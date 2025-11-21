@@ -8,7 +8,7 @@ interface ResultsProps {
 }
 
 const Results: React.FC<ResultsProps> = ({ results, outputFile }) => {
-    const { violations, components, summary } = results;
+    const { violations, summary } = results;
 
     const criticalCount = violations.filter(v => v.impact === 'critical').length;
     const seriousCount = violations.filter(v => v.impact === 'serious').length;
@@ -32,12 +32,18 @@ const Results: React.FC<ResultsProps> = ({ results, outputFile }) => {
                 <Text bold underline>Summary</Text>
                 <Box marginTop={1}>
                     <Text color="gray">Components scanned: </Text>
-                    <Text bold>{components.length}</Text>
+                    <Text bold>{summary.totalComponents}</Text>
+                </Box>
+                <Box>
+                    <Text color="gray">Components with issues: </Text>
+                    <Text bold color={summary.componentsWithViolations > 0 ? 'yellow' : 'green'}>
+                        {summary.componentsWithViolations}
+                    </Text>
                 </Box>
                 <Box>
                     <Text color="gray">Total violations: </Text>
-                    <Text bold color={violations.length > 0 ? 'red' : 'green'}>
-                        {violations.length}
+                    <Text bold color={summary.totalViolations > 0 ? 'red' : 'green'}>
+                        {summary.totalViolations}
                     </Text>
                 </Box>
             </Box>
@@ -81,28 +87,53 @@ const Results: React.FC<ResultsProps> = ({ results, outputFile }) => {
             {violations.length > 0 && (
                 <Box flexDirection="column" marginTop={1}>
                     <Text bold underline>Top Issues</Text>
-                    {violations.slice(0, 5).map((violation, idx) => (
-                        <Box key={idx} flexDirection="column" marginTop={1}>
-                            <Box>
-                                <Text color="gray">{idx + 1}. </Text>
-                                <Text bold>{violation.component || 'Unknown'}</Text>
-                                <Text color="gray"> - </Text>
-                                <Text color={
-                                    violation.impact === 'critical' ? 'magenta' :
-                                        violation.impact === 'serious' ? 'red' :
-                                            violation.impact === 'moderate' ? 'yellow' : 'blue'
-                                }>
-                                    {violation.impact}
-                                </Text>
+                    {violations.slice(0, 5).map((violation, idx) => {
+                        // Get the first node for display
+                        const firstNode = violation.nodes[0];
+                        const componentName = firstNode?.component || 'Unknown';
+                        const componentPath = firstNode?.componentPath?.join(' > ') || '';
+                        const componentType = firstNode?.componentType;
+
+                        return (
+                            <Box key={idx} flexDirection="column" marginTop={1}>
+                                <Box>
+                                    <Text color="gray">{idx + 1}. </Text>
+                                    <Text bold color={componentType === 'host' ? 'cyan' : 'blue'}>
+                                        {componentName}
+                                    </Text>
+                                    {componentType && (
+                                        <Text color="gray" dimColor> [{componentType}]</Text>
+                                    )}
+                                    <Text color="gray"> - </Text>
+                                    <Text color={
+                                        violation.impact === 'critical' ? 'magenta' :
+                                            violation.impact === 'serious' ? 'red' :
+                                                violation.impact === 'moderate' ? 'yellow' : 'blue'
+                                    }>
+                                        {violation.impact}
+                                    </Text>
+                                </Box>
+                                {componentPath && (
+                                    <Box marginLeft={3}>
+                                        <Text color="gray" dimColor>Path: {componentPath}</Text>
+                                    </Box>
+                                )}
+                                <Box marginLeft={3}>
+                                    <Text color="gray">{violation.description}</Text>
+                                </Box>
+                                {violation.nodes.length > 1 && (
+                                    <Box marginLeft={3}>
+                                        <Text color="yellow" dimColor>
+                                            +{violation.nodes.length - 1} more instance(s)
+                                        </Text>
+                                    </Box>
+                                )}
                             </Box>
-                            <Box marginLeft={3}>
-                                <Text color="gray">{violation.description}</Text>
-                            </Box>
-                        </Box>
-                    ))}
+                        );
+                    })}
                     {violations.length > 5 && (
                         <Box marginTop={1}>
-                            <Text color="gray">... and {violations.length - 5} more</Text>
+                            <Text color="gray">... and {violations.length - 5} more violation types</Text>
                         </Box>
                     )}
                 </Box>

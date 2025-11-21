@@ -29,11 +29,14 @@ export interface AttributedViolation {
     description: string;
     help: string;
     helpUrl: string;
-    component: string | null;
-    componentPath: string[];
-    target: string[];
-    html: string;
-    failureSummary: string;
+    nodes: Array<{
+        component: string | null;
+        componentPath: string[];
+        componentType: 'host' | 'component' | null;
+        html: string;
+        target: string[];
+        failureSummary: string;
+    }>;
 }
 
 // Final scan results
@@ -66,5 +69,5 @@ export interface ScanOptions {
 // Raw scan data from browser context
 export interface BrowserScanData {
     components: ComponentInfo[];
-    violations: AxeViolation[];
+    violations: AttributedViolation[];
 }

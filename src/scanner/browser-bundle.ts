@@ -43,6 +43,24 @@ interface AxeViolation {
     }>;
 }
 
+interface AttributedViolationNode {
+    component: string | null;
+    componentPath: string[];
+    componentType: 'host' | 'component' | null;
+    html: string;
+    target: string[];
+    failureSummary: string;
+}
+
+interface AttributedViolation {
+    id: string;
+    impact: 'critical' | 'serious' | 'moderate' | 'minor';
+    description: string;
+    help: string;
+    helpUrl: string;
+    nodes: AttributedViolationNode[];
+}
+
 /**
  * Find the React root fiber node
  */
@@ -169,6 +187,102 @@ async function runAxeScan(): Promise<AxeViolation[]> {
 }
 
 /**
+ * Build a map of DOM elements to their React components
+ */
+function buildDomToComponentMap(components: ComponentInfo[]): Map<Element, ComponentInfo> {
+    const map = new Map<Element, ComponentInfo>();
+
+    for (const component of components) {
+        if (component.domNode) {
+            map.set(component.domNode, component);
+        }
+    }
+
+    return map;
+}
+
+/**
+ * Find the React component for a given DOM element
+ * Walks up the DOM tree if the element itself isn't mapped
+ */
+function findComponentForElement(
+    element: Element | null,
+    domToComponentMap: Map<Element, ComponentInfo>
+): ComponentInfo | null {
+    if (!element) return null;
+
+    // Check if this element is directly mapped
+    if (domToComponentMap.has(element)) {
+        return domToComponentMap.get(element)!;
+    }
+
+    // Walk up the DOM tree to find the nearest parent component
+    let current = element.parentElement;
+    while (current) {
+        if (domToComponentMap.has(current)) {
+            return domToComponentMap.get(current)!;
+        }
+        current = current.parentElement;
+    }
+
+    return null;
+}
+
+/**
+ * Attribute violations to React components
+ */
+function attributeViolationsToComponents(
+    violations: AxeViolation[],
+    domToComponentMap: Map<Element, ComponentInfo>
+): AttributedViolation[] {
+    const attributed: AttributedViolation[] = [];
+
+    for (const violation of violations) {
+        const attributedNodes: AttributedViolationNode[] = [];
+
+        for (const node of violation.nodes) {
+            // Get the first target selector (axe returns an array, first is most specific)
+            const selector = node.target[0];
+
+            let element: Element | null = null;
+            let component: ComponentInfo | null = null;
+
+            try {
+                // Try to find the element using the selector
+                element = document.querySelector(selector);
+
+                if (element) {
+                    // Find the component for this element
+                    component = findComponentForElement(element, domToComponentMap);
+                }
+            } catch (error) {
+                console.warn(`Could not find element for selector: ${selector}`, error);
+            }
+
+            attributedNodes.push({
+                component: component?.name || null,
+                componentPath: component?.path || [],
+                componentType: component ? (component.type as 'host' | 'component') : null,
+                html: node.html,
+                target: node.target,
+                failureSummary: node.failureSummary,
+            });
+        }
+
+        attributed.push({
+            id: violation.id,
+            impact: violation.impact,
+            description: violation.description,
+            help: violation.help,
+            helpUrl: violation.helpUrl,
+            nodes: attributedNodes,
+        });
+    }
+
+    return attributed;
+}
+
+/**
  * Main scan function - called from Node context
  */
 export async function scan() {
@@ -190,9 +304,16 @@ export async function scan() {
     const violations = await runAxeScan();
     console.log(`✓ Found ${violations.length} violations`);
 
+    // Build DOM-to-component map for attribution
+    const domToComponentMap = buildDomToComponentMap(components);
+
+    // Attribute violations to components
+    const attributedViolations = attributeViolationsToComponents(violations, domToComponentMap);
+    console.log(`✓ Attributed violations to components`);
+
     return {
         components,
-        violations,
+        violations: attributedViolations,
     };
 }
 
