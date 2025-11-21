@@ -1,0 +1,108 @@
+import React, { useEffect, useState } from 'react';
+import { Box, Text } from 'ink';
+import Spinner from 'ink-spinner';
+import Scanner from './components/Scanner.js';
+import Results from './components/Results.js';
+import { runScan } from '../browser/launcher.js';
+import type { ScanResults } from '../types.js';
+
+interface AppProps {
+    url: string;
+    browser: 'chromium' | 'firefox' | 'webkit';
+    output?: string;
+    ci: boolean;
+    threshold: number;
+    headless: boolean;
+}
+
+type ScanState = 'idle' | 'scanning' | 'complete' | 'error';
+
+const App: React.FC<AppProps> = ({ url, browser, output, ci, threshold, headless }) => {
+    const [state, setState] = useState<ScanState>('idle');
+    const [results, setResults] = useState<ScanResults | null>(null);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        const performScan = async () => {
+            setState('scanning');
+
+            try {
+                const scanResults = await runScan({
+                    url,
+                    browser,
+                    headless,
+                });
+
+                if (cancelled) return;
+
+                setResults(scanResults);
+                setState('complete');
+
+                // Handle CI mode
+                if (ci) {
+                    const totalViolations = scanResults.violations.length;
+                    if (totalViolations > threshold) {
+                        process.exit(1);
+                    } else {
+                        process.exit(0);
+                    }
+                }
+
+                // Handle output file
+                if (output) {
+                    const fs = await import('fs/promises');
+                    await fs.writeFile(output, JSON.stringify(scanResults, null, 2));
+                }
+            } catch (err) {
+                if (cancelled) return;
+
+                setState('error');
+                setError(err instanceof Error ? err.message : String(err));
+
+                if (ci) {
+                    process.exit(1);
+                }
+            }
+        };
+
+        performScan();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [url, browser, headless, ci, threshold, output]);
+
+    if (state === 'error') {
+        return (
+            <Box flexDirection="column" padding={1}>
+                <Box>
+                    <Text color="red" bold>❌ Scan Error</Text>
+                </Box>
+                <Box marginTop={1}>
+                    <Text>{error}</Text>
+                </Box>
+            </Box>
+        );
+    }
+
+    if (state === 'scanning') {
+        return <Scanner url={url} browser={browser} />;
+    }
+
+    if (state === 'complete' && results) {
+        return <Results results={results} outputFile={output} />;
+    }
+
+    return (
+        <Box>
+            <Text color="green">
+                <Spinner type="dots" />
+            </Text>
+            <Text> Initializing...</Text>
+        </Box>
+    );
+};
+
+export default App;
