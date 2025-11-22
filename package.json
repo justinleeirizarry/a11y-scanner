@@ -11,7 +11,9 @@
         "build": "tsc && npm run build:scanner",
         "build:scanner": "esbuild src/scanner/browser-bundle.ts --bundle --platform=browser --format=iife --global-name=ReactA11yScanner --outfile=dist/scanner-bundle.js",
         "dev": "tsc --watch",
+        "dev:scanner": "esbuild src/scanner/browser-bundle.ts --bundle --platform=browser --format=iife --global-name=ReactA11yScanner --outfile=dist/scanner-bundle.js --watch",
         "start": "node ./bin/cli.js",
+        "test:fixture": "node ./bin/cli.js file://$(pwd)/test/fixtures/test-app.html",
         "test": "echo \"Error: no test specified\" && exit 1"
     },
     "keywords": [
