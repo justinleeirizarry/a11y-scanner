@@ -5,9 +5,10 @@ import type { ScanResults } from '../../types.js';
 interface ResultsProps {
     results: ScanResults;
     outputFile?: string;
+    aiPromptFile?: string;
 }
 
-const Results: React.FC<ResultsProps> = ({ results, outputFile }) => {
+const Results: React.FC<ResultsProps> = ({ results, outputFile, aiPromptFile }) => {
     const { violations, summary } = results;
 
     const criticalCount = violations.filter(v => v.impact === 'critical').length;
@@ -27,6 +28,14 @@ const Results: React.FC<ResultsProps> = ({ results, outputFile }) => {
                     <Text color="green">{outputFile}</Text>
                 </Box>
             )}
+
+            {aiPromptFile && (
+                <Box marginBottom={1}>
+                    <Text color="gray">AI Prompt: </Text>
+                    <Text color="cyan">{aiPromptFile}</Text>
+                </Box>
+            )}
+
 
             <Box flexDirection="column" marginTop={1} borderStyle="round" borderColor="gray" padding={1}>
                 <Text bold underline>Summary</Text>

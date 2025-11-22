@@ -13,15 +13,20 @@ interface AppProps {
     ci: boolean;
     threshold: number;
     headless: boolean;
+    aiPrompts?: boolean;
+    aiTemplate?: string;
+    aiFormat?: 'txt' | 'md' | 'json';
+    aiOutput?: string;
 }
 
 type ScanState = 'idle' | 'scanning' | 'complete' | 'error';
 
-const App: React.FC<AppProps> = ({ url, browser, output, ci, threshold, headless }) => {
+const App: React.FC<AppProps> = ({ url, browser, output, ci, threshold, headless, aiPrompts, aiTemplate, aiFormat, aiOutput }) => {
     const { exit } = useApp();
     const [state, setState] = useState<ScanState>('idle');
     const [results, setResults] = useState<ScanResults | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [aiPromptFilePath, setAiPromptFilePath] = useState<string | null>(null);
 
     useEffect(() => {
         let cancelled = false;
@@ -57,6 +62,21 @@ const App: React.FC<AppProps> = ({ url, browser, output, ci, threshold, headless
                 if (output) {
                     const fs = await import('fs/promises');
                     await fs.writeFile(output, JSON.stringify(scanResults, null, 2));
+                }
+
+                // Handle AI prompts
+                if (aiPrompts) {
+                    const { generateAndExport } = await import('../prompts/prompt-generator.js');
+                    const promptPath = generateAndExport(
+                        scanResults,
+                        scanResults.techStack || { framework: 'unknown', hasTypeScript: false, cssFramework: 'none' },
+                        {
+                            template: aiTemplate || 'fix-all',
+                            format: aiFormat || 'txt',
+                            outputPath: aiOutput,
+                        }
+                    );
+                    setAiPromptFilePath(promptPath);
                 }
             } catch (err) {
                 if (cancelled) return;
@@ -96,7 +116,7 @@ const App: React.FC<AppProps> = ({ url, browser, output, ci, threshold, headless
     }
 
     if (state === 'complete' && results) {
-        return <Results results={results} outputFile={output} />;
+        return <Results results={results} outputFile={output} aiPromptFile={aiPromptFilePath || undefined} />;
     }
 
     return (

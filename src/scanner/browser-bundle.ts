@@ -278,31 +278,91 @@ function findReactRoot(): FiberNode | null {
 }
 
 /**
- * Get component name from fiber node using Bippy
+ * Get component name from fiber node using multiple strategies
+ * Mimics React DevTools resolution logic
  */
 function getComponentName(fiber: FiberNode): string | null {
+    const type = fiber.type;
+
+    // 1. Handle Context Providers explicitly
+    // React Context Providers often appear as objects with _context
+    if (type && type._context) {
+        const contextName = type._context.displayName || 'Context';
+        return `${contextName}.Provider`;
+    }
+
+    // 2. Handle Context Consumers
+    if (type && type.$$typeof === Symbol.for('react.context')) {
+        const contextName = type.displayName || 'Context';
+        return `${contextName}.Consumer`;
+    }
+
+    // 3. Handle Lazy Components
+    if (type && type.$$typeof === Symbol.for('react.lazy')) {
+        return 'Lazy';
+    }
+
+    // 4. Handle Memo and ForwardRef
+    // These wrap the actual component
+    if (type && typeof type === 'object') {
+        // Check if it's a Memo
+        if (type.$$typeof === Symbol.for('react.memo')) {
+            const innerName = type.type.displayName || type.type.name;
+            return innerName ? `Memo(${innerName})` : 'Memo';
+        }
+        // Check if it's a ForwardRef
+        if (type.$$typeof === Symbol.for('react.forward_ref')) {
+            const innerName = type.displayName || type.render.displayName || type.render.name;
+            return innerName ? `ForwardRef(${innerName})` : 'ForwardRef';
+        }
+    }
+
+    // 5. Try Bippy's resolution (it handles many standard cases well)
     try {
-        // Use Bippy's getDisplayName for better handling of memo, forwardRef, etc.
         const displayName = getDisplayName(fiber as any);
-        if (displayName) return displayName;
+        // Only accept if it's not a single letter (minified)
+        if (displayName && displayName.length > 1) return displayName;
     } catch (error) {
-        // Fallback to manual extraction if Bippy fails
+        // Ignore bippy errors
     }
 
-    // Fallback: Manual extraction
-    if (!fiber.type) return null;
-
-    if (typeof fiber.type === 'string') {
-        return fiber.type; // HTML element like 'div', 'button'
+    // 6. Fallback: Check _debugSource (Dev builds only)
+    if ((fiber as any)._debugSource?.fileName) {
+        const match = (fiber as any)._debugSource.fileName.match(/\/([^/]+)\.(tsx?|jsx?)$/);
+        if (match && match[1] && match[1].length > 1) {
+            return match[1];
+        }
     }
 
-    if (typeof fiber.type === 'function') {
-        return fiber.type.displayName || fiber.type.name || 'Anonymous';
+    // 7. Manual extraction from type
+    if (typeof type === 'function') {
+        const name = type.displayName || type.name;
+        // If name is single letter, it's likely minified. 
+        // Try to add a hint based on what it renders.
+        if (name && name.length === 1) {
+            let hint = '';
+            if (fiber.child) {
+                if (typeof fiber.child.type === 'string') {
+                    hint = `(${fiber.child.type})`;
+                } else if (typeof fiber.child.type === 'function') {
+                    const childName = fiber.child.type.displayName || fiber.child.type.name;
+                    if (childName && childName.length > 1) {
+                        hint = `(${childName})`;
+                    }
+                }
+            }
+            return `${name}${hint} [minified]`;
+        }
+        return name || 'Anonymous';
     }
 
-    if (typeof fiber.type === 'object' && fiber.type !== null) {
-        if (fiber.type.displayName) return fiber.type.displayName;
-        if (fiber.type.render && fiber.type.render.name) return fiber.type.render.name;
+    if (typeof type === 'object' && type !== null) {
+        if (type.displayName) return type.displayName;
+    }
+
+    // 8. Handle Host Components (HTML elements)
+    if (typeof type === 'string') {
+        return type;
     }
 
     return null;
@@ -494,9 +554,101 @@ export async function scan() {
     const attributedViolations = attributeViolationsToComponents(violations, domToComponentMap);
     console.log(`✓ Attributed violations to components`);
 
+    // Detect tech stack
+    const techStack = detectTechStack();
+    console.log(`✓ Detected tech stack`);
+
     return {
         components,
         violations: attributedViolations,
+        techStack,
+    };
+}
+
+/**
+ * Detect the tech stack from the page
+ */
+function detectTechStack(): {
+    framework: 'nextjs' | 'vite' | 'cra' | 'remix' | 'gatsby' | 'unknown';
+    hasTypeScript: boolean;
+    cssFramework: 'tailwind' | 'css-modules' | 'styled-components' | 'emotion' | 'sass' | 'none';
+} {
+    let framework: 'nextjs' | 'vite' | 'cra' | 'remix' | 'gatsby' | 'unknown' = 'unknown';
+    let hasTypeScript = false;
+    let cssFramework: 'tailwind' | 'css-modules' | 'styled-components' | 'emotion' | 'sass' | 'none' = 'none';
+
+    // Detect framework
+    if (typeof window !== 'undefined') {
+        // Next.js detection - check multiple indicators
+        const hasNextData = !!(window as any).__NEXT_DATA__;
+        const hasNextRoot = !!document.querySelector('[id^="__next"]');
+        const hasNextScript = !!document.querySelector('script[src*="/_next/"]');
+        const hasNextMeta = !!document.querySelector('meta[name="next-head-count"]');
+
+        if (hasNextData || hasNextRoot || hasNextScript || hasNextMeta) {
+            framework = 'nextjs';
+        }
+        // Vite detection
+        else if ((window as any).__vite__ || document.querySelector('[type="module"][src*="/@vite"]')) {
+            framework = 'vite';
+        }
+        // Create React App detection
+        else if (document.querySelector('[id="root"]') && (window as any).webpackHotUpdate) {
+            framework = 'cra';
+        }
+        // Remix detection
+        else if ((window as any).__remixContext) {
+            framework = 'remix';
+        }
+        // Gatsby detection
+        else if ((window as any).___gatsby) {
+            framework = 'gatsby';
+        }
+
+        // Detect CSS framework by checking class patterns
+        const allElements = document.querySelectorAll('*');
+
+        // Tailwind detection (common utility classes)
+        let tailwindScore = 0;
+        const tailwindPatterns = ['flex', 'grid', 'w-', 'h-', 'bg-', 'text-', 'p-', 'm-'];
+        allElements.forEach(el => {
+            const classes = el.className;
+            if (typeof classes === 'string') {
+                tailwindPatterns.forEach(pattern => {
+                    if (classes.includes(pattern)) tailwindScore++;
+                });
+            }
+        });
+
+        if (tailwindScore > 10) {
+            cssFramework = 'tailwind';
+        }
+        // CSS Modules detection (hashed class names)
+        else if (document.body.className.match(/[a-zA-Z]+_[a-zA-Z]+__[a-zA-Z0-9]+/)) {
+            cssFramework = 'css-modules';
+        }
+        // Styled Components detection
+        else if (document.querySelector('[class^="sc-"]')) {
+            cssFramework = 'styled-components';
+        }
+        // Emotion detection
+        else if (document.querySelector('[class^="css-"]')) {
+            cssFramework = 'emotion';
+        }
+
+        // TypeScript detection (rough heuristic)
+        const scripts = Array.from(document.querySelectorAll('script'));
+        hasTypeScript = scripts.some(script =>
+            script.src.includes('.tsx') ||
+            script.src.includes('.ts') ||
+            script.textContent?.includes('__esModule')
+        );
+    }
+
+    return {
+        framework,
+        hasTypeScript,
+        cssFramework,
     };
 }
 

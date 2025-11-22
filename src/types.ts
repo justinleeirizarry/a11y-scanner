@@ -58,6 +58,7 @@ export interface ScanResults {
     browser: string;
     components: ComponentInfo[];
     violations: AttributedViolation[];
+    techStack?: TechStack;
     summary: {
         totalComponents: number;
         totalViolations: number;
@@ -83,3 +84,32 @@ export interface BrowserScanData {
     components: ComponentInfo[];
     violations: AttributedViolation[];
 }
+
+// Prompt template types
+export interface PromptTemplate {
+    name: string;
+    description: string;
+    render: (context: PromptContext) => string;
+}
+
+export interface PromptContext {
+    violations: AttributedViolation[];
+    summary: ScanResults['summary'];
+    techStack: TechStack;
+    url: string;
+}
+
+export interface TechStack {
+    framework: 'nextjs' | 'vite' | 'cra' | 'remix' | 'gatsby' | 'unknown';
+    version?: string;
+    hasTypeScript: boolean;
+    cssFramework: 'tailwind' | 'css-modules' | 'styled-components' | 'emotion' | 'sass' | 'none';
+    packageManager?: 'npm' | 'yarn' | 'pnpm' | 'bun';
+}
+
+export interface PromptExportOptions {
+    template: string;
+    format: 'txt' | 'md' | 'json';
+    outputPath?: string;
+}
+

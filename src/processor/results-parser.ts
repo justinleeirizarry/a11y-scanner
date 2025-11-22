@@ -46,6 +46,7 @@ export function processResults(options: ProcessOptions): ScanResults {
         browser,
         components,
         violations: attributedViolations,
+        techStack: (rawData as any).techStack, // Tech stack from browser scan
         summary,
     };
 }
