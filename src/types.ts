@@ -22,6 +22,13 @@ export interface ComponentInfo {
     domNode?: Element;
 }
 
+// Fix suggestion for a violation
+export interface FixSuggestion {
+    summary: string;
+    details: string;
+    codeExample?: string;
+}
+
 // Violation attributed to a component
 export interface AttributedViolation {
     id: string;
@@ -32,11 +39,16 @@ export interface AttributedViolation {
     nodes: Array<{
         component: string | null;
         componentPath: string[];
+        userComponentPath: string[]; // Filtered path with only user components
         componentType: 'host' | 'component' | null;
         html: string;
+        htmlSnippet: string; // Truncated, readable version
+        cssSelector: string; // Generated CSS selector for easy location
         target: string[];
         failureSummary: string;
+        isFrameworkComponent: boolean;
     }>;
+    fixSuggestion?: FixSuggestion;
 }
 
 // Final scan results

@@ -204,8 +204,7 @@ async function detectReact(page: Page): Promise<boolean> {
         // Check common React root containers
         const containers = [
             '#root', '#app', '#__next', // Next.js uses #__next
-            '[data-reactroot]', '[data-reactid]',
-            'nextjs-portal' // Your site uses this!
+            '[data-reactroot]', '[data-reactid]'
         ];
 
         for (const selector of containers) {

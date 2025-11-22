@@ -91,11 +91,16 @@ const Results: React.FC<ResultsProps> = ({ results, outputFile }) => {
                         // Get the first node for display
                         const firstNode = violation.nodes[0];
                         const componentName = firstNode?.component || 'Unknown';
-                        const componentPath = firstNode?.componentPath?.join(' > ') || '';
+
+                        // Use user component path (filtered), fallback to full path
+                        const displayPath = firstNode?.userComponentPath && firstNode.userComponentPath.length > 0
+                            ? firstNode.userComponentPath
+                            : firstNode?.componentPath || [];
+
                         const componentType = firstNode?.componentType;
 
                         return (
-                            <Box key={idx} flexDirection="column" marginTop={1}>
+                            <Box key={idx} flexDirection="column" marginTop={1} borderStyle="round" borderColor="gray" padding={1}>
                                 <Box>
                                     <Text color="gray">{idx + 1}. </Text>
                                     <Text bold color={componentType === 'host' ? 'cyan' : 'blue'}>
@@ -113,16 +118,67 @@ const Results: React.FC<ResultsProps> = ({ results, outputFile }) => {
                                         {violation.impact}
                                     </Text>
                                 </Box>
-                                {componentPath && (
-                                    <Box marginLeft={3}>
-                                        <Text color="gray" dimColor>Path: {componentPath}</Text>
+
+                                {/* Component Path - Show user components only */}
+                                {displayPath.length > 0 && (
+                                    <Box marginLeft={3} flexWrap="wrap">
+                                        <Text color="gray" dimColor>Component Path: </Text>
+                                        {displayPath.map((item, i) => {
+                                            const isReact = /^[A-Z]/.test(item);
+                                            return (
+                                                <Text key={i}>
+                                                    {i > 0 && <Text color="gray" dimColor> {'>'} </Text>}
+                                                    <Text
+                                                        color={isReact ? 'cyan' : 'gray'}
+                                                        bold={isReact}
+                                                        dimColor={!isReact}
+                                                    >
+                                                        {item}
+                                                    </Text>
+                                                </Text>
+                                            );
+                                        })}
                                     </Box>
                                 )}
-                                <Box marginLeft={3}>
-                                    <Text color="gray">{violation.description}</Text>
+
+                                {/* Description */}
+                                <Box marginLeft={3} marginTop={1}>
+                                    <Text color="yellow">{violation.description}</Text>
                                 </Box>
-                                {violation.nodes.length > 1 && (
+
+                                {/* CSS Selector for easy location */}
+                                {firstNode?.cssSelector && (
                                     <Box marginLeft={3}>
+                                        <Text color="gray" dimColor>Selector: </Text>
+                                        <Text color="cyan">{firstNode.cssSelector}</Text>
+                                    </Box>
+                                )}
+
+                                {/* HTML Snippet */}
+                                {firstNode?.htmlSnippet && (
+                                    <Box marginLeft={3} flexDirection="column">
+                                        <Text color="gray" dimColor>HTML:</Text>
+                                        <Text color="gray">{firstNode.htmlSnippet}</Text>
+                                    </Box>
+                                )}
+
+                                {/* Fix Suggestion */}
+                                {violation.fixSuggestion && (
+                                    <Box marginLeft={3} marginTop={1} flexDirection="column" borderStyle="single" borderColor="green" padding={1}>
+                                        <Text color="green" bold>💡 How to Fix:</Text>
+                                        <Text color="green">{violation.fixSuggestion.summary}</Text>
+                                        <Text color="gray" dimColor>{violation.fixSuggestion.details}</Text>
+                                        {violation.fixSuggestion.codeExample && (
+                                            <Box marginTop={1}>
+                                                <Text color="blue">{violation.fixSuggestion.codeExample}</Text>
+                                            </Box>
+                                        )}
+                                    </Box>
+                                )}
+
+                                {/* Multiple instances indicator */}
+                                {violation.nodes.length > 1 && (
+                                    <Box marginLeft={3} marginTop={1}>
                                         <Text color="yellow" dimColor>
                                             +{violation.nodes.length - 1} more instance(s)
                                         </Text>

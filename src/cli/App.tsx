@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Text } from 'ink';
+import { Box, Text, useApp } from 'ink';
 import Spinner from 'ink-spinner';
 import Scanner from './components/Scanner.js';
 import Results from './components/Results.js';
@@ -18,6 +18,7 @@ interface AppProps {
 type ScanState = 'idle' | 'scanning' | 'complete' | 'error';
 
 const App: React.FC<AppProps> = ({ url, browser, output, ci, threshold, headless }) => {
+    const { exit } = useApp();
     const [state, setState] = useState<ScanState>('idle');
     const [results, setResults] = useState<ScanResults | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -44,9 +45,11 @@ const App: React.FC<AppProps> = ({ url, browser, output, ci, threshold, headless
                 if (ci) {
                     const totalViolations = scanResults.violations.length;
                     if (totalViolations > threshold) {
-                        process.exit(1);
+                        process.exitCode = 1;
+                        exit();
                     } else {
-                        process.exit(0);
+                        process.exitCode = 0;
+                        exit();
                     }
                 }
 
@@ -62,7 +65,8 @@ const App: React.FC<AppProps> = ({ url, browser, output, ci, threshold, headless
                 setError(err instanceof Error ? err.message : String(err));
 
                 if (ci) {
-                    process.exit(1);
+                    process.exitCode = 1;
+                    exit();
                 }
             }
         };

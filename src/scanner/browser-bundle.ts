@@ -8,6 +8,17 @@ import axe from 'axe-core';
 // @ts-ignore - Bippy utilities for better fiber handling
 import { getDisplayName, isHostFiber, isCompositeFiber } from 'bippy/core';
 
+declare global {
+    interface Window {
+        ReactA11yScanner: {
+            scan: () => Promise<any>;
+        };
+        __REACT_DEVTOOLS_GLOBAL_HOOK__: {
+            getFiberRoots: (id: number) => Set<any>;
+        };
+    }
+}
+
 interface FiberNode {
     type: any;
     stateNode: any;
@@ -20,6 +31,10 @@ interface FiberNode {
         fileName: string;
         lineNumber: number;
     };
+    // Add common fiber properties for better type safety
+    tag?: number;
+    key?: string | null;
+    index?: number;
 }
 
 interface ComponentInfo {
@@ -44,13 +59,23 @@ interface AxeViolation {
     }>;
 }
 
+interface FixSuggestion {
+    summary: string;
+    details: string;
+    codeExample?: string;
+}
+
 interface AttributedViolationNode {
     component: string | null;
     componentPath: string[];
+    userComponentPath: string[];
     componentType: 'host' | 'component' | null;
     html: string;
+    htmlSnippet: string;
+    cssSelector: string;
     target: string[];
     failureSummary: string;
+    isFrameworkComponent: boolean;
 }
 
 interface AttributedViolation {
@@ -60,6 +85,140 @@ interface AttributedViolation {
     help: string;
     helpUrl: string;
     nodes: AttributedViolationNode[];
+    fixSuggestion?: FixSuggestion;
+}
+
+/**
+ * Framework component patterns to filter out
+ */
+const FRAMEWORK_PATTERNS = [
+    // Next.js
+    'ServerRoot', 'AppRouter', 'RootErrorBoundary', 'ErrorBoundary', 'ErrorBoundaryHandler',
+    'Router', 'RedirectBoundary', 'RedirectErrorBoundary', '__next_root_layout_boundary__',
+    'ViewTransitions', 'OuterLayoutRouter', 'RenderFromTemplateContext', 'ScrollAndFocusHandler',
+    'InnerScrollAndFocusHandler', 'LoadingBoundary', 'HTTPAccessFallbackBoundary',
+    'HTTPAccessFallbackErrorBoundary', 'InnerLayoutRouter', 'ClientPageRoot',
+    // React Router
+    'RouterProvider', 'DataRouterContext', 'LocationContext', 'RouteContext',
+    // Common HOCs
+    'Context.Provider', 'Context.Consumer', 'ForwardRef', 'Memo',
+    // Generic
+    'Root', 'App', 'Fragment'
+];
+
+/**
+ * Check if a component name is a framework component
+ */
+function isFrameworkComponent(name: string | null): boolean {
+    if (!name) return false;
+    return FRAMEWORK_PATTERNS.some(pattern =>
+        name === pattern ||
+        name.startsWith(pattern + '.') ||
+        name.includes('ErrorBoundary') ||
+        name.includes('Suspense') ||
+        name.startsWith('_')
+    );
+}
+
+/**
+ * Filter component path to show only user components
+ */
+function filterUserComponents(path: string[]): string[] {
+    return path.filter(name => !isFrameworkComponent(name));
+}
+
+/**
+ * Generate a CSS selector for an element
+ */
+function generateCssSelector(element: Element): string {
+    if (element.id) {
+        return `#${element.id}`;
+    }
+
+    const path: string[] = [];
+    let current: Element | null = element;
+
+    while (current && current !== document.body) {
+        let selector = current.tagName.toLowerCase();
+
+        if (current.className && typeof current.className === 'string') {
+            const classes = current.className.trim().split(/\s+/).filter(c => c);
+            if (classes.length > 0) {
+                selector += '.' + classes.slice(0, 2).join('.');
+            }
+        }
+
+        path.unshift(selector);
+
+        if (path.length >= 3) break; // Keep selector reasonably short
+        current = current.parentElement;
+    }
+
+    return path.join(' > ');
+}
+
+/**
+ * Extract a readable HTML snippet from an element
+ */
+function extractHtmlSnippet(html: string, maxLength: number = 200): string {
+    // Remove excessive whitespace
+    let snippet = html.replace(/\s+/g, ' ').trim();
+
+    if (snippet.length > maxLength) {
+        snippet = snippet.substring(0, maxLength) + '...';
+    }
+
+    return snippet;
+}
+
+/**
+ * Generate fix suggestions based on violation type
+ */
+function generateFixSuggestion(violationId: string, element: Element | null): FixSuggestion | undefined {
+    const suggestions: Record<string, FixSuggestion> = {
+        'landmark-one-main': {
+            summary: 'Add a <main> landmark to your page',
+            details: 'Wrap your primary page content in a <main> element. This helps screen reader users navigate to the main content quickly.',
+            codeExample: '<main>\n  {/* Your page content here */}\n</main>'
+        },
+        'page-has-heading-one': {
+            summary: 'Add an <h1> heading to your page',
+            details: 'Every page should have exactly one <h1> element that describes the page\'s main topic.',
+            codeExample: '<h1>Page Title</h1>'
+        },
+        'region': {
+            summary: 'Wrap content in semantic landmarks',
+            details: 'Use semantic HTML5 elements like <main>, <nav>, <aside>, <header>, <footer> to structure your page content.',
+            codeExample: '<main>\n  <section>\n    {/* Content */}\n  </section>\n</main>'
+        },
+        'button-name': {
+            summary: 'Add accessible text to the button',
+            details: 'Buttons must have text content or an aria-label attribute.',
+            codeExample: '<button aria-label="Close dialog">\n  <CloseIcon />\n</button>'
+        },
+        'link-name': {
+            summary: 'Add accessible text to the link',
+            details: 'Links must have text content or an aria-label attribute.',
+            codeExample: '<a href="..." aria-label="Read more about topic">\n  <Icon />\n</a>'
+        },
+        'image-alt': {
+            summary: 'Add alt text to the image',
+            details: 'All images must have an alt attribute. Use empty alt="" for decorative images.',
+            codeExample: '<img src="..." alt="Description of image" />'
+        },
+        'color-contrast': {
+            summary: 'Increase color contrast',
+            details: 'Text must have sufficient contrast with its background. Aim for at least 4.5:1 for normal text, 3:1 for large text.',
+            codeExample: '// Use darker text or lighter background'
+        },
+        'label': {
+            summary: 'Add a label to the form input',
+            details: 'Form inputs must have associated labels.',
+            codeExample: '<label htmlFor="email">Email</label>\n<input id="email" type="email" />'
+        }
+    };
+
+    return suggestions[violationId];
 }
 
 /**
@@ -67,7 +226,7 @@ interface AttributedViolation {
  */
 function findReactRoot(): FiberNode | null {
     // Try to find root via React DevTools hook
-    const hook = (window as any).__REACT_DEVTOOLS_GLOBAL_HOOK__;
+    const hook = window.__REACT_DEVTOOLS_GLOBAL_HOOK__;
     if (hook && hook.getFiberRoots) {
         const roots = hook.getFiberRoots(1);
         if (roots && roots.size > 0) {
@@ -269,15 +428,28 @@ function attributeViolationsToComponents(
                 console.warn(`Could not find element for selector: ${selector}`, error);
             }
 
+            const userPath = component?.path ? filterUserComponents(component.path) : [];
+            const isFramework = component ? isFrameworkComponent(component.name) : false;
+            const cssSelector = element ? generateCssSelector(element) : node.target[0];
+            const htmlSnippet = extractHtmlSnippet(node.html);
+
             attributedNodes.push({
                 component: component?.name || null,
                 componentPath: component?.path || [],
+                userComponentPath: userPath,
                 componentType: component ? (component.type as 'host' | 'component') : null,
                 html: node.html,
+                htmlSnippet,
+                cssSelector,
                 target: node.target,
                 failureSummary: node.failureSummary,
+                isFrameworkComponent: isFramework,
             });
         }
+
+        // Generate fix suggestion for this violation
+        const firstElement = attributedNodes[0];
+        const fixSuggestion = generateFixSuggestion(violation.id, null);
 
         attributed.push({
             id: violation.id,
@@ -286,6 +458,7 @@ function attributeViolationsToComponents(
             help: violation.help,
             helpUrl: violation.helpUrl,
             nodes: attributedNodes,
+            fixSuggestion,
         });
     }
 
@@ -329,5 +502,5 @@ export async function scan() {
 
 // Expose to global window for evaluation
 if (typeof window !== 'undefined') {
-    (window as any).ReactA11yScanner = { scan };
+    window.ReactA11yScanner = { scan };
 }
