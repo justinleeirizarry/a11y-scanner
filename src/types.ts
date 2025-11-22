@@ -63,7 +63,6 @@ export interface ScanResults {
     components: ComponentInfo[];
     violations: AttributedViolation[];
     accessibilityTree?: any; // Playwright accessibility snapshot
-    techStack?: TechStack;
     summary: {
         totalComponents: number;
         totalViolations: number;
@@ -101,17 +100,8 @@ export interface PromptTemplate {
 export interface PromptContext {
     violations: AttributedViolation[];
     summary: ScanResults['summary'];
-    techStack: TechStack;
     url: string;
     accessibilityTree?: any;
-}
-
-export interface TechStack {
-    framework: 'nextjs' | 'vite' | 'cra' | 'remix' | 'gatsby' | 'unknown';
-    version?: string;
-    hasTypeScript: boolean;
-    cssFramework: 'tailwind' | 'css-modules' | 'styled-components' | 'emotion' | 'sass' | 'none';
-    packageManager?: 'npm' | 'yarn' | 'pnpm' | 'bun';
 }
 
 export interface PromptExportOptions {
@@ -119,4 +109,5 @@ export interface PromptExportOptions {
     format: 'txt' | 'md' | 'json';
     outputPath?: string;
 }
+
 

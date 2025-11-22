@@ -72,7 +72,6 @@ const App: React.FC<AppProps> = ({ url, browser, output, ci, threshold, headless
                     const { generateAndExport } = await import('../prompts/prompt-generator.js');
                     const promptPath = generateAndExport(
                         scanResults,
-                        scanResults.techStack || { framework: 'unknown', hasTypeScript: false, cssFramework: 'none' },
                         {
                             template: aiTemplate || 'fix-all',
                             format: aiFormat || 'txt',

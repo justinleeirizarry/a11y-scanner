@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import type { ScanResults, PromptContext, PromptExportOptions, TechStack } from '../types.js';
+import type { ScanResults, PromptContext, PromptExportOptions } from '../types.js';
 import { getTemplate } from './templates/index.js';
 
 /**
@@ -8,7 +8,6 @@ import { getTemplate } from './templates/index.js';
  */
 export function generatePrompt(
     results: ScanResults,
-    techStack: TechStack,
     templateName: string = 'fix-all'
 ): string {
     const template = getTemplate(templateName);
@@ -20,7 +19,6 @@ export function generatePrompt(
     const context: PromptContext = {
         violations: results.violations,
         summary: results.summary,
-        techStack,
         url: results.url,
     };
 
@@ -74,9 +72,8 @@ export function exportPrompt(
  */
 export function generateAndExport(
     results: ScanResults,
-    techStack: TechStack,
     options: PromptExportOptions
 ): string {
-    const prompt = generatePrompt(results, techStack, options.template);
+    const prompt = generatePrompt(results, options.template);
     return exportPrompt(prompt, options);
 }

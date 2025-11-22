@@ -1,21 +1,17 @@
 import type { PromptTemplate } from '../../types.js';
-import { formatTechStack } from '../context-detector.js';
 import { formatViolationSummary, formatViolations } from '../formatters.js';
 
 export const fixAllTemplate: PromptTemplate = {
     name: 'fix-all',
     description: 'Comprehensive prompt to fix all accessibility violations',
     render: (context) => {
-        const { violations, techStack, url, summary } = context;
+        const { violations, url, summary } = context;
 
         return `You are an expert React developer and accessibility specialist.
 
 I need you to fix ALL accessibility violations in my application.
 
 SCANNED URL: ${url}
-
-TECH STACK:
-${formatTechStack(techStack)}
 
 SCAN SUMMARY:
 - Total Components Scanned: ${summary.totalComponents}

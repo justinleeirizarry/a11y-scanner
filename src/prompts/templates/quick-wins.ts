@@ -1,12 +1,11 @@
 import type { PromptTemplate } from '../../types.js';
-import { formatTechStack } from '../context-detector.js';
 import { getQuickWins, formatViolations } from '../formatters.js';
 
 export const quickWinsTemplate: PromptTemplate = {
     name: 'quick-wins',
     description: 'Focus on easy, high-impact fixes first',
     render: (context) => {
-        const { violations, techStack, url } = context;
+        const { violations, url } = context;
         const quickWins = getQuickWins(violations);
 
         if (quickWins.length === 0) {
@@ -19,9 +18,6 @@ Consider using the 'fix-all' template for comprehensive fixes.`;
         return `Let's start with the quick wins - easy accessibility fixes that have high impact.
 
 SCANNED URL: ${url}
-
-TECH STACK:
-${formatTechStack(techStack)}
 
 QUICK WIN VIOLATIONS (${quickWins.length} out of ${violations.length} total):
 ${formatViolations(quickWins)}

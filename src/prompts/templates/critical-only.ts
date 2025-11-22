@@ -1,12 +1,11 @@
 import type { PromptTemplate } from '../../types.js';
-import { formatTechStack } from '../context-detector.js';
 import { getCriticalViolations, formatViolations } from '../formatters.js';
 
 export const criticalOnlyTemplate: PromptTemplate = {
     name: 'critical-only',
     description: 'Focus on critical and serious violations only',
     render: (context) => {
-        const { violations, techStack, url, summary } = context;
+        const { violations, url, summary } = context;
         const criticalViolations = getCriticalViolations(violations);
 
         if (criticalViolations.length === 0) {
@@ -19,9 +18,6 @@ These are important but not blocking. Consider using the 'fix-all' template to a
         return `URGENT: Critical accessibility violations need immediate attention.
 
 SCANNED URL: ${url}
-
-TECH STACK:
-${formatTechStack(techStack)}
 
 CRITICAL/SERIOUS VIOLATIONS (${criticalViolations.length} out of ${summary.totalViolations} total):
 ${formatViolations(criticalViolations)}

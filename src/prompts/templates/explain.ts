@@ -1,12 +1,11 @@
 import type { PromptTemplate } from '../../types.js';
-import { formatTechStack } from '../context-detector.js';
 import { formatViolations } from '../formatters.js';
 
 export const explainTemplate: PromptTemplate = {
     name: 'explain',
     description: 'Educational prompt to learn about accessibility violations',
     render: (context) => {
-        const { violations, techStack, url, accessibilityTree } = context;
+        const { violations, url, accessibilityTree } = context;
 
         const treeSummary = accessibilityTree
             ? JSON.stringify(accessibilityTree, null, 2).slice(0, 1000) + '...'
@@ -15,9 +14,6 @@ export const explainTemplate: PromptTemplate = {
         return `I'm learning about web accessibility and would like to understand these violations found in my application.
 
 SCANNED URL: ${url}
-
-TECH STACK:
-${formatTechStack(techStack)}
 
 ACCESSIBILITY TREE SNAPSHOT (Partial):
 \`\`\`json
