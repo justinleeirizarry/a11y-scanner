@@ -19,7 +19,25 @@ npm install -g react-a11y-scanner
 
 ## Usage
 
-### Basic Scan
+### Quick Scan (Recommended)
+
+```bash
+npm start <url>
+```
+
+**Examples:**
+```bash
+# Scan your local app (production build)
+npm start http://localhost:3000
+
+# Scan any website
+npm start https://example.com
+```
+
+> **Note:** For best results, scan **production builds** (not dev mode with HMR).
+> See [INSTALL_MODE.md](INSTALL_MODE.md) for dev mode scanning options.
+
+### Command Line Options
 
 ```bash
 react-a11y-scanner https://example.com

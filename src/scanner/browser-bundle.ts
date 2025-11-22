@@ -5,7 +5,8 @@
 
 // @ts-ignore - these will be bundled
 import axe from 'axe-core';
-// Note: Bippy might need to be included differently - checking approach
+// @ts-ignore - Bippy utilities for better fiber handling
+import { getDisplayName, isHostFiber, isCompositeFiber } from 'bippy/core';
 
 interface FiberNode {
     type: any;
@@ -118,9 +119,18 @@ function findReactRoot(): FiberNode | null {
 }
 
 /**
- * Get component name from fiber node
+ * Get component name from fiber node using Bippy
  */
 function getComponentName(fiber: FiberNode): string | null {
+    try {
+        // Use Bippy's getDisplayName for better handling of memo, forwardRef, etc.
+        const displayName = getDisplayName(fiber as any);
+        if (displayName) return displayName;
+    } catch (error) {
+        // Fallback to manual extraction if Bippy fails
+    }
+
+    // Fallback: Manual extraction
     if (!fiber.type) return null;
 
     if (typeof fiber.type === 'string') {
