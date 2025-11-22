@@ -12,7 +12,7 @@ const __dirname = dirname(__filename);
  * Launch browser and run the scan
  */
 export async function runScan(options: ScanOptions): Promise<ScanResults> {
-    const { url, browser: browserType, headless } = options;
+    const { url, browser: browserType, headless, tags } = options;
 
     let browser: Browser | null = null;
     let page: Page | null = null;
@@ -90,7 +90,7 @@ export async function runScan(options: ScanOptions): Promise<ScanResults> {
                 }
 
                 // Block navigation during scan to prevent context destruction
-                rawData = await page.evaluate(() => {
+                rawData = await page.evaluate(({ tags }) => {
                     // Save original navigation methods
                     const originalPushState = history.pushState;
                     const originalReplaceState = history.replaceState;
@@ -102,7 +102,7 @@ export async function runScan(options: ScanOptions): Promise<ScanResults> {
 
                     try {
                         // @ts-ignore - ReactA11yScanner is injected
-                        const result = window.ReactA11yScanner.scan();
+                        const result = window.ReactA11yScanner.scan({ tags });
 
                         // Restore navigation
                         history.pushState = originalPushState;
@@ -115,7 +115,7 @@ export async function runScan(options: ScanOptions): Promise<ScanResults> {
                         history.replaceState = originalReplaceState;
                         throw error;
                     }
-                }) as BrowserScanData;
+                }, { tags }) as BrowserScanData;
 
                 // Success! Break out of retry loop
                 break;

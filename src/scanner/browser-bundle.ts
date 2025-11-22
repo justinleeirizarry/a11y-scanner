@@ -6,12 +6,21 @@
 // @ts-ignore - these will be bundled
 import axe from 'axe-core';
 // @ts-ignore - Bippy utilities for better fiber handling
-import { getDisplayName, isHostFiber, isCompositeFiber } from 'bippy/core';
+import { getDisplayName, isHostFiber, isCompositeFiber, instrument } from 'bippy';
+
+// Initialize Bippy instrumentation immediately
+try {
+    instrument({
+        onCommitFiberRoot: () => { }, // We just need instrumentation active
+    });
+} catch (e) {
+    console.warn('Failed to initialize Bippy instrumentation:', e);
+}
 
 declare global {
     interface Window {
         ReactA11yScanner: {
-            scan: () => Promise<any>;
+            scan: (options?: { tags?: string[] }) => Promise<any>;
         };
         __REACT_DEVTOOLS_GLOBAL_HOOK__: {
             getFiberRoots: (id: number) => Set<any>;
@@ -284,49 +293,32 @@ function findReactRoot(): FiberNode | null {
 function getComponentName(fiber: FiberNode): string | null {
     const type = fiber.type;
 
-    // 1. Handle Context Providers explicitly
-    // React Context Providers often appear as objects with _context
+    // 1. Try Bippy's resolution first (it handles most cases including HOCs)
+    try {
+        const displayName = getDisplayName(fiber as any);
+        // Only accept if it's not a single letter (minified) unless we have no other choice
+        if (displayName && displayName.length > 1) return displayName;
+
+        // If it is minified (length 1), keep it but try to find a better name below
+        if (displayName) {
+            // If we have a minified name, check if we can get a better one from type
+            if (typeof type === 'function' && (type.displayName || type.name)) {
+                const manualName = type.displayName || type.name;
+                if (manualName.length > 1) return manualName;
+            }
+            return displayName;
+        }
+    } catch (error) {
+        // Ignore bippy errors
+    }
+
+    // 2. Handle Context Providers explicitly (Bippy might miss some internal ones)
     if (type && type._context) {
         const contextName = type._context.displayName || 'Context';
         return `${contextName}.Provider`;
     }
 
-    // 2. Handle Context Consumers
-    if (type && type.$$typeof === Symbol.for('react.context')) {
-        const contextName = type.displayName || 'Context';
-        return `${contextName}.Consumer`;
-    }
-
-    // 3. Handle Lazy Components
-    if (type && type.$$typeof === Symbol.for('react.lazy')) {
-        return 'Lazy';
-    }
-
-    // 4. Handle Memo and ForwardRef
-    // These wrap the actual component
-    if (type && typeof type === 'object') {
-        // Check if it's a Memo
-        if (type.$$typeof === Symbol.for('react.memo')) {
-            const innerName = type.type.displayName || type.type.name;
-            return innerName ? `Memo(${innerName})` : 'Memo';
-        }
-        // Check if it's a ForwardRef
-        if (type.$$typeof === Symbol.for('react.forward_ref')) {
-            const innerName = type.displayName || type.render.displayName || type.render.name;
-            return innerName ? `ForwardRef(${innerName})` : 'ForwardRef';
-        }
-    }
-
-    // 5. Try Bippy's resolution (it handles many standard cases well)
-    try {
-        const displayName = getDisplayName(fiber as any);
-        // Only accept if it's not a single letter (minified)
-        if (displayName && displayName.length > 1) return displayName;
-    } catch (error) {
-        // Ignore bippy errors
-    }
-
-    // 6. Fallback: Check _debugSource (Dev builds only)
+    // 3. Fallback: Check _debugSource (Dev builds only)
     if ((fiber as any)._debugSource?.fileName) {
         const match = (fiber as any)._debugSource.fileName.match(/\/([^/]+)\.(tsx?|jsx?)$/);
         if (match && match[1] && match[1].length > 1) {
@@ -334,25 +326,9 @@ function getComponentName(fiber: FiberNode): string | null {
         }
     }
 
-    // 7. Manual extraction from type
+    // 4. Manual extraction from type (last resort)
     if (typeof type === 'function') {
         const name = type.displayName || type.name;
-        // If name is single letter, it's likely minified. 
-        // Try to add a hint based on what it renders.
-        if (name && name.length === 1) {
-            let hint = '';
-            if (fiber.child) {
-                if (typeof fiber.child.type === 'string') {
-                    hint = `(${fiber.child.type})`;
-                } else if (typeof fiber.child.type === 'function') {
-                    const childName = fiber.child.type.displayName || fiber.child.type.name;
-                    if (childName && childName.length > 1) {
-                        hint = `(${childName})`;
-                    }
-                }
-            }
-            return `${name}${hint} [minified]`;
-        }
         return name || 'Anonymous';
     }
 
@@ -360,7 +336,7 @@ function getComponentName(fiber: FiberNode): string | null {
         if (type.displayName) return type.displayName;
     }
 
-    // 8. Handle Host Components (HTML elements)
+    // 5. Handle Host Components (HTML elements)
     if (typeof type === 'string') {
         return type;
     }
@@ -405,9 +381,24 @@ function traverseFiberTree(fiber: FiberNode | null, components: ComponentInfo[] 
 /**
  * Run axe-core accessibility scan
  */
-async function runAxeScan(): Promise<AxeViolation[]> {
+async function runAxeScan(tags?: string[]): Promise<AxeViolation[]> {
     try {
-        const results = await axe.run(document);
+        const options: any = {};
+
+        if (tags && tags.length > 0) {
+            options.runOnly = {
+                type: 'tag',
+                values: tags
+            };
+        } else {
+            // Default to full scan if no tags provided
+            options.runOnly = {
+                type: 'tag',
+                values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'best-practice']
+            };
+        }
+
+        const results = await (axe as any).run(document, options);
         return results.violations as AxeViolation[];
     } catch (error) {
         console.error('Axe scan failed:', error);
@@ -528,7 +519,7 @@ function attributeViolationsToComponents(
 /**
  * Main scan function - called from Node context
  */
-export async function scan() {
+export async function scan(options: { tags?: string[] } = {}) {
     console.log('🔍 Starting React A11y scan...');
 
     // Find React root
@@ -544,7 +535,7 @@ export async function scan() {
     console.log(`✓ Found ${components.length} components`);
 
     // Run axe accessibility scan
-    const violations = await runAxeScan();
+    const violations = await runAxeScan(options.tags);
     console.log(`✓ Found ${violations.length} violations`);
 
     // Build DOM-to-component map for attribution

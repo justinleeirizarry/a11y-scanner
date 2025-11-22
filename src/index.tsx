@@ -19,6 +19,7 @@ const cli = meow(
     --ai-template   Template to use (fix-all, explain, quick-wins, critical-only) [default: fix-all]
     --ai-format     Export format (txt, md, json) [default: txt]
     --ai-output     Custom output path for AI prompts
+    --tags          Comma-separated list of axe-core tags (e.g. wcag2a,best-practice)
     --help          Show this help message
 
   Examples
@@ -68,6 +69,9 @@ const cli = meow(
             aiOutput: {
                 type: 'string',
             },
+            tags: {
+                type: 'string',
+            },
         },
     }
 );
@@ -102,6 +106,7 @@ const { waitUntilExit } = render(
         aiTemplate={cli.flags.aiTemplate}
         aiFormat={cli.flags.aiFormat as 'txt' | 'md' | 'json'}
         aiOutput={cli.flags.aiOutput}
+        tags={cli.flags.tags ? cli.flags.tags.split(',') : undefined}
     />
 );
 

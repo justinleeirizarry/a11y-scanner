@@ -77,6 +77,7 @@ export interface ScanOptions {
     url: string;
     browser: 'chromium' | 'firefox' | 'webkit';
     headless: boolean;
+    tags?: string[];
 }
 
 // Raw scan data from browser context

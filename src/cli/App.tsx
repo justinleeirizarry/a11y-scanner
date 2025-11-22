@@ -17,11 +17,12 @@ interface AppProps {
     aiTemplate?: string;
     aiFormat?: 'txt' | 'md' | 'json';
     aiOutput?: string;
+    tags?: string[];
 }
 
 type ScanState = 'idle' | 'scanning' | 'complete' | 'error';
 
-const App: React.FC<AppProps> = ({ url, browser, output, ci, threshold, headless, aiPrompts, aiTemplate, aiFormat, aiOutput }) => {
+const App: React.FC<AppProps> = ({ url, browser, output, ci, threshold, headless, aiPrompts, aiTemplate, aiFormat, aiOutput, tags }) => {
     const { exit } = useApp();
     const [state, setState] = useState<ScanState>('idle');
     const [results, setResults] = useState<ScanResults | null>(null);
@@ -39,6 +40,7 @@ const App: React.FC<AppProps> = ({ url, browser, output, ci, threshold, headless
                     url,
                     browser,
                     headless,
+                    tags,
                 });
 
                 if (cancelled) return;
