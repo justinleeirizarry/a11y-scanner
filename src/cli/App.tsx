@@ -18,11 +18,12 @@ interface AppProps {
     aiFormat?: 'txt' | 'md' | 'json';
     aiOutput?: string;
     tags?: string[];
+    showTree?: boolean;
 }
 
 type ScanState = 'idle' | 'scanning' | 'complete' | 'error';
 
-const App: React.FC<AppProps> = ({ url, browser, output, ci, threshold, headless, aiPrompts, aiTemplate, aiFormat, aiOutput, tags }) => {
+const App: React.FC<AppProps> = ({ url, browser, output, ci, threshold, headless, aiPrompts, aiTemplate, aiFormat, aiOutput, tags, showTree }) => {
     const { exit } = useApp();
     const [state, setState] = useState<ScanState>('idle');
     const [results, setResults] = useState<ScanResults | null>(null);
@@ -118,7 +119,7 @@ const App: React.FC<AppProps> = ({ url, browser, output, ci, threshold, headless
     }
 
     if (state === 'complete' && results) {
-        return <Results results={results} outputFile={output} aiPromptFile={aiPromptFilePath || undefined} />;
+        return <Results results={results} outputFile={output} aiPromptFile={aiPromptFilePath || undefined} showTree={showTree} />;
     }
 
     return (

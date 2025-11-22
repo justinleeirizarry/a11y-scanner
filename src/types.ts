@@ -27,6 +27,10 @@ export interface FixSuggestion {
     summary: string;
     details: string;
     codeExample?: string;
+    wcagCriteria?: string; // e.g., "1.4.3 Contrast (Minimum)"
+    wcagLevel?: 'A' | 'AA' | 'AAA';
+    userImpact?: string; // Description of who is affected and how
+    priority?: 'critical' | 'high' | 'medium' | 'low';
 }
 
 // Violation attributed to a component
@@ -58,6 +62,7 @@ export interface ScanResults {
     browser: string;
     components: ComponentInfo[];
     violations: AttributedViolation[];
+    accessibilityTree?: any; // Playwright accessibility snapshot
     techStack?: TechStack;
     summary: {
         totalComponents: number;
@@ -98,6 +103,7 @@ export interface PromptContext {
     summary: ScanResults['summary'];
     techStack: TechStack;
     url: string;
+    accessibilityTree?: any;
 }
 
 export interface TechStack {

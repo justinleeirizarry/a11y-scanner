@@ -140,12 +140,24 @@ export async function runScan(options: ScanOptions): Promise<ScanResults> {
             throw new Error('No scan data received');
         }
 
+        // Capture accessibility tree snapshot
+        let accessibilityTree = null;
+        try {
+            accessibilityTree = await page.accessibility.snapshot();
+            console.log('✓ Captured accessibility tree snapshot');
+        } catch (error) {
+            console.warn('Failed to capture accessibility tree:', error);
+        }
+
         // Process the results
         const results = processResults({
             rawData,
             url,
             browser: browserType,
         });
+
+        // Add accessibility tree to results
+        results.accessibilityTree = accessibilityTree;
 
         return results;
     } catch (error) {

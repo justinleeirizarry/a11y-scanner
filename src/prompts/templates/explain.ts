@@ -6,7 +6,11 @@ export const explainTemplate: PromptTemplate = {
     name: 'explain',
     description: 'Educational prompt to learn about accessibility violations',
     render: (context) => {
-        const { violations, techStack, url } = context;
+        const { violations, techStack, url, accessibilityTree } = context;
+
+        const treeSummary = accessibilityTree
+            ? JSON.stringify(accessibilityTree, null, 2).slice(0, 1000) + '...'
+            : 'Not available';
 
         return `I'm learning about web accessibility and would like to understand these violations found in my application.
 
@@ -14,6 +18,11 @@ SCANNED URL: ${url}
 
 TECH STACK:
 ${formatTechStack(techStack)}
+
+ACCESSIBILITY TREE SNAPSHOT (Partial):
+\`\`\`json
+${treeSummary}
+\`\`\`
 
 VIOLATIONS FOUND:
 ${formatViolations(violations)}
