@@ -57,17 +57,35 @@ export const ViolationCard: React.FC<ViolationCardProps> = ({ violation, index }
 
             {/* List all instances */}
             <Box flexDirection="column" marginLeft={2}>
-                {violation.nodes.map((node, i) => (
-                    <Box key={i}>
-                        <Text color="gray">- </Text>
-                        <Text color={node.component ? 'cyan' : 'gray'}>
-                            {node.component || 'Unknown Component'}
-                        </Text>
-                        {node.cssSelector && (
-                            <Text color="gray" dimColor> ({node.cssSelector})</Text>
-                        )}
-                    </Box>
-                ))}
+                {violation.nodes.map((node, i) => {
+                    // Extract the nearest React component from the path
+                    const rawPath = node.userComponentPath && node.userComponentPath.length > 0
+                        ? node.userComponentPath
+                        : node.componentPath || [];
+
+                    const filteredPath = rawPath.filter(name => {
+                        if (name.length <= 2) return false; // Filter minified
+                        if (name.includes('Anonymous')) return false;
+                        if (name.startsWith('__')) return false;
+                        return true;
+                    });
+
+                    const componentName = filteredPath.length > 0
+                        ? filteredPath[filteredPath.length - 1]
+                        : (node.component && node.component.length > 2 ? node.component : 'Unknown Component');
+
+                    return (
+                        <Box key={i}>
+                            <Text color="gray">- </Text>
+                            <Text color="yellow" bold>
+                                {componentName}
+                            </Text>
+                            {node.cssSelector && (
+                                <Text color="gray" dimColor> ({node.cssSelector})</Text>
+                            )}
+                        </Box>
+                    );
+                })}
             </Box>
         </Box>
     );

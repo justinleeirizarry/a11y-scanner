@@ -24,9 +24,24 @@ export function formatViolationSummary(violations: AttributedViolation[]): strin
 export function formatViolations(violations: AttributedViolation[]): string {
     return violations.map((violation, idx) => {
         const firstNode = violation.nodes[0];
-        const userPath = firstNode?.userComponentPath && firstNode.userComponentPath.length > 0
-            ? firstNode.userComponentPath.join(' > ')
-            : firstNode?.componentPath?.join(' > ') || 'Unknown';
+
+        let pathParts = firstNode?.userComponentPath && firstNode.userComponentPath.length > 0
+            ? firstNode.userComponentPath
+            : firstNode?.componentPath || [];
+
+        // Filter out minified components and internal wrappers
+        pathParts = pathParts.filter(name => {
+            // Keep meaningful names (longer than 2 chars)
+            if (name.length > 2) return true;
+            // Filter out single/double letter minified names
+            return false;
+        }).filter(name =>
+            // Filter out common internal wrappers
+            !name.includes('Anonymous') &&
+            !name.startsWith('__')
+        );
+
+        const userPath = pathParts.length > 0 ? pathParts.join(' > ') : 'Unknown';
 
         let output = `### ${idx + 1}. ${violation.id} (${violation.impact})\n\n`;
         output += `**Description:** ${violation.description}\n`;

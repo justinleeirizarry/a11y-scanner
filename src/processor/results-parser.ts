@@ -24,22 +24,25 @@ export function processResults(options: ProcessOptions): ScanResults {
         }
     }
 
-    // Calculate total violations (count nodes across all violations)
-    const totalViolations = attributedViolations.reduce((sum, v) => sum + v.nodes.length, 0);
+    // Calculate total violations (sum of all instances)
+    const totalViolations = attributedViolations.reduce((acc, v) => acc + v.nodes.length, 0);
 
     // Calculate keyboard issues if keyboard tests were run
     const keyboardIssues = keyboardTests?.summary.totalIssues;
+
+    // Calculate severity breakdown by instances
+    const violationsBySeverity = {
+        critical: attributedViolations.filter(v => v.impact === 'critical').reduce((acc, v) => acc + v.nodes.length, 0),
+        serious: attributedViolations.filter(v => v.impact === 'serious').reduce((acc, v) => acc + v.nodes.length, 0),
+        moderate: attributedViolations.filter(v => v.impact === 'moderate').reduce((acc, v) => acc + v.nodes.length, 0),
+        minor: attributedViolations.filter(v => v.impact === 'minor').reduce((acc, v) => acc + v.nodes.length, 0),
+    };
 
     // Calculate summary statistics
     const summary = {
         totalComponents: components.length,
         totalViolations,
-        violationsBySeverity: {
-            critical: attributedViolations.filter(v => v.impact === 'critical').length,
-            serious: attributedViolations.filter(v => v.impact === 'serious').length,
-            moderate: attributedViolations.filter(v => v.impact === 'moderate').length,
-            minor: attributedViolations.filter(v => v.impact === 'minor').length,
-        },
+        violationsBySeverity,
         componentsWithViolations: componentsWithViolationsSet.size,
         keyboardIssues,
     };

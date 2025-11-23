@@ -18,7 +18,8 @@ const cli = meow(
     --headless         Run browser in headless mode [default: true]
     --ai               Generate AI prompt for fixing violations (markdown)
     --tags             Comma-separated list of axe-core tags (e.g. wcag2a,best-practice)
-    --keyboard-nav     Run keyboard navigation tests
+    --keyboard-nav     Run keyboard navigation tests [default: true]
+    --tree             Show component hierarchy view
     --help             Show this help message
 
   Examples
@@ -26,6 +27,7 @@ const cli = meow(
     $ a11y-scan https://example.com --browser firefox
     $ a11y-scan https://example.com --output report.json --ci
     $ a11y-scan https://example.com --ai
+    $ a11y-scan https://example.com --tree
 `,
     {
         importMeta: import.meta,
@@ -60,6 +62,10 @@ const cli = meow(
                 default: '',
             },
             keyboardNav: {
+                type: 'boolean',
+                default: true,
+            },
+            tree: {
                 type: 'boolean',
                 default: false,
             },
@@ -96,6 +102,7 @@ const { waitUntilExit } = render(
         ai={cli.flags.ai}
         tags={cli.flags.tags ? cli.flags.tags.split(',') : undefined}
         keyboardNav={cli.flags.keyboardNav}
+        tree={cli.flags.tree}
     />
 );
 

@@ -34,6 +34,15 @@ export function runKeyboardTests(): KeyboardTestResults {
     const allViolations = [
         ...tabOrder.violations,
         ...focusManagement.focusIndicatorIssues,
+        // Map custom widget issues to violation structure
+        ...shortcuts.customWidgets
+            .filter(w => w.keyboardSupport !== 'full')
+            .map(w => ({
+                type: 'custom-widget',
+                element: w.element,
+                details: `Custom widget with role "${w.role}" has incomplete keyboard support: ${w.issues.join(', ')}`,
+                severity: w.keyboardSupport === 'none' ? 'critical' : 'serious' as 'critical' | 'serious' | 'moderate'
+            }))
     ];
 
     const summary = {

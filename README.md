@@ -1,11 +1,27 @@
 # React A11y Scanner
 
+```text
+   ██████╗ ███████╗ █████╗  ██████╗████████╗     █████╗  ██╗ ██╗██╗   ██╗
+   ██╔══██╗██╔════╝██╔══██╗██╔════╝╚══██╔══╝    ██╔══██╗███║███║╚██╗ ██╔╝
+   ██████╔╝█████╗  ███████║██║        ██║       ███████║╚██║╚██║ ╚████╔╝ 
+   ██╔══██╗██╔══╝  ██╔══██║██║        ██║       ██╔══██║ ██║ ██║  ╚██╔╝  
+   ██║  ██║███████╗██║  ██║╚██████╗   ██║       ██║  ██║ ██║ ██║   ██║   
+   ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝ ╚═════╝   ╚═╝       ╚═╝  ╚═╝ ╚═╝ ╚═╝   ╚═╝   
+   ███████╗ ██████╗ █████╗ ███╗   ██╗███╗   ██╗███████╗██████╗ 
+   ██╔════╝██╔════╝██╔══██╗████╗  ██║████╗  ██║██╔════╝██╔══██╗
+   ███████╗██║     ███████║██╔██╗ ██║██╔██╗ ██║█████╗  ██████╔╝
+   ╚════██║██║     ██╔══██║██║╚██╗██║██║╚██╗██║██╔══╝  ██╔══██╗
+   ███████║╚██████╗██║  ██║██║ ╚████║██║ ╚████║███████╗██║  ██║
+   ╚══════╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝
+```
+
 A CLI tool that combines React Fiber inspection with accessibility testing to provide component-specific violation reports.
 
 ## Features
 
 - 🔍 **React Fiber Inspection** - Scans the React component tree using Fiber internals
 - ♿ **Accessibility Testing** - Runs axe-core to find WCAG violations
+- 🎹 **Keyboard Navigation Testing** - Validates tab order, focus management, and shortcuts
 - 🎯 **Component Attribution** - Maps violations to specific React components
 - 🎨 **Beautiful Terminal UI** - Rich, interactive output powered by Ink
 - 🌐 **Multi-Browser Support** - Test with Chromium, Firefox, or WebKit via Playwright
@@ -58,15 +74,30 @@ a11y-scan https://example.com --output report.json
 
 # CI mode (exit code 1 if violations found)
 a11y-scan https://example.com --ci --threshold 0
+
+# Show component hierarchy tree view
+a11y-scan https://example.com --tree
+
+# Generate AI prompt for fixes
+a11y-scan https://example.com --ai
+
+# Disable keyboard navigation tests
+a11y-scan https://example.com --keyboard-nav=false
 ```
 
 ### Available Options
+
 
 - `--browser, -b` - Browser to use: `chromium`, `firefox`, or `webkit` (default: `chromium`)
 - `--output, -o` - Output file path for JSON report
 - `--ci` - CI mode - exits with code 1 if violations exceed threshold
 - `--threshold` - Maximum allowed violations in CI mode (default: `0`)
 - `--headless` - Run browser in headless mode (default: `true`)
+- `--keyboard-nav` - Run keyboard navigation tests (default: `true`)
+- `--tree` - Show component hierarchy view (default: `false`)
+- `--ai` - Generate AI prompt for fixing violations (markdown format)
+- `--tags` - Comma-separated list of axe-core tags (e.g., `wcag2a,best-practice`)
+
 
 ## How It Works
 
@@ -106,7 +137,7 @@ src/
 ├── scanner/
 │   └── browser-bundle.ts # Browser-side scanner
 └── processor/
-    └── results-parser.ts # Results processing
+│   └── results-parser.ts # Results processing
 ```
 
 ## Requirements
@@ -120,6 +151,7 @@ src/
 - [x] Playwright browser automation
 - [x] Fiber tree scanning
 - [x] Axe-core integration
+- [x] Keyboard navigation testing
 - [ ] Enhanced violation attribution
 - [ ] Component hierarchy view
 - [ ] Watch mode

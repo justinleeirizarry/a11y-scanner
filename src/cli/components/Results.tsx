@@ -12,9 +12,10 @@ interface ResultsProps {
     outputFile?: string;
     aiPromptFile?: string;
     report?: string;
+    showTree?: boolean;
 }
 
-const Results: React.FC<ResultsProps> = ({ results, outputFile, aiPromptFile, report }) => {
+const Results: React.FC<ResultsProps> = ({ results, outputFile, aiPromptFile, report, showTree }) => {
     if (!results) {
         return (
             <Box flexDirection="column" padding={1}>
@@ -71,8 +72,8 @@ const Results: React.FC<ResultsProps> = ({ results, outputFile, aiPromptFile, re
                 </Box>
             )}
 
-            {/* Accessibility Tree */}
-            {violations.length > 0 && (
+            {/* Accessibility Tree - Only show if --tree flag is set */}
+            {violations.length > 0 && showTree && (
                 <TreeViewer violations={violations} />
             )}
 

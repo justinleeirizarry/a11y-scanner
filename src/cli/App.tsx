@@ -16,11 +16,12 @@ interface AppProps {
     ai?: boolean;
     tags?: string[];
     keyboardNav?: boolean;
+    tree?: boolean;
 }
 
 type ScanState = 'idle' | 'scanning' | 'complete' | 'error';
 
-const App: React.FC<AppProps> = ({ url, browser, output, ci, threshold, headless, ai, tags, keyboardNav }) => {
+const App: React.FC<AppProps> = ({ url, browser, output, ci, threshold, headless, ai, tags, keyboardNav, tree }) => {
     const { exit } = useApp();
     const [state, setState] = useState<ScanState>('idle');
     const [results, setResults] = useState<ScanResults | null>(null);
@@ -116,7 +117,7 @@ const App: React.FC<AppProps> = ({ url, browser, output, ci, threshold, headless
     }
 
     if (state === 'complete' && results) {
-        return <Results results={results} outputFile={output} aiPromptFile={aiPromptFilePath || undefined} />;
+        return <Results results={results} outputFile={output} aiPromptFile={aiPromptFilePath || undefined} showTree={tree} />;
     }
 
     return (
