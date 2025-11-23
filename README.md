@@ -152,8 +152,9 @@ src/
 - [x] Fiber tree scanning
 - [x] Axe-core integration
 - [x] Keyboard navigation testing
+- [x] Component hierarchy view
+- [x] AI prompt generation
 - [ ] Enhanced violation attribution
-- [ ] Component hierarchy view
 - [ ] Watch mode
 - [ ] Custom rule configuration
 - [ ] IDE integration
