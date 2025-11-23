@@ -13,6 +13,7 @@ import { findReactRoot, traverseFiberTree, buildDomToComponentMap } from './fibe
 import { runAxeScan } from './axe/runner.js';
 import { attributeViolationsToComponents } from './axe/attribution.js';
 import { runKeyboardTests } from './keyboard/index.js';
+import { buildAccessibilityTree } from './axe/tree-builder.js';
 
 // Initialize Bippy instrumentation immediately
 try {
@@ -77,10 +78,16 @@ export async function scan(options: { tags?: string[]; includeKeyboardTests?: bo
         }
     }
 
+    // Build accessibility tree
+    console.log('🌳 Building accessibility tree...');
+    const accessibilityTree = buildAccessibilityTree();
+    console.log('✓ Accessibility tree built');
+
     return {
         components,
         violations: attributedViolations,
         keyboardTests,
+        accessibilityTree,
     };
 }
 

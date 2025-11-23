@@ -129,26 +129,14 @@ export async function runScan(options: ScanOptions): Promise<ScanResults> {
                     logger.debug(`Error: ${error.message}`);
                 }
             }
-        );
+        )
 
-        // Capture accessibility tree snapshot
-        let accessibilityTree = null;
-        try {
-            accessibilityTree = await page.accessibility.snapshot();
-            logger.info('✓ Captured accessibility tree snapshot');
-        } catch (error) {
-            logger.warn('Failed to capture accessibility tree:', error);
-        }
-
-        // Process the results
+        // Process the results (accessibility tree is now included in rawData)
         const results = processResults({
             rawData,
             url,
             browser: browserType,
         });
-
-        // Add accessibility tree to results
-        results.accessibilityTree = accessibilityTree;
 
         return results;
     } catch (error) {
