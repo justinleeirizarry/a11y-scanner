@@ -28,33 +28,37 @@ export function formatViolations(violations: AttributedViolation[]): string {
             ? firstNode.userComponentPath.join(' > ')
             : firstNode?.componentPath?.join(' > ') || 'Unknown';
 
-        let output = `\n${idx + 1}. ${violation.help} (${violation.impact})\n`;
-        output += `   ID: ${violation.id}\n`;
-        output += `   Component Path: ${userPath}\n`;
+        let output = `### ${idx + 1}. ${violation.id} (${violation.impact})\n\n`;
+        output += `**Description:** ${violation.description}\n`;
+        output += `**Help:** [${violation.help}](${violation.helpUrl})\n\n`;
+
+        output += `**Component Path:** \`${userPath}\`\n`;
 
         if (firstNode?.cssSelector) {
-            output += `   CSS Selector: ${firstNode.cssSelector}\n`;
+            output += `**Selector:** \`${firstNode.cssSelector}\`\n`;
         }
 
         if (firstNode?.htmlSnippet) {
-            output += `   HTML: ${firstNode.htmlSnippet}\n`;
+            output += `\n**HTML Element:**\n\`\`\`html\n${firstNode.htmlSnippet}\n\`\`\`\n`;
         }
 
-        output += `   Issue: ${violation.description}\n`;
+        if (firstNode?.failureSummary) {
+            output += `\n**Failure Summary:**\n> ${firstNode.failureSummary.split('\n').join('\n> ')}\n`;
+        }
 
         if (violation.fixSuggestion) {
-            output += `   Fix: ${violation.fixSuggestion.summary}\n`;
+            output += `\n**How to Fix:**\n${violation.fixSuggestion.summary}\n`;
             if (violation.fixSuggestion.codeExample) {
-                output += `   Example:\n   ${violation.fixSuggestion.codeExample.split('\n').join('\n   ')}\n`;
+                output += `\n**Example:**\n\`\`\`jsx\n${violation.fixSuggestion.codeExample}\n\`\`\`\n`;
             }
         }
 
         if (violation.nodes.length > 1) {
-            output += `   (+ ${violation.nodes.length - 1} more instance(s))\n`;
+            output += `\n*Found in ${violation.nodes.length} instances total.*\n`;
         }
 
         return output;
-    }).join('\n');
+    }).join('\n---\n\n');
 }
 
 /**

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 import Spinner from 'ink-spinner';
+import { Banner } from './Banner.js';
 
 interface ScannerProps {
     url: string;
@@ -9,26 +10,25 @@ interface ScannerProps {
 
 const Scanner: React.FC<ScannerProps> = ({ url, browser }) => {
     return (
-        <Box flexDirection="column" padding={1}>
-            <Box marginBottom={1}>
-                <Text bold color="cyan">🔍 React A11y Scanner</Text>
+        <Box flexDirection="column" padding={1} borderStyle="round" borderColor="cyan">
+            <Banner />
+
+            <Box flexDirection="column" marginBottom={1}>
+                <Box>
+                    <Text color="gray">Target:  </Text>
+                    <Text bold>{url}</Text>
+                </Box>
+                <Box>
+                    <Text color="gray">Browser: </Text>
+                    <Text>{browser}</Text>
+                </Box>
             </Box>
 
-            <Box>
-                <Text color="gray">URL: </Text>
-                <Text>{url}</Text>
-            </Box>
-
-            <Box>
-                <Text color="gray">Browser: </Text>
-                <Text>{browser}</Text>
-            </Box>
-
-            <Box marginTop={1}>
+            <Box borderStyle="single" borderColor="gray" paddingX={1}>
                 <Text color="green">
                     <Spinner type="dots" />
                 </Text>
-                <Text> Scanning React components...</Text>
+                <Text>  Analyzing accessibility tree and components...</Text>
             </Box>
         </Box>
     );

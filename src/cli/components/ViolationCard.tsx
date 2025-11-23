@@ -1,0 +1,74 @@
+import React from 'react';
+import { Box, Text } from 'ink';
+import { AttributedViolation } from '../../types.js';
+
+interface ViolationCardProps {
+    violation: AttributedViolation;
+    index: number;
+}
+
+export const ViolationCard: React.FC<ViolationCardProps> = ({ violation, index }) => {
+    const impactColor =
+        violation.impact === 'critical' ? 'magenta' :
+            violation.impact === 'serious' ? 'red' :
+                violation.impact === 'moderate' ? 'yellow' : 'blue';
+
+    return (
+        <Box flexDirection="column" marginTop={1} borderStyle="round" borderColor="gray" padding={1}>
+            {/* Header */}
+            <Box justifyContent="space-between">
+                <Box>
+                    <Text color="gray">{index}. </Text>
+                    <Text bold color="cyan">{violation.id}</Text>
+                </Box>
+                <Box>
+                    <Text bold color={impactColor} backgroundColor={impactColor === 'yellow' ? undefined : undefined}>
+                        {' ' + violation.impact.toUpperCase() + ' '}
+                    </Text>
+                </Box>
+            </Box>
+
+            {/* Description */}
+            <Box marginTop={1}>
+                <Text>{violation.description}</Text>
+            </Box>
+
+            {/* Fix Suggestion */}
+            {violation.fixSuggestion && (
+                <Box marginTop={1} flexDirection="column" borderStyle="single" borderColor="green" padding={1}>
+                    <Text color="green" bold>💡 How to Fix:</Text>
+                    <Text>{violation.fixSuggestion.summary}</Text>
+
+                    {violation.fixSuggestion.codeExample && (
+                        <Box marginTop={1} flexDirection="column">
+                            <Text color="gray" dimColor>Example:</Text>
+                            <Text color="blue">{violation.fixSuggestion.codeExample}</Text>
+                        </Box>
+                    )}
+                </Box>
+            )}
+
+            {/* Instances Summary */}
+            <Box marginTop={1}>
+                <Text color="gray" dimColor>
+                    Found in {violation.nodes.length} instance{violation.nodes.length !== 1 ? 's' : ''}:
+                </Text>
+            </Box>
+
+            {/* List all instances */}
+            <Box flexDirection="column" marginLeft={2}>
+                {violation.nodes.map((node, i) => (
+                    <Box key={i}>
+                        <Text color="gray">- </Text>
+                        <Text color={node.component ? 'cyan' : 'gray'}>
+                            {node.component || 'Unknown Component'}
+                        </Text>
+                        {node.cssSelector && (
+                            <Text color="gray" dimColor> ({node.cssSelector})</Text>
+                        )}
+                    </Box>
+                ))}
+            </Box>
+        </Box>
+    );
+};
