@@ -98,7 +98,7 @@ export async function runScan(options: ScanOptions): Promise<ScanResults> {
                 }
 
                 // Block navigation during scan to prevent context destruction
-                rawData = await page.evaluate(({ tags }) => {
+                rawData = await page.evaluate(({ tags, includeKeyboardTests }) => {
                     // Save original navigation methods
                     const originalPushState = history.pushState;
                     const originalReplaceState = history.replaceState;
@@ -110,7 +110,7 @@ export async function runScan(options: ScanOptions): Promise<ScanResults> {
 
                     try {
                         // @ts-ignore - ReactA11yScanner is injected
-                        const result = window.ReactA11yScanner.scan({ tags });
+                        const result = window.ReactA11yScanner.scan({ tags, includeKeyboardTests });
 
                         // Restore navigation
                         history.pushState = originalPushState;
@@ -123,7 +123,7 @@ export async function runScan(options: ScanOptions): Promise<ScanResults> {
                         history.replaceState = originalReplaceState;
                         throw error;
                     }
-                }, { tags }) as BrowserScanData;
+                }, { tags, includeKeyboardTests: options.includeKeyboardTests }) as BrowserScanData;
 
                 // Success! Break out of retry loop
                 break;

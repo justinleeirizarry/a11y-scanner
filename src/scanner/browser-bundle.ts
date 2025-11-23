@@ -12,6 +12,7 @@ import { instrument } from 'bippy';
 import { findReactRoot, traverseFiberTree, buildDomToComponentMap } from './fiber/traversal.js';
 import { runAxeScan } from './axe/runner.js';
 import { attributeViolationsToComponents } from './axe/attribution.js';
+import { runKeyboardTests } from './keyboard/index.js';
 
 // Initialize Bippy instrumentation immediately
 try {
@@ -25,7 +26,7 @@ try {
 declare global {
     interface Window {
         ReactA11yScanner: {
-            scan: (options?: { tags?: string[] }) => Promise<any>;
+            scan: (options?: { tags?: string[]; includeKeyboardTests?: boolean }) => Promise<any>;
         };
     }
 }
@@ -33,7 +34,7 @@ declare global {
 /**
  * Main scan function - called from Node context
  */
-export async function scan(options: { tags?: string[] } = {}) {
+export async function scan(options: { tags?: string[]; includeKeyboardTests?: boolean } = {}) {
     console.log('🔍 Starting React A11y scan...');
 
     // Find React root
@@ -59,9 +60,27 @@ export async function scan(options: { tags?: string[] } = {}) {
     const attributedViolations = attributeViolationsToComponents(violations, domToComponentMap);
     console.log(`✓ Attributed violations to components`);
 
+    // Run keyboard tests if requested
+    let keyboardTests = null;
+    console.log(`🎹 Keyboard tests requested: ${options.includeKeyboardTests}`);
+    if (options.includeKeyboardTests) {
+        console.log('🎹 Starting keyboard tests...');
+        try {
+            keyboardTests = runKeyboardTests();
+            console.log(`✓ Keyboard tests complete:`, keyboardTests);
+            console.log(`✓ Keyboard tests summary: ${keyboardTests.summary.totalIssues} issues found`);
+        } catch (error) {
+            console.error('❌ Failed to run keyboard tests:', error);
+            console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+        }
+    } else {
+        console.log('🎹 Keyboard tests skipped (not requested)');
+    }
+
     return {
         components,
         violations: attributedViolations,
+        keyboardTests,
     };
 }
 

@@ -15,11 +15,12 @@ interface AppProps {
     headless: boolean;
     ai?: boolean;
     tags?: string[];
+    keyboardNav?: boolean;
 }
 
 type ScanState = 'idle' | 'scanning' | 'complete' | 'error';
 
-const App: React.FC<AppProps> = ({ url, browser, output, ci, threshold, headless, ai, tags }) => {
+const App: React.FC<AppProps> = ({ url, browser, output, ci, threshold, headless, ai, tags, keyboardNav }) => {
     const { exit } = useApp();
     const [state, setState] = useState<ScanState>('idle');
     const [results, setResults] = useState<ScanResults | null>(null);
@@ -38,6 +39,7 @@ const App: React.FC<AppProps> = ({ url, browser, output, ci, threshold, headless
                     browser,
                     headless,
                     tags,
+                    includeKeyboardTests: keyboardNav,
                 });
 
                 if (cancelled) return;
@@ -94,7 +96,7 @@ const App: React.FC<AppProps> = ({ url, browser, output, ci, threshold, headless
         return () => {
             cancelled = true;
         };
-    }, [url, browser, headless, ci, threshold, output, ai]);
+    }, [url, browser, headless, ci, threshold, output, ai, tags, keyboardNav]);
 
     if (state === 'error') {
         return (

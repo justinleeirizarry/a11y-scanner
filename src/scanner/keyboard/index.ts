@@ -1,0 +1,57 @@
+/**
+ * Main keyboard testing module - orchestrates all keyboard accessibility tests
+ */
+
+import { validateTabOrder, type TabOrderResults } from './tab-order.js';
+import { validateFocusManagement, type FocusManagementResults } from './focus-management.js';
+import { testKeyboardShortcuts, type KeyboardShortcutResults } from './shortcuts.js';
+
+export interface KeyboardTestResults {
+    tabOrder: TabOrderResults;
+    focusManagement: FocusManagementResults;
+    shortcuts: KeyboardShortcutResults;
+    summary: {
+        totalIssues: number;
+        criticalIssues: number;
+        seriousIssues: number;
+        moderateIssues: number;
+    };
+}
+
+/**
+ * Run all keyboard accessibility tests
+ */
+export function runKeyboardTests(): KeyboardTestResults {
+    console.log('🎹 runKeyboardTests() called');
+    console.log('🎹 Running keyboard accessibility tests...');
+
+    // Run all tests
+    const tabOrder = validateTabOrder();
+    const focusManagement = validateFocusManagement();
+    const shortcuts = testKeyboardShortcuts();
+
+    // Calculate summary
+    const allViolations = [
+        ...tabOrder.violations,
+        ...focusManagement.focusIndicatorIssues,
+    ];
+
+    const summary = {
+        totalIssues: allViolations.length,
+        criticalIssues: allViolations.filter(v => v.severity === 'critical').length,
+        seriousIssues: allViolations.filter(v => v.severity === 'serious').length,
+        moderateIssues: allViolations.filter(v => v.severity === 'moderate').length,
+    };
+
+    console.log(`✓ Keyboard tests complete: ${summary.totalIssues} issues found`);
+
+    return {
+        tabOrder,
+        focusManagement,
+        shortcuts,
+        summary,
+    };
+}
+
+// Export types
+export type { TabOrderResults, FocusManagementResults, KeyboardShortcutResults };

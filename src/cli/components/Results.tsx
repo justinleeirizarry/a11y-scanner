@@ -5,6 +5,7 @@ import { TreeViewer } from './TreeViewer.js';
 import { Dashboard } from './Dashboard.js';
 import { ViolationCard } from './ViolationCard.js';
 import { Banner } from './Banner.js';
+import { KeyboardResults } from './KeyboardResults.js';
 
 interface ResultsProps {
     results: ScanResults | null;
@@ -53,7 +54,15 @@ const Results: React.FC<ResultsProps> = ({ results, outputFile, aiPromptFile, re
             )}
 
             {/* Dashboard Summary */}
-            <Dashboard summary={summary} />
+            <Dashboard
+                summary={summary}
+                keyboardSummary={results.keyboardTests?.summary}
+            />
+
+            {/* Keyboard Test Results */}
+            {results.keyboardTests && (
+                <KeyboardResults results={results.keyboardTests} />
+            )}
 
             {/* Success Message */}
             {violations.length === 0 && (

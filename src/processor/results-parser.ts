@@ -11,7 +11,7 @@ interface ProcessOptions {
  */
 export function processResults(options: ProcessOptions): ScanResults {
     const { rawData, url, browser } = options;
-    const { components, violations: attributedViolations } = rawData;
+    const { components, violations: attributedViolations, keyboardTests } = rawData;
 
     // Count unique components with violations
     const componentsWithViolationsSet = new Set<string>();
@@ -27,6 +27,9 @@ export function processResults(options: ProcessOptions): ScanResults {
     // Calculate total violations (count nodes across all violations)
     const totalViolations = attributedViolations.reduce((sum, v) => sum + v.nodes.length, 0);
 
+    // Calculate keyboard issues if keyboard tests were run
+    const keyboardIssues = keyboardTests?.summary.totalIssues;
+
     // Calculate summary statistics
     const summary = {
         totalComponents: components.length,
@@ -38,6 +41,7 @@ export function processResults(options: ProcessOptions): ScanResults {
             minor: attributedViolations.filter(v => v.impact === 'minor').length,
         },
         componentsWithViolations: componentsWithViolationsSet.size,
+        keyboardIssues,
     };
 
     return {
@@ -46,6 +50,7 @@ export function processResults(options: ProcessOptions): ScanResults {
         browser,
         components,
         violations: attributedViolations,
+        keyboardTests,
         summary,
     };
 }

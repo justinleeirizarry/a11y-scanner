@@ -11,14 +11,15 @@ const cli = meow(
     $ a11y-scan <url>
 
   Options
-    --browser, -b   Browser to use (chromium, firefox, webkit) [default: chromium]
-    --output, -o    Output file path (JSON format)
-    --ci            CI mode - exit with code 1 if violations found
-    --threshold     Maximum allowed violations in CI mode [default: 0]
-    --headless      Run browser in headless mode [default: true]
-    --ai            Generate AI prompt for fixing violations (markdown)
-    --tags          Comma-separated list of axe-core tags (e.g. wcag2a,best-practice)
-    --help          Show this help message
+    --browser, -b      Browser to use (chromium, firefox, webkit) [default: chromium]
+    --output, -o       Output file path (JSON format)
+    --ci               CI mode - exit with code 1 if violations found
+    --threshold        Maximum allowed violations in CI mode [default: 0]
+    --headless         Run browser in headless mode [default: true]
+    --ai               Generate AI prompt for fixing violations (markdown)
+    --tags             Comma-separated list of axe-core tags (e.g. wcag2a,best-practice)
+    --keyboard-nav     Run keyboard navigation tests
+    --help             Show this help message
 
   Examples
     $ a11y-scan https://example.com
@@ -58,6 +59,10 @@ const cli = meow(
                 type: 'string',
                 default: '',
             },
+            keyboardNav: {
+                type: 'boolean',
+                default: false,
+            },
         },
     }
 );
@@ -90,6 +95,7 @@ const { waitUntilExit } = render(
         headless={cli.flags.headless}
         ai={cli.flags.ai}
         tags={cli.flags.tags ? cli.flags.tags.split(',') : undefined}
+        keyboardNav={cli.flags.keyboardNav}
     />
 );
 

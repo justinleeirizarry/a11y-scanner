@@ -55,6 +55,64 @@ export interface AttributedViolation {
     fixSuggestion?: FixSuggestion;
 }
 
+// Keyboard testing types
+export interface KeyboardTestResults {
+    tabOrder: {
+        totalFocusableElements: number;
+        tabOrder: Array<{
+            selector: string;
+            tabIndex: number;
+            position: { x: number; y: number };
+        }>;
+        violations: Array<{
+            type: 'tab-trap' | 'illogical-order' | 'tabindex-antipattern' | 'hidden-focusable';
+            element: string;
+            details: string;
+            severity: 'critical' | 'serious' | 'moderate';
+        }>;
+        visualOrderMismatches: Array<{
+            domIndex: number;
+            visualIndex: number;
+            element: string;
+        }>;
+    };
+    focusManagement: {
+        focusIndicatorIssues: Array<{
+            element: string;
+            issue: 'missing' | 'low-contrast' | 'too-small' | 'not-visible';
+            details: string;
+            severity: 'critical' | 'serious' | 'moderate';
+        }>;
+        skipLinksWorking: boolean;
+        skipLinkDetails: string;
+        focusRestorationTests: Array<{
+            scenario: string;
+            passed: boolean;
+            details: string;
+        }>;
+    };
+    shortcuts: {
+        tests: Array<{
+            shortcut: string;
+            description: string;
+            passed: boolean;
+            details: string;
+        }>;
+        customWidgets: Array<{
+            element: string;
+            role: string;
+            keyboardSupport: 'full' | 'partial' | 'none';
+            issues: string[];
+        }>;
+    };
+    summary: {
+        totalIssues: number;
+        criticalIssues: number;
+        seriousIssues: number;
+        moderateIssues: number;
+    };
+}
+
 // Final scan results
 export interface ScanResults {
     url: string;
@@ -63,6 +121,7 @@ export interface ScanResults {
     components: ComponentInfo[];
     violations: AttributedViolation[];
     accessibilityTree?: any; // Playwright accessibility snapshot
+    keyboardTests?: KeyboardTestResults; // Keyboard navigation test results
     summary: {
         totalComponents: number;
         totalViolations: number;
@@ -73,6 +132,7 @@ export interface ScanResults {
             minor: number;
         };
         componentsWithViolations: number;
+        keyboardIssues?: number; // Total keyboard issues found
     };
 }
 
@@ -82,12 +142,14 @@ export interface ScanOptions {
     browser: 'chromium' | 'firefox' | 'webkit';
     headless: boolean;
     tags?: string[];
+    includeKeyboardTests?: boolean; // Enable keyboard navigation testing
 }
 
 // Raw scan data from browser context
 export interface BrowserScanData {
     components: ComponentInfo[];
     violations: AttributedViolation[];
+    keyboardTests?: KeyboardTestResults; // Keyboard test results from browser
 }
 
 // Prompt template types
