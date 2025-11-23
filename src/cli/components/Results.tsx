@@ -9,12 +9,11 @@ import { Banner } from './Banner.js';
 interface ResultsProps {
     results: ScanResults | null;
     outputFile?: string;
-    showTree?: boolean;
     aiPromptFile?: string;
     report?: string;
 }
 
-const Results: React.FC<ResultsProps> = ({ results, outputFile, aiPromptFile, showTree, report }) => {
+const Results: React.FC<ResultsProps> = ({ results, outputFile, aiPromptFile, report }) => {
     if (!results) {
         return (
             <Box flexDirection="column" padding={1}>
@@ -64,7 +63,7 @@ const Results: React.FC<ResultsProps> = ({ results, outputFile, aiPromptFile, sh
             )}
 
             {/* Accessibility Tree */}
-            {showTree && violations.length > 0 && (
+            {violations.length > 0 && (
                 <TreeViewer violations={violations} />
             )}
 

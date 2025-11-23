@@ -13,7 +13,6 @@ const cli = meow(
   Options
     --browser, -b   Browser to use (chromium, firefox, webkit) [default: chromium]
     --output, -o    Output file path (JSON format)
-    --tree          Show accessibility issues summary (element types with issues)
     --ci            CI mode - exit with code 1 if violations found
     --threshold     Maximum allowed violations in CI mode [default: 0]
     --headless      Run browser in headless mode [default: true]
@@ -59,10 +58,6 @@ const cli = meow(
                 type: 'string',
                 default: '',
             },
-            tree: {
-                type: 'boolean',
-                default: false,
-            },
         },
     }
 );
@@ -95,7 +90,6 @@ const { waitUntilExit } = render(
         headless={cli.flags.headless}
         ai={cli.flags.ai}
         tags={cli.flags.tags ? cli.flags.tags.split(',') : undefined}
-        showTree={cli.flags.tree}
     />
 );
 
