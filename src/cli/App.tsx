@@ -13,17 +13,14 @@ interface AppProps {
     ci: boolean;
     threshold: number;
     headless: boolean;
-    aiPrompts?: boolean;
-    aiTemplate?: string;
-    aiFormat?: 'txt' | 'md' | 'json';
-    aiOutput?: string;
+    ai?: boolean;
     tags?: string[];
     showTree?: boolean;
 }
 
 type ScanState = 'idle' | 'scanning' | 'complete' | 'error';
 
-const App: React.FC<AppProps> = ({ url, browser, output, ci, threshold, headless, aiPrompts, aiTemplate, aiFormat, aiOutput, tags, showTree }) => {
+const App: React.FC<AppProps> = ({ url, browser, output, ci, threshold, headless, ai, tags, showTree }) => {
     const { exit } = useApp();
     const [state, setState] = useState<ScanState>('idle');
     const [results, setResults] = useState<ScanResults | null>(null);
@@ -68,14 +65,14 @@ const App: React.FC<AppProps> = ({ url, browser, output, ci, threshold, headless
                 }
 
                 // Handle AI prompts
-                if (aiPrompts) {
+                if (ai) {
                     const { generateAndExport } = await import('../prompts/prompt-generator.js');
                     const promptPath = generateAndExport(
                         scanResults,
                         {
-                            template: aiTemplate || 'fix-all',
-                            format: aiFormat || 'txt',
-                            outputPath: aiOutput,
+                            template: 'fix-all',
+                            format: 'md',
+                            outputPath: undefined,
                         }
                     );
                     setAiPromptFilePath(promptPath);
@@ -98,7 +95,7 @@ const App: React.FC<AppProps> = ({ url, browser, output, ci, threshold, headless
         return () => {
             cancelled = true;
         };
-    }, [url, browser, headless, ci, threshold, output]);
+    }, [url, browser, headless, ci, threshold, output, ai]);
 
     if (state === 'error') {
         return (

@@ -45,7 +45,7 @@ export function exportPrompt(
 
         case 'md':
             content = `# Accessibility Violations - AI Fix Prompt\n\n${prompt}`;
-            defaultFilename = `a11y-prompt-${template}.md`;
+            defaultFilename = 'a11y-prompt.md';
             break;
 
         case 'json':

@@ -17,10 +17,7 @@ const cli = meow(
     --ci            CI mode - exit with code 1 if violations found
     --threshold     Maximum allowed violations in CI mode [default: 0]
     --headless      Run browser in headless mode [default: true]
-    --ai-prompts    Generate AI prompts for fixing violations
-    --ai-template   Template to use (fix-all, explain, quick-wins, critical-only) [default: fix-all]
-    --ai-format     Export format (txt, md, json) [default: txt]
-    --ai-output     Custom output path for AI prompts
+    --ai            Generate AI prompt for fixing violations (markdown)
     --tags          Comma-separated list of axe-core tags (e.g. wcag2a,best-practice)
     --help          Show this help message
 
@@ -28,9 +25,7 @@ const cli = meow(
     $ a11y-scan https://example.com
     $ a11y-scan https://example.com --browser firefox
     $ a11y-scan https://example.com --output report.json --ci
-    $ a11y-scan https://example.com --ai-prompts
-    $ a11y-scan https://example.com --ai-prompts --ai-template explain
-    $ a11y-scan https://example.com --ai-prompts --ai-format md
+    $ a11y-scan https://example.com --ai
 `,
     {
         importMeta: import.meta,
@@ -56,20 +51,9 @@ const cli = meow(
                 type: 'boolean',
                 default: true,
             },
-            aiPrompts: {
+            ai: {
                 type: 'boolean',
                 default: false,
-            },
-            aiTemplate: {
-                type: 'string',
-                default: 'fix-all',
-            },
-            aiFormat: {
-                type: 'string',
-                default: 'txt',
-            },
-            aiOutput: {
-                type: 'string',
             },
             tags: {
                 type: 'string',
@@ -109,10 +93,7 @@ const { waitUntilExit } = render(
         ci={cli.flags.ci}
         threshold={cli.flags.threshold}
         headless={cli.flags.headless}
-        aiPrompts={cli.flags.aiPrompts}
-        aiTemplate={cli.flags.aiTemplate}
-        aiFormat={cli.flags.aiFormat as 'txt' | 'md' | 'json'}
-        aiOutput={cli.flags.aiOutput}
+        ai={cli.flags.ai}
         tags={cli.flags.tags ? cli.flags.tags.split(',') : undefined}
         showTree={cli.flags.tree}
     />
