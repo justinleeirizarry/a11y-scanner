@@ -22,7 +22,7 @@ Now you can edit files and they'll automatically rebuild. Just run your tests:
 ```bash
 npm run test:fixture
 # or
-node bin/cli.js <url>
+npm start <url>
 ```
 
 ### Option 2: Manual Build
@@ -36,7 +36,7 @@ npm run test:fixture
 ### Quick Test Commands
 
 ```bash
-# Test with fixture
+# Test with fixture (fastest way to verify changes)
 npm run test:fixture
 
 # Test with a URL
@@ -85,7 +85,7 @@ npm start <url> --ci --threshold 10
 
 ## Tips
 
-- **Watch mode is fast**: Changes compile in milliseconds
+- **Watch modes are fast**: TypeScript and scanner bundle changes compile in milliseconds
 - **Keep terminals open**: Leave watch modes running while you code
 - **Use test:fixture**: Fastest way to verify your changes
 - **Browser choice**: Use `--browser webkit` to test Safari compatibility
