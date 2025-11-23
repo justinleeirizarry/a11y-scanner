@@ -62,7 +62,26 @@ export function exportPrompt(
     }
 
     const filepath = outputPath || defaultFilename;
-    fs.writeFileSync(filepath, content, 'utf-8');
+
+    try {
+        // Ensure directory exists
+        const dir = path.dirname(filepath);
+        if (dir !== '.') {
+            try {
+                fs.mkdirSync(dir, { recursive: true });
+            } catch (err) {
+                // Directory may already exist
+                if (err instanceof Error && !err.message.includes('exists')) {
+                    throw err;
+                }
+            }
+        }
+
+        fs.writeFileSync(filepath, content, 'utf-8');
+    } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : String(err);
+        throw new Error(`Failed to write prompt to ${filepath}: ${errorMsg}`);
+    }
 
     return path.resolve(filepath);
 }

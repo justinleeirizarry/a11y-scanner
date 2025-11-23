@@ -53,11 +53,17 @@ export async function runScan(options: ScanOptions): Promise<ScanResults> {
         // Some apps (especially Next.js) do client-side navigation after initial load
         let isStable = false;
         let navigationCount = 0;
+        let lastError: Error | null = null;
 
         while (!isStable && navigationCount < config.browser.maxNavigationWaits) {
             try {
                 // Wait for network to be completely idle
-                await page.waitForLoadState('networkidle', { timeout: config.browser.networkIdleTimeout });
+                try {
+                    await page.waitForLoadState('networkidle', { timeout: config.browser.networkIdleTimeout });
+                } catch (error) {
+                    // Network idle timeout could mean slow network or infinite loaders
+                    logger.debug('Network idle timeout - may indicate slow network or infinite loaders');
+                }
 
                 // Extra wait to ensure React has settled
                 await page.waitForTimeout(config.browser.postNavigationDelay);
@@ -69,67 +75,126 @@ export async function runScan(options: ScanOptions): Promise<ScanResults> {
                     });
                     // Navigation happened, increment counter and retry
                     navigationCount++;
-                    logger.warn(`Navigation detected (${navigationCount}/${config.browser.maxNavigationWaits}), waiting...`);
+                    logger.warn(`Navigation detected (${navigationCount}/${config.browser.maxNavigationWaits}), waiting for stabilization...`);
                 } catch (error) {
                     // No navigation in the check interval, we're stable
                     isStable = true;
+                    logger.debug('No navigation detected - page appears stable');
                 }
             } catch (error) {
-                // Network idle timeout - assume stable
-                isStable = true;
+                lastError = error instanceof Error ? error : new Error(String(error));
+                logger.debug(`Stability check iteration ${navigationCount} failed: ${lastError.message}`);
+                // Continue trying
+                navigationCount++;
             }
         }
 
-        if (!isStable) {
-            logger.warn('Page may still be navigating, but proceeding with scan...');
+        if (!isStable && navigationCount >= config.browser.maxNavigationWaits) {
+            logger.warn(`Page did not stabilize after ${navigationCount} navigation checks. Proceeding with scan...`);
+            logger.debug(`Last error: ${lastError?.message || 'Unknown'}`);
         }
-        logger.info('Page appears stable, proceeding with scan...');
+        if (isStable) {
+            logger.info('Page appears stable, proceeding with scan...');
+        }
 
         // Load and inject the scanner bundle
         const scannerBundlePath = join(__dirname, '../../dist/scanner-bundle.js');
 
         // Inject the scanner script into the page
-        await page.addScriptTag({ path: scannerBundlePath });
+        try {
+            await page.addScriptTag({ path: scannerBundlePath });
+            logger.debug('Scanner bundle injected successfully');
+        } catch (error) {
+            const errorMsg = error instanceof Error ? error.message : String(error);
+            throw new BrowserLaunchError(
+                'scanner',
+                `Failed to inject scanner bundle: ${errorMsg}. The dist/scanner-bundle.js file may be missing or corrupted. Try running "npm run build" to regenerate it.`
+            );
+        }
 
         // Run the scanner with retry logic for heavy sites
-        const rawData = await withRetry(
-            async () => {
-                if (!page) {
-                    throw new Error('Page is null');
-                }
-
-                // Block navigation during scan to prevent context destruction
-                return await page.evaluate(({ tags, includeKeyboardTests }) => {
-                    // Save original navigation methods
-                    const originalPushState = history.pushState;
-                    const originalReplaceState = history.replaceState;
-
-                    try {
-                        // Temporarily block navigation
-                        history.pushState = () => { };
-                        history.replaceState = () => { };
-
-                        // @ts-ignore - ReactA11yScanner is injected
-                        const result = window.ReactA11yScanner.scan({ tags, includeKeyboardTests });
-
-                        return result;
-                    } finally {
-                        // Always restore navigation
-                        history.pushState = originalPushState;
-                        history.replaceState = originalReplaceState;
+        let rawData: BrowserScanData | null = null;
+        try {
+            rawData = await withRetry(
+                async () => {
+                    if (!page) {
+                        throw new Error('Page is null');
                     }
-                }, { tags, includeKeyboardTests: options.includeKeyboardTests }) as BrowserScanData;
-            },
-            {
-                maxRetries: config.scan.maxRetries,
-                delayMs: config.scan.retryDelayBase,
-                backoff: 'linear',
-                onRetry: (attempt, error) => {
-                    logger.warn(`Scan attempt ${attempt} failed, retrying...`);
-                    logger.debug(`Error: ${error.message}`);
+
+                    // Check if scanner bundle was loaded
+                    const isScannerLoaded = await page.evaluate(() => {
+                        return typeof (window as any).ReactA11yScanner !== 'undefined';
+                    });
+
+                    if (!isScannerLoaded) {
+                        throw new Error('ReactA11yScanner is not available in page context');
+                    }
+
+                    // Block navigation during scan to prevent context destruction
+                    return await page.evaluate(({ tags, includeKeyboardTests }) => {
+                        // Save original navigation methods
+                        const originalPushState = history.pushState;
+                        const originalReplaceState = history.replaceState;
+
+                        try {
+                            // Temporarily block navigation
+                            history.pushState = () => { };
+                            history.replaceState = () => { };
+
+                            // @ts-ignore - ReactA11yScanner is injected
+                            const result = window.ReactA11yScanner.scan({ tags, includeKeyboardTests });
+
+                            return result;
+                        } finally {
+                            // Always restore navigation
+                            history.pushState = originalPushState;
+                            history.replaceState = originalReplaceState;
+                        }
+                    }, { tags, includeKeyboardTests: options.includeKeyboardTests }) as BrowserScanData;
+                },
+                {
+                    maxRetries: config.scan.maxRetries,
+                    delayMs: config.scan.retryDelayBase,
+                    backoff: 'linear',
+                    onRetry: (attempt, error) => {
+                        logger.warn(`Scan attempt ${attempt} failed, retrying...`);
+                        logger.debug(`Error: ${error.message}`);
+                    }
                 }
+            );
+        } catch (error) {
+            const errorMsg = error instanceof Error ? error.message : String(error);
+            if (errorMsg.includes('ReactA11yScanner is not available')) {
+                throw new BrowserLaunchError(
+                    'scanner',
+                    'Scanner bundle failed to load in page context. This may indicate a JavaScript error in the page. Try running with --headless=false to debug.'
+                );
             }
-        )
+            throw error;
+        }
+
+        // Validate that we got results
+        if (!rawData) {
+            throw new Error('No scan data returned from browser');
+        }
+
+        // Validate results have expected structure
+        if (!Array.isArray(rawData.components)) {
+            logger.warn('Scan returned invalid component data');
+            rawData.components = [];
+        }
+
+        if (!Array.isArray(rawData.violations)) {
+            logger.warn('Scan returned invalid violations data');
+            rawData.violations = [];
+        }
+
+        // Warn if accessibility tree is empty (page may have no accessible content)
+        if (!rawData.accessibilityTree) {
+            logger.debug('No accessibility tree generated - page may have no accessible content');
+        }
+
+        logger.info(`Scan complete: Found ${rawData.components.length} components and ${rawData.violations.length} violations`);
 
         // Process the results (accessibility tree is now included in rawData)
         const results = processResults({
@@ -157,6 +222,23 @@ export async function runScan(options: ScanOptions): Promise<ScanResults> {
 }
 
 /**
+ * Check if Playwright browsers are installed
+ */
+function getPlaywrightInstallInstructions(browserType: string): string {
+    return `
+Playwright browsers are not installed. Please install them with:
+
+    npx playwright install ${browserType}
+
+Or install all browsers with:
+
+    npx playwright install
+
+For more information, visit: https://playwright.dev/docs/intro
+`;
+}
+
+/**
  * Launch the specified browser type
  */
 async function launchBrowser(browserType: 'chromium' | 'firefox' | 'webkit', headless: boolean): Promise<Browser> {
@@ -177,7 +259,21 @@ async function launchBrowser(browserType: 'chromium' | 'firefox' | 'webkit', hea
         if (error instanceof BrowserLaunchError) {
             throw error;
         }
-        throw new BrowserLaunchError(browserType, error instanceof Error ? error.message : String(error));
+
+        const errorMessage = error instanceof Error ? error.message : String(error);
+
+        // Detect Playwright browser not installed error
+        if (errorMessage.includes('No browsers found') ||
+            errorMessage.includes('browser executable path') ||
+            errorMessage.includes('Failed to find') ||
+            errorMessage.includes('not installed')) {
+            throw new BrowserLaunchError(
+                browserType,
+                getPlaywrightInstallInstructions(browserType)
+            );
+        }
+
+        throw new BrowserLaunchError(browserType, errorMessage);
     }
 }
 

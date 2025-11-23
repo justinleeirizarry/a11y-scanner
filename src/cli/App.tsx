@@ -50,7 +50,7 @@ const App: React.FC<AppProps> = ({ url, browser, output, ci, threshold, headless
 
                 // Handle CI mode
                 if (ci) {
-                    const totalViolations = scanResults.violations.length;
+                    const totalViolations = scanResults.summary.totalViolations;
                     if (totalViolations > threshold) {
                         process.exitCode = 1;
                         exit();
@@ -62,22 +62,59 @@ const App: React.FC<AppProps> = ({ url, browser, output, ci, threshold, headless
 
                 // Handle output file
                 if (output) {
-                    const fs = await import('fs/promises');
-                    await fs.writeFile(output, JSON.stringify(scanResults, null, 2));
+                    try {
+                        const fs = await import('fs/promises');
+                        const path = await import('path');
+
+                        // Ensure directory exists
+                        const dir = path.dirname(output);
+                        if (dir !== '.') {
+                            try {
+                                await fs.mkdir(dir, { recursive: true });
+                            } catch (err) {
+                                // Directory may already exist
+                                if (err instanceof Error && !err.message.includes('exists')) {
+                                    throw err;
+                                }
+                            }
+                        }
+
+                        await fs.writeFile(output, JSON.stringify(scanResults, null, 2));
+                    } catch (err) {
+                        const errorMsg = err instanceof Error ? err.message : String(err);
+                        setState('error');
+                        setError(`Failed to write output file to ${output}: ${errorMsg}`);
+                        if (ci) {
+                            process.exitCode = 1;
+                            exit();
+                        }
+                        return;
+                    }
                 }
 
                 // Handle AI prompts
                 if (ai) {
-                    const { generateAndExport } = await import('../prompts/prompt-generator.js');
-                    const promptPath = generateAndExport(
-                        scanResults,
-                        {
-                            template: 'fix-all',
-                            format: 'md',
-                            outputPath: undefined,
+                    try {
+                        const { generateAndExport } = await import('../prompts/prompt-generator.js');
+                        const promptPath = generateAndExport(
+                            scanResults,
+                            {
+                                template: 'fix-all',
+                                format: 'md',
+                                outputPath: undefined,
+                            }
+                        );
+                        setAiPromptFilePath(promptPath);
+                    } catch (err) {
+                        const errorMsg = err instanceof Error ? err.message : String(err);
+                        setState('error');
+                        setError(`Failed to generate AI prompt: ${errorMsg}`);
+                        if (ci) {
+                            process.exitCode = 1;
+                            exit();
                         }
-                    );
-                    setAiPromptFilePath(promptPath);
+                        return;
+                    }
                 }
             } catch (err) {
                 if (cancelled) return;

@@ -151,6 +151,7 @@ export interface BrowserScanData {
     components: ComponentInfo[];
     violations: AttributedViolation[];
     keyboardTests?: KeyboardTestResults; // Keyboard test results from browser
+    accessibilityTree?: any; // Playwright accessibility snapshot
 }
 
 // Prompt template types
