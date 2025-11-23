@@ -35,7 +35,8 @@ declare global {
  * Main scan function - called from Node context
  */
 export async function scan(options: { tags?: string[]; includeKeyboardTests?: boolean } = {}) {
-    console.log('🔍 Starting React A11y scan...');
+    // Note: console.log is intentional here as this runs in browser context
+    // and needs to be visible in browser console for debugging
 
     // Find React root
     const root = findReactRoot();
@@ -62,19 +63,18 @@ export async function scan(options: { tags?: string[]; includeKeyboardTests?: bo
 
     // Run keyboard tests if requested
     let keyboardTests = null;
-    console.log(`🎹 Keyboard tests requested: ${options.includeKeyboardTests}`);
     if (options.includeKeyboardTests) {
         console.log('🎹 Starting keyboard tests...');
+        console.warn('⚠️  Keyboard testing is experimental and may not detect all issues');
         try {
             keyboardTests = runKeyboardTests();
-            console.log(`✓ Keyboard tests complete:`, keyboardTests);
-            console.log(`✓ Keyboard tests summary: ${keyboardTests.summary.totalIssues} issues found`);
+            console.log(`✓ Keyboard tests complete: ${keyboardTests.summary.totalIssues} issues found`);
         } catch (error) {
             console.error('❌ Failed to run keyboard tests:', error);
-            console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+            if (error instanceof Error) {
+                console.error('Error stack:', error.stack);
+            }
         }
-    } else {
-        console.log('🎹 Keyboard tests skipped (not requested)');
     }
 
     return {

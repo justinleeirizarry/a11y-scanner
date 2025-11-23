@@ -3,15 +3,7 @@
  */
 
 import { getComponentName, type FiberNode } from './component-resolver.js';
-
-export interface ComponentInfo {
-    name: string;
-    type: string;
-    displayName?: string;
-    props?: Record<string, any>;
-    domNode?: Element | null;
-    path: string[];
-}
+import type { ComponentInfo } from '../../types.js';
 
 /**
  * Find the React root fiber node

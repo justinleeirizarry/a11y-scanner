@@ -15,7 +15,10 @@
         "dev:scanner": "esbuild src/scanner/browser-bundle.ts --bundle --platform=browser --format=iife --global-name=ReactA11yScanner --outfile=dist/scanner-bundle.js --watch",
         "start": "node ./bin/cli.js",
         "test:fixture": "node ./bin/cli.js file://$(pwd)/test/fixtures/test-app.html",
-        "test": "echo \"Error: no test specified\" && exit 1"
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "test:ui": "vitest --ui",
+        "test:coverage": "vitest run --coverage"
     },
     "keywords": [
         "react",
@@ -44,7 +47,10 @@
         "@types/node": "^20.10.0",
         "@types/react": "^18.2.0",
         "@types/react-dom": "^18.3.7",
+        "@vitest/coverage-v8": "^4.0.13",
+        "@vitest/ui": "^4.0.13",
         "esbuild": "^0.19.0",
-        "typescript": "^5.3.0"
+        "typescript": "^5.3.0",
+        "vitest": "^4.0.13"
     }
 }

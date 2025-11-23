@@ -3,6 +3,7 @@ import React from 'react';
 import { render } from 'ink';
 import meow from 'meow';
 import App from './cli/App.js';
+import { validateUrl, validateTags, validateThreshold, validateBrowser } from './utils/validation.js';
 
 const cli = meow(
     `
@@ -82,11 +83,33 @@ if (cli.input.length === 0) {
 
 const url = cli.input[0];
 
-// Validate URL format
-try {
-    new URL(url);
-} catch (error) {
-    console.error(`❌ Error: Invalid URL "${url}"\n`);
+// Validate URL format and protocol
+const urlValidation = validateUrl(url);
+if (!urlValidation.valid) {
+    console.error(`❌ Error: ${urlValidation.error}\n`);
+    process.exit(1);
+}
+
+// Validate browser type
+const browserValidation = validateBrowser(cli.flags.browser);
+if (!browserValidation.valid) {
+    console.error(`❌ Error: ${browserValidation.error}\n`);
+    process.exit(1);
+}
+
+// Validate tags if provided
+if (cli.flags.tags) {
+    const tagsValidation = validateTags(cli.flags.tags);
+    if (!tagsValidation.valid) {
+        console.error(`❌ Error: ${tagsValidation.error}\n`);
+        process.exit(1);
+    }
+}
+
+// Validate threshold
+const thresholdValidation = validateThreshold(cli.flags.threshold);
+if (!thresholdValidation.valid) {
+    console.error(`❌ Error: ${thresholdValidation.error}\n`);
     process.exit(1);
 }
 
@@ -107,9 +130,15 @@ const { waitUntilExit } = render(
 );
 
 // Wait for app to finish and handle exit code
-waitUntilExit().then(() => {
-    // Exit code will be set by the App component
-}).catch((error) => {
-    console.error('Fatal error:', error);
-    process.exit(1);
-});
+(async () => {
+    try {
+        await waitUntilExit();
+        // Exit code will be set by the App component
+    } catch (error) {
+        console.error('❌ Fatal error during scan:', error instanceof Error ? error.message : String(error));
+        if (error instanceof Error && error.stack) {
+            console.error('\nStack trace:', error.stack);
+        }
+        process.exit(1);
+    }
+})();

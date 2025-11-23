@@ -3,7 +3,7 @@
  */
 
 import type { AxeViolation } from './runner.js';
-import type { ComponentInfo } from '../fiber/traversal.js';
+import type { ComponentInfo } from '../../types.js';
 import { findComponentForElement } from '../fiber/traversal.js';
 import { filterUserComponents, isFrameworkComponent } from '../fiber/framework-filter.js';
 import { generateCssSelector } from '../utils/css-selector.js';

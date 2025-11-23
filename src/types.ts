@@ -19,7 +19,8 @@ export interface ComponentInfo {
     displayName?: string;
     props?: Record<string, any>;
     fiber?: any;
-    domNode?: Element;
+    domNode?: Element | null;
+    path: string[];
 }
 
 // Fix suggestion for a violation

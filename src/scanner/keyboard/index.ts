@@ -22,8 +22,7 @@ export interface KeyboardTestResults {
  * Run all keyboard accessibility tests
  */
 export function runKeyboardTests(): KeyboardTestResults {
-    console.log('🎹 runKeyboardTests() called');
-    console.log('🎹 Running keyboard accessibility tests...');
+    // Run all tests
 
     // Run all tests
     const tabOrder = validateTabOrder();
@@ -51,8 +50,6 @@ export function runKeyboardTests(): KeyboardTestResults {
         seriousIssues: allViolations.filter(v => v.severity === 'serious').length,
         moderateIssues: allViolations.filter(v => v.severity === 'moderate').length,
     };
-
-    console.log(`✓ Keyboard tests complete: ${summary.totalIssues} issues found`);
 
     return {
         tabOrder,

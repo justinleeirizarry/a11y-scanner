@@ -5,6 +5,8 @@ import { dirname, join } from 'path';
 import type { ScanOptions, ScanResults, BrowserScanData } from '../types.js';
 import { processResults } from '../processor/results-parser.js';
 import { getConfig } from '../config/index.js';
+import { logger } from '../utils/logger.js';
+import { withRetry } from '../utils/retry.js';
 import {
     ReactNotDetectedError,
     NavigationTimeoutError,
@@ -49,9 +51,10 @@ export async function runScan(options: ScanOptions): Promise<ScanResults> {
 
         // Wait for any pending navigations to complete
         // Some apps (especially Next.js) do client-side navigation after initial load
+        let isStable = false;
         let navigationCount = 0;
 
-        while (navigationCount < config.browser.maxNavigationWaits) {
+        while (!isStable && navigationCount < config.browser.maxNavigationWaits) {
             try {
                 // Wait for network to be completely idle
                 await page.waitForLoadState('networkidle', { timeout: config.browser.networkIdleTimeout });
@@ -59,26 +62,28 @@ export async function runScan(options: ScanOptions): Promise<ScanResults> {
                 // Extra wait to ensure React has settled
                 await page.waitForTimeout(config.browser.postNavigationDelay);
 
-                // Check if another navigation happens immediately
-                const navigationHappened = await Promise.race([
-                    page.waitForNavigation({ timeout: config.browser.navigationCheckInterval }).then(() => true).catch(() => false),
-                    new Promise(resolve => setTimeout(() => resolve(false), config.browser.navigationCheckInterval))
-                ]);
-
-                if (!navigationHappened) {
-                    // No navigation in the last second, we're stable
-                    break;
+                // Check if page is truly stable by monitoring for a period
+                try {
+                    await page.waitForNavigation({
+                        timeout: config.browser.navigationCheckInterval
+                    });
+                    // Navigation happened, increment counter and retry
+                    navigationCount++;
+                    logger.warn(`Navigation detected (${navigationCount}/${config.browser.maxNavigationWaits}), waiting...`);
+                } catch (error) {
+                    // No navigation in the check interval, we're stable
+                    isStable = true;
                 }
-
-                navigationCount++;
-                console.warn(`Navigation detected (${navigationCount}/${config.browser.maxNavigationWaits}), waiting...`);
             } catch (error) {
-                // Timeout is fine, means no navigation
-                break;
+                // Network idle timeout - assume stable
+                isStable = true;
             }
         }
 
-        console.log('Page appears stable, proceeding with scan...');
+        if (!isStable) {
+            logger.warn('Page may still be navigating, but proceeding with scan...');
+        }
+        logger.info('Page appears stable, proceeding with scan...');
 
         // Load and inject the scanner bundle
         const scannerBundlePath = join(__dirname, '../../dist/scanner-bundle.js');
@@ -87,70 +92,52 @@ export async function runScan(options: ScanOptions): Promise<ScanResults> {
         await page.addScriptTag({ path: scannerBundlePath });
 
         // Run the scanner with retry logic for heavy sites
-        let rawData: BrowserScanData | null = null;
-        let lastError: Error | null = null;
-
-        for (let attempt = 1; attempt <= config.scan.maxRetries; attempt++) {
-            try {
-                // Wait a bit before each attempt (especially important for GSAP/Three.js)
-                if (attempt > 1) {
-                    await page.waitForTimeout(config.scan.retryDelayBase * attempt);
+        const rawData = await withRetry(
+            async () => {
+                if (!page) {
+                    throw new Error('Page is null');
                 }
 
                 // Block navigation during scan to prevent context destruction
-                rawData = await page.evaluate(({ tags, includeKeyboardTests }) => {
+                return await page.evaluate(({ tags, includeKeyboardTests }) => {
                     // Save original navigation methods
                     const originalPushState = history.pushState;
                     const originalReplaceState = history.replaceState;
-                    const originalLocation = window.location.href;
-
-                    // Temporarily block navigation
-                    history.pushState = () => { };
-                    history.replaceState = () => { };
 
                     try {
+                        // Temporarily block navigation
+                        history.pushState = () => { };
+                        history.replaceState = () => { };
+
                         // @ts-ignore - ReactA11yScanner is injected
                         const result = window.ReactA11yScanner.scan({ tags, includeKeyboardTests });
 
-                        // Restore navigation
-                        history.pushState = originalPushState;
-                        history.replaceState = originalReplaceState;
-
                         return result;
-                    } catch (error) {
-                        // Restore navigation even on error
+                    } finally {
+                        // Always restore navigation
                         history.pushState = originalPushState;
                         history.replaceState = originalReplaceState;
-                        throw error;
                     }
                 }, { tags, includeKeyboardTests: options.includeKeyboardTests }) as BrowserScanData;
-
-                // Success! Break out of retry loop
-                break;
-            } catch (error) {
-                lastError = error as Error;
-
-                // If this is the last attempt, throw
-                if (attempt === config.scan.maxRetries) {
-                    throw new MaxRetriesExceededError(config.scan.maxRetries, lastError);
+            },
+            {
+                maxRetries: config.scan.maxRetries,
+                delayMs: config.scan.retryDelayBase,
+                backoff: 'linear',
+                onRetry: (attempt, error) => {
+                    logger.warn(`Scan attempt ${attempt} failed, retrying...`);
+                    logger.debug(`Error: ${error.message}`);
                 }
-
-                // Otherwise, log and retry
-                console.warn(`Scan attempt ${attempt} failed, retrying...`);
             }
-        }
-
-        if (!rawData) {
-            throw new Error('No scan data received');
-        }
+        );
 
         // Capture accessibility tree snapshot
         let accessibilityTree = null;
         try {
             accessibilityTree = await page.accessibility.snapshot();
-            console.log('✓ Captured accessibility tree snapshot');
+            logger.info('✓ Captured accessibility tree snapshot');
         } catch (error) {
-            console.warn('Failed to capture accessibility tree:', error);
+            logger.warn('Failed to capture accessibility tree:', error);
         }
 
         // Process the results
@@ -207,49 +194,45 @@ async function launchBrowser(browserType: 'chromium' | 'firefox' | 'webkit', hea
 }
 
 async function detectReact(page: Page): Promise<boolean> {
-    const config = getConfig();
+    return await page.evaluate(() => {
+        // Helper function to check if element has React fiber
+        function hasReactFiber(element: Element): boolean {
+            const keys = Object.keys(element);
+            return keys.some(key =>
+                key.startsWith('__reactFiber') ||
+                key.startsWith('__reactProps') ||
+                key.startsWith('__reactInternalInstance')
+            );
+        }
 
-    return await page.evaluate((maxElements) => {
-        // Check for React DevTools hook
+        // 1. Fast path: Check DevTools hook first (most reliable)
         if (typeof window !== 'undefined' && (window as any).__REACT_DEVTOOLS_GLOBAL_HOOK__) {
             const hook = (window as any).__REACT_DEVTOOLS_GLOBAL_HOOK__;
-            // Check if it has fiber roots (actual React app running)
             if (hook.getFiberRoots && hook.getFiberRoots(1)?.size > 0) {
                 return true;
             }
         }
 
-        // Check for React fiber keys on DOM elements (works in prod)
-        const allElements = document.querySelectorAll('*');
-        for (let i = 0; i < Math.min(allElements.length, maxElements); i++) {
-            const element = allElements[i];
-            const keys = Object.keys(element);
-            // Look for React internal fiber keys
-            if (keys.some(key =>
-                key.startsWith('__reactFiber') ||
-                key.startsWith('__reactProps') ||
-                key.startsWith('__reactInternalInstance')
-            )) {
+        // 2. Check common React root containers (most likely locations)
+        const rootSelectors = ['#root', '#app', '#__next', '[data-reactroot]', '[data-reactid]'];
+        for (const selector of rootSelectors) {
+            const element = document.querySelector(selector);
+            if (element && hasReactFiber(element)) {
                 return true;
             }
         }
 
-        // Check common React root containers
-        const containers = [
-            '#root', '#app', '#__next', // Next.js uses #__next
-            '[data-reactroot]', '[data-reactid]'
-        ];
+        // 3. Sample random elements instead of checking all (performance optimization)
+        const allElements = document.querySelectorAll('*');
+        const sampleSize = Math.min(100, allElements.length);
+        const step = Math.max(1, Math.floor(allElements.length / sampleSize));
 
-        for (const selector of containers) {
-            const element = document.querySelector(selector);
-            if (element) {
-                const keys = Object.keys(element);
-                if (keys.some(key => key.startsWith('__react') || key.startsWith('_react'))) {
-                    return true;
-                }
+        for (let i = 0; i < allElements.length; i += step) {
+            if (hasReactFiber(allElements[i])) {
+                return true;
             }
         }
 
         return false;
-    }, config.scan.maxElementsToCheck);
+    });
 }
