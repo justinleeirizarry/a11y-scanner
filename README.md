@@ -124,23 +124,6 @@ npm run build
 npm start test/fixtures/test-app.html
 ```
 
-### Project Structure
-
-```
-src/
-├── index.tsx              # CLI entry point
-├── types.ts               # TypeScript definitions
-├── cli/
-│   ├── App.tsx           # Main Ink app
-│   └── components/       # UI components
-├── browser/
-│   └── launcher.ts       # Playwright automation
-├── scanner/
-│   └── browser-bundle.ts # Browser-side scanner
-└── processor/
-│   └── results-parser.ts # Results processing
-```
-
 ## Requirements
 
 - Node.js 18+
