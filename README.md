@@ -158,6 +158,7 @@ src/
 - [ ] Watch mode
 - [ ] Custom rule configuration
 - [ ] IDE integration
+- [ ] AI-powered testing with [Stagehand](https://docs.stagehand.dev)
 
 ## License
 
