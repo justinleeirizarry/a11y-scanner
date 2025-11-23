@@ -40,20 +40,24 @@ npm start https://example.com
 ### Command Line Options
 
 ```bash
+# Using the full command name
 react-a11y-scanner https://example.com
+
+# Or use the shorter alias
+a11y-scan https://example.com
 ```
 
 ### With Options
 
 ```bash
 # Use Firefox
-react-a11y-scanner https://example.com --browser firefox
+a11y-scan https://example.com --browser firefox
 
 # Export JSON report
-react-a11y-scanner https://example.com --output report.json
+a11y-scan https://example.com --output report.json
 
 # CI mode (exit code 1 if violations found)
-react-a11y-scanner https://example.com --ci --threshold 0
+a11y-scan https://example.com --ci --threshold 0
 ```
 
 ### Available Options

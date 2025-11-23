@@ -4,6 +4,14 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import type { ScanOptions, ScanResults, BrowserScanData } from '../types.js';
 import { processResults } from '../processor/results-parser.js';
+import { getConfig } from '../config/index.js';
+import {
+    ReactNotDetectedError,
+    NavigationTimeoutError,
+    ContextDestroyedError,
+    MaxRetriesExceededError,
+    BrowserLaunchError,
+} from '../errors/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -22,38 +30,39 @@ export async function runScan(options: ScanOptions): Promise<ScanResults> {
         browser = await launchBrowser(browserType, headless);
         page = await browser.newPage();
 
+        const config = getConfig();
+
         // Navigate to the URL with network idle wait
         await page.goto(url, {
             waitUntil: 'networkidle',
-            timeout: 30000
+            timeout: config.browser.timeout
         });
 
         // Wait longer for React to mount and stabilize (especially for Next.js)
-        await page.waitForTimeout(3000);
+        await page.waitForTimeout(config.browser.stabilizationDelay);
 
         // Check if React is present
         const hasReact = await detectReact(page);
         if (!hasReact) {
-            throw new Error('React was not detected on this page. This tool only works with React applications.');
+            throw new ReactNotDetectedError(url);
         }
 
         // Wait for any pending navigations to complete
         // Some apps (especially Next.js) do client-side navigation after initial load
         let navigationCount = 0;
-        const maxNavigationWaits = 3;
 
-        while (navigationCount < maxNavigationWaits) {
+        while (navigationCount < config.browser.maxNavigationWaits) {
             try {
                 // Wait for network to be completely idle
-                await page.waitForLoadState('networkidle', { timeout: 5000 });
+                await page.waitForLoadState('networkidle', { timeout: config.browser.networkIdleTimeout });
 
                 // Extra wait to ensure React has settled
-                await page.waitForTimeout(2000);
+                await page.waitForTimeout(config.browser.postNavigationDelay);
 
                 // Check if another navigation happens immediately
                 const navigationHappened = await Promise.race([
-                    page.waitForNavigation({ timeout: 1000 }).then(() => true).catch(() => false),
-                    new Promise(resolve => setTimeout(() => resolve(false), 1000))
+                    page.waitForNavigation({ timeout: config.browser.navigationCheckInterval }).then(() => true).catch(() => false),
+                    new Promise(resolve => setTimeout(() => resolve(false), config.browser.navigationCheckInterval))
                 ]);
 
                 if (!navigationHappened) {
@@ -62,7 +71,7 @@ export async function runScan(options: ScanOptions): Promise<ScanResults> {
                 }
 
                 navigationCount++;
-                console.warn(`Navigation detected (${navigationCount}/${maxNavigationWaits}), waiting...`);
+                console.warn(`Navigation detected (${navigationCount}/${config.browser.maxNavigationWaits}), waiting...`);
             } catch (error) {
                 // Timeout is fine, means no navigation
                 break;
@@ -80,13 +89,12 @@ export async function runScan(options: ScanOptions): Promise<ScanResults> {
         // Run the scanner with retry logic for heavy sites
         let rawData: BrowserScanData | null = null;
         let lastError: Error | null = null;
-        const maxRetries = 3;
 
-        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        for (let attempt = 1; attempt <= config.scan.maxRetries; attempt++) {
             try {
                 // Wait a bit before each attempt (especially important for GSAP/Three.js)
                 if (attempt > 1) {
-                    await page.waitForTimeout(2000 * attempt);
+                    await page.waitForTimeout(config.scan.retryDelayBase * attempt);
                 }
 
                 // Block navigation during scan to prevent context destruction
@@ -123,12 +131,8 @@ export async function runScan(options: ScanOptions): Promise<ScanResults> {
                 lastError = error as Error;
 
                 // If this is the last attempt, throw
-                if (attempt === maxRetries) {
-                    throw new Error(
-                        `Failed to scan after ${maxRetries} attempts. ` +
-                        `This might be due to heavy libraries (GSAP, Three.js, etc.) ` +
-                        `causing page instability. Last error: ${lastError.message}`
-                    );
+                if (attempt === config.scan.maxRetries) {
+                    throw new MaxRetriesExceededError(config.scan.maxRetries, lastError);
                 }
 
                 // Otherwise, log and retry
@@ -161,6 +165,14 @@ export async function runScan(options: ScanOptions): Promise<ScanResults> {
 
         return results;
     } catch (error) {
+        // Re-throw our custom errors as-is
+        if (error instanceof ReactNotDetectedError ||
+            error instanceof MaxRetriesExceededError ||
+            error instanceof NavigationTimeoutError ||
+            error instanceof ContextDestroyedError) {
+            throw error;
+        }
+        // Wrap other errors
         throw new Error(`Scan failed: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
         // Clean up
@@ -175,20 +187,29 @@ export async function runScan(options: ScanOptions): Promise<ScanResults> {
 async function launchBrowser(browserType: 'chromium' | 'firefox' | 'webkit', headless: boolean): Promise<Browser> {
     const launchOptions = { headless };
 
-    switch (browserType) {
-        case 'chromium':
-            return await chromium.launch(launchOptions);
-        case 'firefox':
-            return await firefox.launch(launchOptions);
-        case 'webkit':
-            return await webkit.launch(launchOptions);
-        default:
-            throw new Error(`Unsupported browser: ${browserType}`);
+    try {
+        switch (browserType) {
+            case 'chromium':
+                return await chromium.launch(launchOptions);
+            case 'firefox':
+                return await firefox.launch(launchOptions);
+            case 'webkit':
+                return await webkit.launch(launchOptions);
+            default:
+                throw new BrowserLaunchError(browserType, 'Unsupported browser type');
+        }
+    } catch (error) {
+        if (error instanceof BrowserLaunchError) {
+            throw error;
+        }
+        throw new BrowserLaunchError(browserType, error instanceof Error ? error.message : String(error));
     }
 }
 
 async function detectReact(page: Page): Promise<boolean> {
-    return await page.evaluate(() => {
+    const config = getConfig();
+
+    return await page.evaluate((maxElements) => {
         // Check for React DevTools hook
         if (typeof window !== 'undefined' && (window as any).__REACT_DEVTOOLS_GLOBAL_HOOK__) {
             const hook = (window as any).__REACT_DEVTOOLS_GLOBAL_HOOK__;
@@ -200,7 +221,7 @@ async function detectReact(page: Page): Promise<boolean> {
 
         // Check for React fiber keys on DOM elements (works in prod)
         const allElements = document.querySelectorAll('*');
-        for (let i = 0; i < Math.min(allElements.length, 100); i++) {
+        for (let i = 0; i < Math.min(allElements.length, maxElements); i++) {
             const element = allElements[i];
             const keys = Object.keys(element);
             // Look for React internal fiber keys
@@ -230,5 +251,5 @@ async function detectReact(page: Page): Promise<boolean> {
         }
 
         return false;
-    });
+    }, config.scan.maxElementsToCheck);
 }

@@ -8,6 +8,7 @@ const cli = meow(
     `
   Usage
     $ react-a11y-scanner <url>
+    $ a11y-scan <url>
 
   Options
     --browser, -b   Browser to use (chromium, firefox, webkit) [default: chromium]
@@ -24,12 +25,12 @@ const cli = meow(
     --help          Show this help message
 
   Examples
-    $ react-a11y-scanner https://example.com
-    $ react-a11y-scanner https://example.com --browser firefox
-    $ react-a11y-scanner https://example.com --output report.json --ci
-    $ react-a11y-scanner https://example.com --ai-prompts
-    $ react-a11y-scanner https://example.com --ai-prompts --ai-template explain
-    $ react-a11y-scanner https://example.com --ai-prompts --ai-format md
+    $ a11y-scan https://example.com
+    $ a11y-scan https://example.com --browser firefox
+    $ a11y-scan https://example.com --output report.json --ci
+    $ a11y-scan https://example.com --ai-prompts
+    $ a11y-scan https://example.com --ai-prompts --ai-template explain
+    $ a11y-scan https://example.com --ai-prompts --ai-format md
 `,
     {
         importMeta: import.meta,
