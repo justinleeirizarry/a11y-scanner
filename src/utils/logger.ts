@@ -12,6 +12,7 @@ export enum LogLevel {
 
 class Logger {
     private level: LogLevel;
+    private useStderr: boolean = false;
 
     constructor(level?: LogLevel) {
         // Check environment variable first, then use provided level, default to INFO
@@ -32,6 +33,14 @@ class Logger {
     }
 
     /**
+     * Set whether to log to stderr instead of stdout
+     * Useful for MCP servers where stdout is used for communication
+     */
+    setUseStderr(useStderr: boolean): void {
+        this.useStderr = useStderr;
+    }
+
+    /**
      * Get current log level
      */
     getLevel(): LogLevel {
@@ -43,7 +52,11 @@ class Logger {
      */
     debug(message: string, ...args: any[]): void {
         if (this.level <= LogLevel.DEBUG) {
-            console.debug(`[DEBUG] ${message}`, ...args);
+            if (this.useStderr) {
+                console.error(`[DEBUG] ${message}`, ...args);
+            } else {
+                console.debug(`[DEBUG] ${message}`, ...args);
+            }
         }
     }
 
@@ -52,7 +65,11 @@ class Logger {
      */
     info(message: string, ...args: any[]): void {
         if (this.level <= LogLevel.INFO) {
-            console.log(`[INFO] ${message}`, ...args);
+            if (this.useStderr) {
+                console.error(`[INFO] ${message}`, ...args);
+            } else {
+                console.log(`[INFO] ${message}`, ...args);
+            }
         }
     }
 
@@ -78,7 +95,11 @@ class Logger {
      * Always log, regardless of level (for critical messages)
      */
     always(message: string, ...args: any[]): void {
-        console.log(message, ...args);
+        if (this.useStderr) {
+            console.error(message, ...args);
+        } else {
+            console.log(message, ...args);
+        }
     }
 }
 

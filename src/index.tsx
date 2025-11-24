@@ -4,6 +4,7 @@ import { render } from 'ink';
 import meow from 'meow';
 import App from './cli/App.js';
 import { validateUrl, validateTags, validateThreshold, validateBrowser } from './utils/validation.js';
+import { runScan } from './browser/launcher.js';
 
 const cli = meow(
     `
@@ -113,32 +114,77 @@ if (!thresholdValidation.valid) {
     process.exit(1);
 }
 
-// Render the Ink app
-const { waitUntilExit } = render(
-    <App
-        url={url}
-        browser={cli.flags.browser as 'chromium' | 'firefox' | 'webkit'}
-        output={cli.flags.output}
-        ci={cli.flags.ci}
-        threshold={cli.flags.threshold}
-        headless={cli.flags.headless}
-        ai={cli.flags.ai}
-        tags={cli.flags.tags ? cli.flags.tags.split(',') : undefined}
-        keyboardNav={cli.flags.keyboardNav}
-        tree={cli.flags.tree}
-    />
-);
+// Check if stdout is a TTY (interactive terminal)
+const isTTY = process.stdout.isTTY === true;
 
-// Wait for app to finish and handle exit code
-(async () => {
-    try {
-        await waitUntilExit();
-        // Exit code will be set by the App component
-    } catch (error) {
-        console.error('❌ Fatal error during scan:', error instanceof Error ? error.message : String(error));
-        if (error instanceof Error && error.stack) {
-            console.error('\nStack trace:', error.stack);
+// If not a TTY (non-interactive), use JSON output mode
+if (!isTTY) {
+    (async () => {
+        try {
+            const scanResults = await runScan({
+                url,
+                browser: cli.flags.browser as 'chromium' | 'firefox' | 'webkit',
+                headless: cli.flags.headless,
+                tags: cli.flags.tags ? cli.flags.tags.split(',') : undefined,
+                includeKeyboardTests: cli.flags.keyboardNav,
+            });
+
+            // Output JSON to stdout with circular reference handling
+            const seen = new WeakSet();
+            const jsonOutput = JSON.stringify(scanResults, (key, value) => {
+                if (typeof value === 'object' && value !== null) {
+                    if (seen.has(value)) {
+                        return '[Circular]';
+                    }
+                    seen.add(value);
+                }
+                return value;
+            }, 2);
+            console.log(jsonOutput);
+
+            // Handle CI mode
+            if (cli.flags.ci) {
+                const totalViolations = scanResults.summary.totalViolations;
+                process.exitCode = totalViolations > cli.flags.threshold ? 1 : 0;
+            } else {
+                process.exitCode = 0;
+            }
+        } catch (error) {
+            console.error(JSON.stringify({
+                error: error instanceof Error ? error.message : String(error),
+                stack: error instanceof Error ? error.stack : undefined,
+            }, null, 2));
+            process.exitCode = 1;
         }
-        process.exit(1);
-    }
-})();
+    })();
+} else {
+    // TTY mode: render the Ink UI
+    const { waitUntilExit } = render(
+        <App
+            url={url}
+            browser={cli.flags.browser as 'chromium' | 'firefox' | 'webkit'}
+            output={cli.flags.output}
+            ci={cli.flags.ci}
+            threshold={cli.flags.threshold}
+            headless={cli.flags.headless}
+            ai={cli.flags.ai}
+            tags={cli.flags.tags ? cli.flags.tags.split(',') : undefined}
+            keyboardNav={cli.flags.keyboardNav}
+            tree={cli.flags.tree}
+        />
+    );
+
+    // Wait for app to finish and handle exit code
+    (async () => {
+        try {
+            await waitUntilExit();
+            // Exit code will be set by the App component
+        } catch (error) {
+            console.error('❌ Fatal error during scan:', error instanceof Error ? error.message : String(error));
+            if (error instanceof Error && error.stack) {
+                console.error('\nStack trace:', error.stack);
+            }
+            process.exit(1);
+        }
+    })();
+}
