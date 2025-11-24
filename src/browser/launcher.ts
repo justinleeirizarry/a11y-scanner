@@ -209,7 +209,8 @@ export async function runScan(options: ScanOptions): Promise<ScanResults> {
         if (error instanceof ReactNotDetectedError ||
             error instanceof MaxRetriesExceededError ||
             error instanceof NavigationTimeoutError ||
-            error instanceof ContextDestroyedError) {
+            error instanceof ContextDestroyedError ||
+            error instanceof BrowserLaunchError) {
             throw error;
         }
         // Wrap other errors
