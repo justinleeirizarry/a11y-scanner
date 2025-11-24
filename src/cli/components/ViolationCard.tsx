@@ -14,7 +14,12 @@ export const ViolationCard: React.FC<ViolationCardProps> = ({ violation, index }
                 violation.impact === 'moderate' ? 'yellow' : 'blue';
 
     return (
-        <Box flexDirection="column" marginTop={1} borderStyle="round" borderColor="gray" padding={1}>
+        <Box flexDirection="column" marginTop={1} padding={1}>
+            {/* Separator */}
+            <Box marginBottom={1}>
+                <Text color="gray">──────────────────────────────────────────────────</Text>
+            </Box>
+
             {/* Header */}
             <Box justifyContent="space-between">
                 <Box>
@@ -35,7 +40,7 @@ export const ViolationCard: React.FC<ViolationCardProps> = ({ violation, index }
 
             {/* Fix Suggestion */}
             {violation.fixSuggestion && (
-                <Box marginTop={1} flexDirection="column" borderStyle="single" borderColor="green" padding={1}>
+                <Box marginTop={1} flexDirection="column" padding={1}>
                     <Text color="green" bold>💡 How to Fix:</Text>
                     <Text>{violation.fixSuggestion.summary}</Text>
 

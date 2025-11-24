@@ -32,7 +32,7 @@ const Results: React.FC<ResultsProps> = ({ results, outputFile, aiPromptFile, re
 
             {/* File Outputs */}
             {(outputFile || aiPromptFile || report) && (
-                <Box flexDirection="column" marginBottom={1} borderStyle="single" borderColor="gray" paddingX={1}>
+                <Box flexDirection="column" marginBottom={1} paddingX={1}>
                     {outputFile && (
                         <Box>
                             <Text color="gray">JSON Report: </Text>
@@ -67,7 +67,7 @@ const Results: React.FC<ResultsProps> = ({ results, outputFile, aiPromptFile, re
 
             {/* Success Message */}
             {violations.length === 0 && (
-                <Box marginTop={1} padding={1} borderStyle="round" borderColor="green">
+                <Box marginTop={1} padding={1}>
                     <Text color="green" bold>✅ No accessibility violations found!</Text>
                 </Box>
             )}
