@@ -35,10 +35,12 @@
     "author": "",
     "license": "MIT",
     "dependencies": {
+        "@browserbasehq/stagehand": "^3.0.3",
         "@modelcontextprotocol/sdk": "^1.22.0",
         "axe-core": "^4.8.3",
         "bippy": "^0.5.16",
         "chalk": "^5.3.0",
+        "dotenv": "^17.2.3",
         "ink": "^4.4.1",
         "ink-spinner": "^5.0.0",
         "meow": "^13.1.0",
@@ -48,6 +50,8 @@
         "zod": "^3.25.76"
     },
     "devDependencies": {
+        "@axe-core/playwright": "^4.11.0",
+        "@playwright/test": "^1.56.1",
         "@types/jsdom": "^27.0.0",
         "@types/node": "^20.10.0",
         "@types/react": "^18.2.0",

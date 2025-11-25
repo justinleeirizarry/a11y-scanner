@@ -52,6 +52,11 @@ export const DEFAULT_CONFIG = {
             'Fragment',
         ],
     },
+    stagehand: {
+        enabled: false,
+        model: 'anthropic/claude-3-5-sonnet-latest',
+        verbose: false,
+    },
 } as const;
 
 export type ScannerConfig = typeof DEFAULT_CONFIG;

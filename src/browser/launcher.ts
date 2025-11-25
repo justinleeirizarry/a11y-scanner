@@ -22,17 +22,19 @@ const __dirname = dirname(__filename);
  * Launch browser and run the scan
  */
 export async function runScan(options: ScanOptions): Promise<ScanResults> {
-    const { url, browser: browserType, headless, tags } = options;
+    const { url, browser: browserType, headless, tags, stagehand: stagehandConfig } = options;
 
     let browser: Browser | null = null;
     let page: Page | null = null;
+    let stagehandScanner: any = null; // Use any to avoid circular dependency issues if types aren't perfect yet
 
     try {
-        // Launch the appropriate browser
+        const config = getConfig();
+
+        // Always use standard Playwright for the main scan
+        // Stagehand will be used later for element discovery only
         browser = await launchBrowser(browserType, headless);
         page = await browser.newPage();
-
-        const config = getConfig();
 
         // Navigate to the URL with network idle wait
         await page.goto(url, {
@@ -66,7 +68,11 @@ export async function runScan(options: ScanOptions): Promise<ScanResults> {
                 }
 
                 // Extra wait to ensure React has settled
-                await page.waitForTimeout(config.browser.postNavigationDelay);
+                if (stagehandScanner) {
+                    await new Promise(resolve => setTimeout(resolve, config.browser.postNavigationDelay));
+                } else {
+                    await page.waitForTimeout(config.browser.postNavigationDelay);
+                }
 
                 // Check if page is truly stable by monitoring for a period
                 try {
@@ -194,6 +200,47 @@ export async function runScan(options: ScanOptions): Promise<ScanResults> {
             logger.debug('No accessibility tree generated - page may have no accessible content');
         }
 
+        // Run Stagehand discovery if enabled
+        if (stagehandConfig?.enabled) {
+            try {
+                // Initialize Stagehand now for element discovery
+                const { StagehandScanner } = await import('../scanner/stagehand/index.js');
+                stagehandScanner = new StagehandScanner(stagehandConfig);
+                await stagehandScanner.init(url);
+
+                // Get the page and navigate
+                const stagehandPage = stagehandScanner.page;
+                if (stagehandPage) {
+                    await stagehandPage.goto(url, { waitUntil: 'networkidle' });
+                    await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for page to settle
+
+                    const elements = await stagehandScanner.discoverElements();
+                    rawData.stagehand = { elements };
+                    logger.info(`Stagehand discovered ${elements.length} interactive elements`);
+
+                    // Generate test file if requested
+                    if (stagehandConfig?.generateTestFile) {
+                        try {
+                            const { TestGenerator } = await import('../scanner/stagehand/test-generator.js');
+                            const generator = new TestGenerator();
+                            const testContent = generator.generateTest(url, elements);
+
+                            // Write to file
+                            const fs = await import('fs/promises');
+                            await fs.writeFile(stagehandConfig.generateTestFile, testContent);
+                            logger.info(`Generated Playwright test: ${stagehandConfig.generateTestFile}`);
+                        } catch (err) {
+                            logger.error(`Failed to generate test file: ${err instanceof Error ? err.message : String(err)}`);
+                        }
+                    }
+                } else {
+                    logger.warn('Could not get page from Stagehand');
+                }
+            } catch (error) {
+                logger.error(`Stagehand discovery failed: ${error instanceof Error ? error.message : String(error)}`);
+            }
+        }
+
         logger.info(`Scan complete: Found ${rawData.components.length} components and ${rawData.violations.length} violations`);
 
         // Process the results (accessibility tree is now included in rawData)
@@ -217,6 +264,10 @@ export async function runScan(options: ScanOptions): Promise<ScanResults> {
         throw new Error(`Scan failed: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
         // Clean up
+        if (stagehandScanner) {
+            await stagehandScanner.close();
+        }
+
         if (page) await page.close();
         if (browser) await browser.close();
     }

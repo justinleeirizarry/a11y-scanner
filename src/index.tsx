@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import 'dotenv/config';
 import React from 'react';
 import { render } from 'ink';
 import meow from 'meow';
@@ -22,6 +23,11 @@ const cli = meow(
     --tags             Comma-separated list of axe-core tags (e.g. wcag2a,best-practice)
     --keyboard-nav     Run keyboard navigation tests [default: true]
     --tree             Show component hierarchy view
+    --stagehand        Enable AI-powered deep accessibility testing
+    --stagehand-model  AI model to use (e.g., anthropic/claude-3-5-sonnet-20241022)
+    --stagehand-model  AI model to use (e.g., anthropic/claude-3-5-sonnet-20241022)
+    --stagehand-verbose Enable verbose Stagehand logging
+    --generate-test    Generate a Playwright test script from Stagehand findings
     --help             Show this help message
 
   Examples
@@ -70,6 +76,20 @@ const cli = meow(
             tree: {
                 type: 'boolean',
                 default: false,
+            },
+            stagehand: {
+                type: 'boolean',
+                default: false,
+            },
+            stagehandModel: {
+                type: 'string',
+            },
+            stagehandVerbose: {
+                type: 'boolean',
+                default: false,
+            },
+            generateTest: {
+                type: 'string',
             },
         },
     }
@@ -127,6 +147,11 @@ if (!isTTY) {
                 headless: cli.flags.headless,
                 tags: cli.flags.tags ? cli.flags.tags.split(',') : undefined,
                 includeKeyboardTests: cli.flags.keyboardNav,
+                stagehand: {
+                    enabled: cli.flags.stagehand,
+                    model: cli.flags.stagehandModel,
+                    verbose: cli.flags.stagehandVerbose,
+                },
             });
 
             // Output JSON to stdout with circular reference handling
@@ -171,6 +196,10 @@ if (!isTTY) {
             tags={cli.flags.tags ? cli.flags.tags.split(',') : undefined}
             keyboardNav={cli.flags.keyboardNav}
             tree={cli.flags.tree}
+            stagehand={cli.flags.stagehand}
+            stagehandModel={cli.flags.stagehandModel}
+            stagehandVerbose={cli.flags.stagehandVerbose}
+            generateTest={cli.flags.generateTest}
         />
     );
 
@@ -179,6 +208,7 @@ if (!isTTY) {
         try {
             await waitUntilExit();
             // Exit code will be set by the App component
+            process.exit(process.exitCode || 0);
         } catch (error) {
             console.error('❌ Fatal error during scan:', error instanceof Error ? error.message : String(error));
             if (error instanceof Error && error.stack) {

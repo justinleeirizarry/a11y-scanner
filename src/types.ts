@@ -114,6 +114,36 @@ export interface KeyboardTestResults {
     };
 }
 
+
+// Stagehand types
+export interface StagehandConfig {
+    enabled: boolean;
+    model?: string;
+    apiKey?: string;
+    verbose?: boolean;
+    generateTestFile?: string;
+}
+
+export type ElementType =
+    | 'button'
+    | 'link'
+    | 'input'
+    | 'checkbox'
+    | 'radio'
+    | 'select'
+    | 'custom';
+
+export interface ElementDiscovery {
+    selector: string;
+    description: string;
+    suggestedMethod?: string;
+    type: ElementType;
+}
+
+export interface StagehandResults {
+    elements: ElementDiscovery[];
+}
+
 // Final scan results
 export interface ScanResults {
     url: string;
@@ -123,6 +153,7 @@ export interface ScanResults {
     violations: AttributedViolation[];
     accessibilityTree?: any; // Playwright accessibility snapshot
     keyboardTests?: KeyboardTestResults; // Keyboard navigation test results
+    stagehand?: StagehandResults; // Stagehand AI discovery results
     summary: {
         totalComponents: number;
         totalViolations: number;
@@ -134,6 +165,7 @@ export interface ScanResults {
         };
         componentsWithViolations: number;
         keyboardIssues?: number; // Total keyboard issues found
+        stagehandElements?: number; // Total elements discovered by Stagehand
     };
 }
 
@@ -144,6 +176,7 @@ export interface ScanOptions {
     headless: boolean;
     tags?: string[];
     includeKeyboardTests?: boolean; // Enable keyboard navigation testing
+    stagehand?: StagehandConfig; // Stagehand configuration
 }
 
 // Raw scan data from browser context
@@ -152,6 +185,7 @@ export interface BrowserScanData {
     violations: AttributedViolation[];
     keyboardTests?: KeyboardTestResults; // Keyboard test results from browser
     accessibilityTree?: any; // Playwright accessibility snapshot
+    stagehand?: StagehandResults; // Stagehand AI discovery results
 }
 
 // Prompt template types
@@ -166,6 +200,7 @@ export interface PromptContext {
     summary: ScanResults['summary'];
     url: string;
     accessibilityTree?: any;
+    stagehand?: StagehandResults;
 }
 
 export interface PromptExportOptions {
@@ -173,5 +208,3 @@ export interface PromptExportOptions {
     format: 'txt' | 'md' | 'json';
     outputPath?: string;
 }
-
-

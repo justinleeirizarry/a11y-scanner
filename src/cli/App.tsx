@@ -17,11 +17,15 @@ interface AppProps {
     tags?: string[];
     keyboardNav?: boolean;
     tree?: boolean;
+    stagehand?: boolean;
+    stagehandModel?: string;
+    stagehandVerbose?: boolean;
+    generateTest?: string;
 }
 
 type ScanState = 'idle' | 'scanning' | 'complete' | 'error';
 
-const App: React.FC<AppProps> = ({ url, browser, output, ci, threshold, headless, ai, tags, keyboardNav, tree }) => {
+const App: React.FC<AppProps> = ({ url, browser, output, ci, threshold, headless, ai, tags, keyboardNav, tree, stagehand, stagehandModel, stagehandVerbose, generateTest }) => {
     const { exit } = useApp();
     const [state, setState] = useState<ScanState>('idle');
     const [results, setResults] = useState<ScanResults | null>(null);
@@ -41,6 +45,12 @@ const App: React.FC<AppProps> = ({ url, browser, output, ci, threshold, headless
                     headless,
                     tags,
                     includeKeyboardTests: keyboardNav,
+                    stagehand: {
+                        enabled: !!stagehand,
+                        model: stagehandModel,
+                        verbose: stagehandVerbose,
+                        generateTestFile: generateTest,
+                    },
                 });
 
                 if (cancelled) return;
@@ -58,6 +68,10 @@ const App: React.FC<AppProps> = ({ url, browser, output, ci, threshold, headless
                         process.exitCode = 0;
                         exit();
                     }
+                } else if (generateTest || !tree) {
+                    // Exit for non-interactive modes (standard CLI behavior)
+                    // If --tree is set, we keep running for the interactive TreeViewer
+                    exit();
                 }
 
                 // Handle output file
@@ -125,6 +139,9 @@ const App: React.FC<AppProps> = ({ url, browser, output, ci, threshold, headless
                 if (ci) {
                     process.exitCode = 1;
                     exit();
+                } else {
+                    process.exitCode = 1;
+                    exit();
                 }
             }
         };
@@ -134,7 +151,7 @@ const App: React.FC<AppProps> = ({ url, browser, output, ci, threshold, headless
         return () => {
             cancelled = true;
         };
-    }, [url, browser, headless, ci, threshold, output, ai, tags, keyboardNav]);
+    }, [url, browser, headless, ci, threshold, output, ai, tags, keyboardNav, stagehand, stagehandModel, stagehandVerbose, generateTest]);
 
     if (state === 'error') {
         return (
