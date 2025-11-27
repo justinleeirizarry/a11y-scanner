@@ -1,7 +1,9 @@
 /**
  * Violation attribution - maps axe violations to React components
+ * Uses Bippy for direct DOM→fiber lookup when possible
  */
 
+import { getFiberFromHostInstance, getFiberStack, getDisplayName } from 'bippy';
 import type { AxeViolation } from './runner.js';
 import type { ComponentInfo } from '../../types.js';
 import { findComponentForElement } from '../fiber/traversal.js';
@@ -34,7 +36,38 @@ export interface AttributedViolation {
 }
 
 /**
+ * Try to get component info directly from DOM element using Bippy
+ */
+function getComponentFromElement(element: Element): ComponentInfo | null {
+    try {
+        const fiber = getFiberFromHostInstance(element);
+        if (!fiber) return null;
+
+        const name = getDisplayName(fiber);
+        if (!name) return null;
+
+        // Get the fiber stack for the full component path
+        const stack = getFiberStack(fiber);
+        const path = stack
+            .map((f: any) => getDisplayName(f))
+            .filter((name: any): name is string => typeof name === 'string' && name.length > 0)
+            .reverse();
+
+        return {
+            name,
+            type: typeof fiber.type === 'string' ? 'host' : 'component',
+            props: fiber.memoizedProps,
+            domNode: element,
+            path,
+        };
+    } catch {
+        return null;
+    }
+}
+
+/**
  * Attribute violations to React components
+ * Uses Bippy for direct DOM→fiber lookup when possible
  */
 export function attributeViolationsToComponents(
     violations: AxeViolation[],
@@ -57,8 +90,13 @@ export function attributeViolationsToComponents(
                 element = document.querySelector(selector);
 
                 if (element) {
-                    // Find the component for this element
-                    component = findComponentForElement(element, domToComponentMap);
+                    // Try Bippy's direct lookup first (more accurate)
+                    component = getComponentFromElement(element);
+
+                    // Fallback to pre-built map if Bippy lookup fails
+                    if (!component) {
+                        component = findComponentForElement(element, domToComponentMap);
+                    }
                 }
             } catch (error) {
                 console.warn(`Could not find element for selector: ${selector}`, error);

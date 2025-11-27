@@ -47,8 +47,20 @@ export async function scan(options: { tags?: string[]; includeKeyboardTests?: bo
 
     console.log('✓ Found React root');
 
-    // Traverse fiber tree to get components
-    const components = traverseFiberTree(root);
+    // Traverse fiber tree to get components with timeout protection
+    let components: any[] = [];
+    try {
+        // Add a safeguard - limit traversal to prevent infinite loops
+        const MAX_COMPONENTS = 10000;
+        components = traverseFiberTree(root);
+        if (components.length > MAX_COMPONENTS) {
+            console.warn(`[react-a11y-scanner] Component limit reached (${MAX_COMPONENTS}), truncating`);
+            components = components.slice(0, MAX_COMPONENTS);
+        }
+    } catch (error) {
+        console.error('[react-a11y-scanner] Fiber traversal failed:', error);
+        components = [];
+    }
     console.log(`✓ Found ${components.length} components`);
 
     // Run axe accessibility scan

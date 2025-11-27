@@ -1,7 +1,8 @@
 /**
- * React Fiber tree traversal
+ * React Fiber tree traversal using Bippy for reliable fiber access
  */
 
+import { traverseFiber as bippyTraverseFiber, isHostFiber, isCompositeFiber } from 'bippy';
 import { getComponentName, type FiberNode } from './component-resolver.js';
 import type { ComponentInfo } from '../../types.js';
 
@@ -61,18 +62,41 @@ export function findReactRoot(): FiberNode | null {
     return null;
 }
 
+// Maximum fibers to traverse (prevents infinite loops in corrupted trees)
+const MAX_FIBER_COUNT = 50000;
+
 /**
- * Traverse the fiber tree and collect component information
+ * Manual fiber tree traversal (fallback for when Bippy fails)
+ * Uses a visited set to prevent infinite loops from circular references
  */
-export function traverseFiberTree(fiber: FiberNode | null, components: ComponentInfo[] = [], path: string[] = []): ComponentInfo[] {
-    if (!fiber) return components;
+function manualTraverseFiber(
+    fiber: FiberNode | null,
+    components: ComponentInfo[],
+    path: string[],
+    visited: WeakSet<object> = new WeakSet(),
+    count: { value: number } = { value: 0 }
+): void {
+    if (!fiber) return;
+
+    // Prevent infinite loops
+    if (visited.has(fiber)) return;
+    visited.add(fiber);
+
+    // Limit total traversal
+    count.value++;
+    if (count.value > MAX_FIBER_COUNT) {
+        console.warn('[react-a11y-scanner] Max fiber count reached, stopping traversal');
+        return;
+    }
 
     const name = getComponentName(fiber);
 
     if (name && name !== 'Anonymous' && !name.startsWith('_')) {
+        const fiberType = typeof fiber.type === 'string' ? 'host' : 'component';
+
         const componentInfo: ComponentInfo = {
             name,
-            type: typeof fiber.type === 'string' ? 'host' : 'component',
+            type: fiberType,
             props: fiber.memoizedProps,
             domNode: fiber.stateNode instanceof Element ? fiber.stateNode : null,
             path: [...path, name],
@@ -84,12 +108,52 @@ export function traverseFiberTree(fiber: FiberNode | null, components: Component
     // Traverse children
     const newPath = name ? [...path, name] : path;
     if (fiber.child) {
-        traverseFiberTree(fiber.child, components, newPath);
+        manualTraverseFiber(fiber.child, components, newPath, visited, count);
     }
 
     // Traverse siblings
     if (fiber.sibling) {
-        traverseFiberTree(fiber.sibling, components, path);
+        manualTraverseFiber(fiber.sibling, components, path, visited, count);
+    }
+}
+
+/**
+ * Traverse the fiber tree and collect component information
+ * Uses Bippy's traverseFiber for reliable traversal with fallback to manual
+ */
+export function traverseFiberTree(fiber: FiberNode | null, components: ComponentInfo[] = [], path: string[] = []): ComponentInfo[] {
+    if (!fiber) return components;
+
+    // Track current path during traversal
+    const pathStack: string[] = [...path];
+
+    try {
+        // Use Bippy's traverseFiber for reliable traversal
+        bippyTraverseFiber(fiber as any, (currentFiber: any) => {
+            const name = getComponentName(currentFiber as FiberNode);
+
+            if (name && name !== 'Anonymous' && !name.startsWith('_')) {
+                // Determine component type using Bippy's helpers
+                const fiberType = isHostFiber(currentFiber) ? 'host' : 'component';
+
+                const componentInfo: ComponentInfo = {
+                    name,
+                    type: fiberType,
+                    props: currentFiber.memoizedProps,
+                    domNode: currentFiber.stateNode instanceof Element ? currentFiber.stateNode : null,
+                    path: [...pathStack, name],
+                };
+
+                components.push(componentInfo);
+
+                // Update path for children
+                pathStack.push(name);
+            }
+        });
+    } catch (error) {
+        console.warn('[react-a11y-scanner] Bippy traversal failed, using manual fallback:', error);
+        // Fallback to manual traversal
+        manualTraverseFiber(fiber, components, path);
     }
 
     return components;
