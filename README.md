@@ -109,6 +109,121 @@ a11y-scan https://example.com --keyboard-nav=false
 5. **Attribute Violations** - Maps violations to specific React components
 6. **Display Results** - Shows beautiful terminal output with violation details
 
+## Architecture
+
+The scanner uses a service-oriented architecture with clear separation of concerns:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      Entry Points                           │
+│    CLI (index.tsx)  │  MCP Server  │  Programmatic API     │
+└──────────────────────────┬──────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│                 OrchestrationService                        │
+│  - Coordinates scan/test-gen workflows                      │
+│  - Handles file output, CI logic                            │
+└──────────────────────────┬──────────────────────────────────┘
+                           │
+        ┌──────────────────┼──────────────────┐
+        ▼                  ▼                  ▼
+┌───────────────┐  ┌───────────────┐  ┌───────────────────────┐
+│BrowserService │  │ScannerService │  │TestGenerationService  │
+│- launch()     │  │- scan(page)   │  │- discoverElements()   │
+│- navigate()   │  │- injectBundle │  │- generateTest()       │
+│- close()      │  │               │  │                       │
+└───────────────┘  └───────────────┘  └───────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│              ResultsProcessorService                        │
+│  - Transform raw data to ScanResults                        │
+│  - Format for JSON, MCP, or CI output                       │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## Programmatic API
+
+You can use the scanner services directly in your own code:
+
+### Using OrchestrationService (Recommended)
+
+```typescript
+import { createOrchestrationService } from 'react-a11y-scanner/services';
+
+const orchestration = createOrchestrationService();
+
+// Perform a scan
+const result = await orchestration.performScan({
+    url: 'http://localhost:3000',
+    browser: 'chromium',
+    headless: true,
+    includeKeyboardTests: true,
+    ciMode: true,
+    ciThreshold: 0,
+});
+
+console.log(`Found ${result.results.summary.totalViolations} violations`);
+console.log(`CI Passed: ${result.ciPassed}`);
+
+// Generate accessibility tests
+const testResult = await orchestration.performTestGeneration({
+    url: 'http://localhost:3000',
+    outputFile: './tests/a11y.spec.ts',
+    model: 'anthropic/claude-sonnet-4-20250514',
+});
+
+console.log(`Generated test with ${testResult.elements?.length} elements`);
+```
+
+### Using Individual Services
+
+For more control, you can compose services directly:
+
+```typescript
+import {
+    createBrowserService,
+    createScannerService,
+    createResultsProcessorService
+} from 'react-a11y-scanner/services';
+
+const browser = createBrowserService();
+const scanner = createScannerService();
+const processor = createResultsProcessorService();
+
+// Launch and navigate
+await browser.launch({ browserType: 'chromium', headless: true });
+await browser.navigate('http://localhost:3000');
+await browser.waitForStability();
+
+// Scan the page
+const page = browser.getPage();
+const rawData = await scanner.scan(page, { includeKeyboardTests: true });
+
+// Process results
+const results = processor.process(rawData, {
+    url: 'http://localhost:3000',
+    browser: 'chromium'
+});
+
+// Format for different outputs
+const json = processor.formatAsJSON(results, true);
+const ciResult = processor.formatForCI(results, 0);
+
+await browser.close();
+```
+
+### Service Interfaces
+
+| Service | Purpose |
+|---------|---------|
+| `BrowserService` | Browser lifecycle management (launch, navigate, close) |
+| `ScannerService` | In-page scanning with bundle injection |
+| `ResultsProcessorService` | Results transformation and formatting |
+| `TestGenerationService` | AI-driven interactive element discovery and test generation |
+| `OrchestrationService` | High-level workflow coordination |
+
 ## Development
 
 ### Setup
