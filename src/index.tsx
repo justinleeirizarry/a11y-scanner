@@ -6,7 +6,7 @@ import { render } from 'ink';
 import meow from 'meow';
 import App from './cli/App.js';
 import { validateUrl, validateTags, validateThreshold, validateBrowser } from './utils/validation.js';
-import { runScan } from './browser/launcher.js';
+import { createOrchestrationService } from './services/index.js';
 
 const cli = meow(
     `
@@ -197,10 +197,11 @@ const isTTY = process.stdout.isTTY === true;
 if (!isTTY) {
     (async () => {
         try {
+            const orchestration = createOrchestrationService();
+
             if (isTestGenerationMode) {
                 // Test generation mode
-                const { runTestGeneration } = await import('./browser/test-generator-launcher.js');
-                const testResults = await runTestGeneration({
+                const testResults = await orchestration.performTestGeneration({
                     url,
                     outputFile: testOutputFile,
                     model: cli.flags.stagehandModel,
@@ -212,17 +213,19 @@ if (!isTTY) {
                 process.exitCode = testResults.success ? 0 : 1;
             } else {
                 // Accessibility scan mode
-                const scanResults = await runScan({
+                const { results, ciPassed } = await orchestration.performScan({
                     url,
                     browser: cli.flags.browser as 'chromium' | 'firefox' | 'webkit',
                     headless: cli.flags.headless,
                     tags: cli.flags.tags ? cli.flags.tags.split(',') : undefined,
                     includeKeyboardTests: cli.flags.keyboardNav,
+                    ciMode: cli.flags.ci,
+                    ciThreshold: cli.flags.threshold,
                 });
 
                 // Output JSON to stdout with circular reference handling
                 const seen = new WeakSet();
-                const jsonOutput = JSON.stringify(scanResults, (key, value) => {
+                const jsonOutput = JSON.stringify(results, (key, value) => {
                     if (typeof value === 'object' && value !== null) {
                         if (seen.has(value)) {
                             return '[Circular]';
@@ -235,8 +238,7 @@ if (!isTTY) {
 
                 // Handle CI mode
                 if (cli.flags.ci) {
-                    const totalViolations = scanResults.summary.totalViolations;
-                    process.exitCode = totalViolations > cli.flags.threshold ? 1 : 0;
+                    process.exitCode = ciPassed ? 0 : 1;
                 } else {
                     process.exitCode = 0;
                 }

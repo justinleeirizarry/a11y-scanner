@@ -7,29 +7,23 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render } from 'ink-testing-library';
 import App from './App.js';
 
-// Mock the scanner/launcher modules
-vi.mock('../browser/launcher.js', () => ({
-    runScan: vi.fn()
-}));
+// Mock the OrchestrationService
+const mockPerformScan = vi.fn();
+const mockPerformTestGeneration = vi.fn();
 
-vi.mock('../browser/test-generator-launcher.js', () => ({
-    runTestGeneration: vi.fn()
+vi.mock('../services/index.js', () => ({
+    createOrchestrationService: vi.fn(() => ({
+        performScan: mockPerformScan,
+        performTestGeneration: mockPerformTestGeneration,
+    }))
 }));
 
 vi.mock('../prompts/prompt-generator.js', () => ({
     generateAndExport: vi.fn()
 }));
 
-// Mock fs/promises for output file writing
-vi.mock('fs/promises', () => ({
-    writeFile: vi.fn(),
-    mkdir: vi.fn()
-}));
-
-import { runScan } from '../browser/launcher.js';
-import { runTestGeneration } from '../browser/test-generator-launcher.js';
+import { createOrchestrationService } from '../services/index.js';
 import { generateAndExport } from '../prompts/prompt-generator.js';
-import * as fsPromises from 'fs/promises';
 import type { ScanResults, TestGenerationResults } from '../types.js';
 
 describe('App Component', () => {
@@ -95,10 +89,16 @@ describe('App Component', () => {
         error: success ? undefined : 'Test generation failed'
     });
 
+    // Helper to create mock performScan response
+    const createMockScanResponse = (results: ScanResults, ciPassed?: boolean) => ({
+        results,
+        ciPassed,
+    });
+
     describe('Scan Mode', () => {
-        it('should call runScan with correct options', async () => {
+        it('should call performScan with correct options', async () => {
             const mockResults = createMockScanResults(0);
-            (runScan as any).mockResolvedValue(mockResults);
+            mockPerformScan.mockResolvedValue(createMockScanResponse(mockResults));
 
             const { lastFrame, unmount } = render(
                 <App
@@ -115,15 +115,18 @@ describe('App Component', () => {
 
             // Wait for async scan to complete
             await vi.waitFor(() => {
-                expect(runScan).toHaveBeenCalled();
+                expect(mockPerformScan).toHaveBeenCalled();
             }, { timeout: 1000 });
 
-            expect(runScan).toHaveBeenCalledWith({
+            expect(mockPerformScan).toHaveBeenCalledWith({
                 url: 'http://localhost:3000',
                 browser: 'chromium',
                 headless: true,
                 tags: ['wcag2a', 'wcag2aa'],
-                includeKeyboardTests: true
+                includeKeyboardTests: true,
+                outputFile: undefined,
+                ciMode: false,
+                ciThreshold: 0,
             });
 
             unmount();
@@ -131,7 +134,7 @@ describe('App Component', () => {
 
         it('should display results after scan completes', async () => {
             const mockResults = createMockScanResults(2);
-            (runScan as any).mockResolvedValue(mockResults);
+            mockPerformScan.mockResolvedValue(createMockScanResponse(mockResults));
 
             const { lastFrame, unmount } = render(
                 <App
@@ -154,7 +157,7 @@ describe('App Component', () => {
         });
 
         it('should handle scan errors gracefully', async () => {
-            (runScan as any).mockRejectedValue(new Error('Network error'));
+            mockPerformScan.mockRejectedValue(new Error('Network error'));
 
             const { lastFrame, unmount } = render(
                 <App
@@ -179,7 +182,7 @@ describe('App Component', () => {
     describe('CI Mode', () => {
         it('should set exit code 1 when violations exceed threshold', async () => {
             const mockResults = createMockScanResults(5);
-            (runScan as any).mockResolvedValue(mockResults);
+            mockPerformScan.mockResolvedValue(createMockScanResponse(mockResults, false));
 
             const { unmount } = render(
                 <App
@@ -201,7 +204,7 @@ describe('App Component', () => {
 
         it('should set exit code 0 when violations are within threshold', async () => {
             const mockResults = createMockScanResults(2);
-            (runScan as any).mockResolvedValue(mockResults);
+            mockPerformScan.mockResolvedValue(createMockScanResponse(mockResults, true));
 
             const { unmount } = render(
                 <App
@@ -222,7 +225,7 @@ describe('App Component', () => {
         });
 
         it('should set exit code 1 on scan error in CI mode', async () => {
-            (runScan as any).mockRejectedValue(new Error('Scan failed'));
+            mockPerformScan.mockRejectedValue(new Error('Scan failed'));
 
             const { unmount } = render(
                 <App
@@ -244,11 +247,9 @@ describe('App Component', () => {
     });
 
     describe('Output File', () => {
-        it('should write results to output file when specified', async () => {
+        it('should pass output file to performScan when specified', async () => {
             const mockResults = createMockScanResults(1);
-            (runScan as any).mockResolvedValue(mockResults);
-            (fsPromises.writeFile as any).mockResolvedValue(undefined);
-            (fsPromises.mkdir as any).mockResolvedValue(undefined);
+            mockPerformScan.mockResolvedValue({ results: mockResults, outputFile: 'report.json' });
 
             const { unmount } = render(
                 <App
@@ -263,20 +264,17 @@ describe('App Component', () => {
             );
 
             await vi.waitFor(() => {
-                expect(fsPromises.writeFile).toHaveBeenCalledWith(
-                    'report.json',
-                    expect.any(String)
+                expect(mockPerformScan).toHaveBeenCalledWith(
+                    expect.objectContaining({ outputFile: 'report.json' })
                 );
             }, { timeout: 2000 });
 
             unmount();
         });
 
-        it('should create directory for output file if needed', async () => {
+        it('should pass nested output path to performScan', async () => {
             const mockResults = createMockScanResults(0);
-            (runScan as any).mockResolvedValue(mockResults);
-            (fsPromises.writeFile as any).mockResolvedValue(undefined);
-            (fsPromises.mkdir as any).mockResolvedValue(undefined);
+            mockPerformScan.mockResolvedValue({ results: mockResults, outputFile: 'reports/a11y/report.json' });
 
             const { unmount } = render(
                 <App
@@ -291,9 +289,8 @@ describe('App Component', () => {
             );
 
             await vi.waitFor(() => {
-                expect(fsPromises.mkdir).toHaveBeenCalledWith(
-                    expect.stringContaining('reports'),
-                    { recursive: true }
+                expect(mockPerformScan).toHaveBeenCalledWith(
+                    expect.objectContaining({ outputFile: 'reports/a11y/report.json' })
                 );
             }, { timeout: 2000 });
 
@@ -304,7 +301,7 @@ describe('App Component', () => {
     describe('AI Prompt Generation', () => {
         it('should generate AI prompt when --ai flag is set', async () => {
             const mockResults = createMockScanResults(3);
-            (runScan as any).mockResolvedValue(mockResults);
+            mockPerformScan.mockResolvedValue(createMockScanResponse(mockResults));
             (generateAndExport as any).mockReturnValue('a11y-prompt.md');
 
             const { unmount } = render(
@@ -337,9 +334,9 @@ describe('App Component', () => {
     });
 
     describe('Test Generation Mode', () => {
-        it('should call runTestGeneration with correct options', async () => {
+        it('should call performTestGeneration with correct options', async () => {
             const mockResults = createMockTestGenResults(true);
-            (runTestGeneration as any).mockResolvedValue(mockResults);
+            mockPerformTestGeneration.mockResolvedValue(mockResults);
 
             const { unmount } = render(
                 <App
@@ -357,7 +354,7 @@ describe('App Component', () => {
             );
 
             await vi.waitFor(() => {
-                expect(runTestGeneration).toHaveBeenCalledWith({
+                expect(mockPerformTestGeneration).toHaveBeenCalledWith({
                     url: 'http://example.com',
                     outputFile: 'tests/a11y.spec.ts',
                     model: 'openai/gpt-4o',
@@ -369,7 +366,7 @@ describe('App Component', () => {
         });
 
         it('should handle test generation errors', async () => {
-            (runTestGeneration as any).mockRejectedValue(new Error('Stagehand failed'));
+            mockPerformTestGeneration.mockRejectedValue(new Error('Stagehand failed'));
 
             const { lastFrame, unmount } = render(
                 <App
@@ -396,7 +393,7 @@ describe('App Component', () => {
 
         it('should display test generation results on success', async () => {
             const mockResults = createMockTestGenResults(true);
-            (runTestGeneration as any).mockResolvedValue(mockResults);
+            mockPerformTestGeneration.mockResolvedValue(mockResults);
 
             const { lastFrame, unmount } = render(
                 <App
@@ -424,7 +421,7 @@ describe('App Component', () => {
     describe('Browser Options', () => {
         it('should support firefox browser', async () => {
             const mockResults = createMockScanResults(0);
-            (runScan as any).mockResolvedValue(mockResults);
+            mockPerformScan.mockResolvedValue(createMockScanResponse(mockResults));
 
             const { unmount } = render(
                 <App
@@ -438,7 +435,7 @@ describe('App Component', () => {
             );
 
             await vi.waitFor(() => {
-                expect(runScan).toHaveBeenCalledWith(
+                expect(mockPerformScan).toHaveBeenCalledWith(
                     expect.objectContaining({ browser: 'firefox' })
                 );
             }, { timeout: 2000 });
@@ -448,7 +445,7 @@ describe('App Component', () => {
 
         it('should support webkit browser', async () => {
             const mockResults = createMockScanResults(0);
-            (runScan as any).mockResolvedValue(mockResults);
+            mockPerformScan.mockResolvedValue(createMockScanResponse(mockResults));
 
             const { unmount } = render(
                 <App
@@ -462,7 +459,7 @@ describe('App Component', () => {
             );
 
             await vi.waitFor(() => {
-                expect(runScan).toHaveBeenCalledWith(
+                expect(mockPerformScan).toHaveBeenCalledWith(
                     expect.objectContaining({ browser: 'webkit' })
                 );
             }, { timeout: 2000 });
@@ -472,7 +469,7 @@ describe('App Component', () => {
 
         it('should pass headless=false when specified', async () => {
             const mockResults = createMockScanResults(0);
-            (runScan as any).mockResolvedValue(mockResults);
+            mockPerformScan.mockResolvedValue(createMockScanResponse(mockResults));
 
             const { unmount } = render(
                 <App
@@ -486,7 +483,7 @@ describe('App Component', () => {
             );
 
             await vi.waitFor(() => {
-                expect(runScan).toHaveBeenCalledWith(
+                expect(mockPerformScan).toHaveBeenCalledWith(
                     expect.objectContaining({ headless: false })
                 );
             }, { timeout: 2000 });

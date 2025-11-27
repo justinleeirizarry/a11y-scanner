@@ -5,8 +5,7 @@ import Scanner from './components/Scanner.js';
 import Results from './components/Results.js';
 import TestGenerator from './components/TestGenerator.js';
 import TestGenerationResults from './components/TestGenerationResults.js';
-import { runScan } from '../browser/launcher.js';
-import { runTestGeneration } from '../browser/test-generator-launcher.js';
+import { createOrchestrationService } from '../services/index.js';
 import type { ScanResults, TestGenerationResults as TestGenResults } from '../types.js';
 
 interface AppProps {
@@ -41,6 +40,7 @@ const App: React.FC<AppProps> = ({ mode, url, browser, output, ci, threshold, he
 
     useEffect(() => {
         let cancelled = false;
+        const orchestration = createOrchestrationService();
 
         if (mode === 'generate-test') {
             // Test generation mode
@@ -54,7 +54,7 @@ const App: React.FC<AppProps> = ({ mode, url, browser, output, ci, threshold, he
 
                     setTestGenState('navigating');
 
-                    const results = await runTestGeneration({
+                    const results = await orchestration.performTestGeneration({
                         url,
                         outputFile: testFile,
                         model: stagehandModel,
@@ -85,12 +85,15 @@ const App: React.FC<AppProps> = ({ mode, url, browser, output, ci, threshold, he
                 setScanState('scanning');
 
                 try {
-                    const results = await runScan({
+                    const { results, ciPassed } = await orchestration.performScan({
                         url,
                         browser,
                         headless,
                         tags,
                         includeKeyboardTests: keyboardNav,
+                        outputFile: output,
+                        ciMode: ci,
+                        ciThreshold: threshold,
                     });
 
                     if (cancelled) return;
@@ -98,52 +101,14 @@ const App: React.FC<AppProps> = ({ mode, url, browser, output, ci, threshold, he
                     setScanResults(results);
                     setScanState('complete');
 
-                    // Handle CI mode
+                    // Handle CI mode exit
                     if (ci) {
-                        const totalViolations = results.summary.totalViolations;
-                        if (totalViolations > threshold) {
-                            process.exitCode = 1;
-                            exit();
-                        } else {
-                            process.exitCode = 0;
-                            exit();
-                        }
+                        process.exitCode = ciPassed ? 0 : 1;
+                        exit();
                     } else if (!tree) {
                         // Exit for non-interactive modes
                         // If --tree is set, we keep running for the interactive TreeViewer
                         exit();
-                    }
-
-                    // Handle output file
-                    if (output) {
-                        try {
-                            const fs = await import('fs/promises');
-                            const path = await import('path');
-
-                            // Ensure directory exists
-                            const dir = path.dirname(output);
-                            if (dir !== '.') {
-                                try {
-                                    await fs.mkdir(dir, { recursive: true });
-                                } catch (err) {
-                                    // Directory may already exist
-                                    if (err instanceof Error && !err.message.includes('exists')) {
-                                        throw err;
-                                    }
-                                }
-                            }
-
-                            await fs.writeFile(output, JSON.stringify(results, null, 2));
-                        } catch (err) {
-                            const errorMsg = err instanceof Error ? err.message : String(err);
-                            setScanState('error');
-                            setError(`Failed to write output file to ${output}: ${errorMsg}`);
-                            if (ci) {
-                                process.exitCode = 1;
-                                exit();
-                            }
-                            return;
-                        }
                     }
 
                     // Handle AI prompts
@@ -176,13 +141,8 @@ const App: React.FC<AppProps> = ({ mode, url, browser, output, ci, threshold, he
                     setScanState('error');
                     setError(err instanceof Error ? err.message : String(err));
 
-                    if (ci) {
-                        process.exitCode = 1;
-                        exit();
-                    } else {
-                        process.exitCode = 1;
-                        exit();
-                    }
+                    process.exitCode = 1;
+                    exit();
                 }
             };
 

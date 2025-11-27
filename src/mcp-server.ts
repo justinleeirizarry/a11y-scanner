@@ -2,7 +2,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { runScan } from "./browser/launcher.js";
+import { createOrchestrationService } from "./services/index.js";
 import { logger } from "./utils/logger.js";
 import { formatViolations } from "./prompts/formatters.js";
 
@@ -31,7 +31,8 @@ server.registerTool(
         try {
             logger.info(`Starting scan for ${url} using ${browser}`);
 
-            const results = await runScan({
+            const orchestration = createOrchestrationService();
+            const { results } = await orchestration.performScan({
                 url,
                 browser: browser as "chromium" | "firefox" | "webkit",
                 headless: true,
@@ -46,8 +47,6 @@ server.registerTool(
 
             if (violationCount > 0) {
                 summary += "### Violations Summary\n";
-                // Use existing formatter but maybe truncate for chat context if needed
-                // For now, we'll use the standard formatter which produces good markdown
                 summary += formatViolations(results.violations);
             } else {
                 summary += "No accessibility violations found!";
@@ -59,10 +58,6 @@ server.registerTool(
                     text: summary,
                 }
             ];
-
-            // Optionally include the full JSON result if requested, but usually text summary is better for LLMs
-            // to avoid token limit issues with massive JSONs.
-            // We can add a separate tool to get raw JSON if needed.
 
             if (include_tree && results.accessibilityTree) {
                 content.push({
