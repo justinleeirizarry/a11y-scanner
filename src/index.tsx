@@ -27,7 +27,7 @@ const cli = meow(
 
   Test Generation (mutually exclusive with scan options)
     --generate-test    Enable test generation mode (skips accessibility scan)
-    --test-file        Output file for generated test [default: <domain>.spec.ts]
+    --test-file        Output file for generated test [default: generated-tests/<domain>-<timestamp>.spec.ts]
     --stagehand-model <model> AI model for test generation [default: openai/gpt-4o-mini]
     --stagehand-verbose       Enable verbose Stagehand logging
 
@@ -143,15 +143,25 @@ if (!thresholdValidation.valid) {
 // Determine mode: test generation or accessibility scan
 const isTestGenerationMode = cli.flags.generateTest;
 
-// Helper to generate filename from URL
+// Helper to generate filename from URL with timestamp in generated-tests directory
 const getFilenameFromUrl = (urlStr: string): string => {
     try {
         const urlObj = new URL(urlStr);
         const hostname = urlObj.hostname.replace(/^www\./, '');
         const sanitized = hostname.replace(/[^a-z0-9]/gi, '-').toLowerCase();
-        return `${sanitized}.spec.ts`;
+
+        // Generate timestamp: YYYY-MM-DD-HHmmss
+        const now = new Date();
+        const timestamp = now.toISOString()
+            .replace(/T/, '-')
+            .replace(/:/g, '')
+            .replace(/\..+/, '')
+            .slice(0, 17); // YYYY-MM-DD-HHmmss
+
+        return `generated-tests/${sanitized}-${timestamp}.spec.ts`;
     } catch {
-        return 'a11y-test.spec.ts';
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+        return `generated-tests/a11y-test-${timestamp}.spec.ts`;
     }
 };
 

@@ -13,15 +13,18 @@ test('Accessibility Interaction Test', async ({ page }) => {
 
     const originalUrl = '${url}';
     
-    // 1. Navigate to the page
+    // 1. Set viewport to ensure responsive elements are visible
+    await page.setViewportSize({ width: 1920, height: 1080 });
+
+    // 2. Navigate to the page
     await page.goto(originalUrl);
     await page.waitForLoadState('networkidle');
 
-    // 2. Initial Accessibility Scan
+    // 3. Initial Accessibility Scan
     const initialResults = await new AxeBuilder({ page }).analyze();
     console.log(\`Initial violations: \${initialResults.violations.length}\`);
 
-    // 3. Interact with discovered elements
+    // 4. Interact with discovered elements
     ${interactions}
     
     console.log('\\n✅ Test completed - checked all ${elements.length} discovered elements');
@@ -29,30 +32,78 @@ test('Accessibility Interaction Test', async ({ page }) => {
 `;
     }
 
+    /**
+     * Extract aria-label from element description if present.
+     * Descriptions often contain patterns like "labeled 'Some Label'" or "aria-label 'Some Label'"
+     */
+    private extractAriaLabel(description: string): string | null {
+        // Match patterns like: labeled 'Use Light Mode', aria-label 'Submit'
+        const patterns = [
+            /labeled ['"]([^'"]+)['"]/i,
+            /aria-label ['"]([^'"]+)['"]/i,
+            /label ['"]([^'"]+)['"]/i,
+        ];
+
+        for (const pattern of patterns) {
+            const match = description.match(pattern);
+            if (match) {
+                return match[1];
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Generate a locator string, preferring aria-label for accessibility testing.
+     * Falls back to XPath selector if no aria-label is found.
+     */
+    private generateLocator(element: ElementDiscovery): { locator: string; isAriaLabel: boolean } {
+        const ariaLabel = this.extractAriaLabel(element.description);
+
+        if (ariaLabel) {
+            // Use aria-label - this also validates that the element has proper accessibility labeling
+            const escapedLabel = ariaLabel.replace(/'/g, "\\'");
+            const elementType = element.type === 'link' ? 'a' : element.type;
+            return {
+                locator: `${elementType}[aria-label='${escapedLabel}']`,
+                isAriaLabel: true
+            };
+        }
+
+        // Fall back to XPath selector
+        const selector = element.selector.replace(/'/g, "\\'");
+        return { locator: selector, isAriaLabel: false };
+    }
+
     private generateInteraction(element: ElementDiscovery, index: number): string {
         // Generate actual executable interactions wrapped in try-catch
         let action = `// Action: ${element.description}`;
-        const selector = element.selector.replace(/'/g, "\\'");
+        const { locator, isAriaLabel } = this.generateLocator(element);
 
         action += `\n    try {`;
+        action += `\n        const el${index} = page.locator('${locator}').first();`;
+
+        // Scroll into view to handle elements below fold or in responsive layouts
+        // Use a timeout to avoid hanging on hidden elements
+        action += `\n        await el${index}.scrollIntoViewIfNeeded({ timeout: 3000 }).catch(() => {});`;
 
         switch (element.type) {
             case 'button':
             case 'link':
-                action += `\n        await page.locator('${selector}').click({ timeout: 5000 });`;
+                action += `\n        await el${index}.click({ timeout: 5000 });`;
                 break;
             case 'input':
-                action += `\n        await page.locator('${selector}').fill('test value', { timeout: 5000 });`;
+                action += `\n        await el${index}.fill('test value', { timeout: 5000 });`;
                 break;
             case 'checkbox':
             case 'radio':
-                action += `\n        await page.locator('${selector}').check({ timeout: 5000 });`;
+                action += `\n        await el${index}.check({ timeout: 5000 });`;
                 break;
             case 'select':
-                action += `\n        await page.locator('${selector}').selectOption('value', { timeout: 5000 });`;
+                action += `\n        await el${index}.selectOption('value', { timeout: 5000 });`;
                 break;
             default:
-                action += `\n        await page.locator('${selector}').click({ timeout: 5000 });`;
+                action += `\n        await el${index}.click({ timeout: 5000 });`;
         }
 
         // Add an accessibility check after interaction with unique variable name
