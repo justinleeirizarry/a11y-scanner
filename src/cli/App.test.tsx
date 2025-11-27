@@ -34,7 +34,7 @@ import type { ScanResults, TestGenerationResults } from '../types.js';
 
 describe('App Component', () => {
     // Store original process.exitCode
-    let originalExitCode: number | undefined;
+    let originalExitCode: typeof process.exitCode;
 
     beforeEach(() => {
         vi.resetAllMocks();
@@ -43,7 +43,7 @@ describe('App Component', () => {
     });
 
     afterEach(() => {
-        process.exitCode = originalExitCode;
+        process.exitCode = originalExitCode as number | undefined;
     });
 
     const createMockScanResults = (violationCount: number = 0): ScanResults => ({
