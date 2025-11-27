@@ -1,0 +1,53 @@
+/**
+ * Services - Public API
+ *
+ * This module exports all services for the React A11y Scanner.
+ */
+
+// Browser Service
+export {
+    BrowserService,
+    createBrowserService,
+    type BrowserServiceConfig,
+    type BrowserType,
+    type NavigateOptions,
+    type StabilityCheckResult,
+    type IBrowserService,
+} from './browser/index.js';
+
+// Scanner Service
+export {
+    ScannerService,
+    createScannerService,
+    type ScanOptions,
+    type IScannerService,
+} from './scanner/index.js';
+
+// Results Processor Service
+export {
+    ResultsProcessorService,
+    createResultsProcessorService,
+    type ScanMetadata,
+    type MCPToolContent,
+    type MCPFormatOptions,
+    type CIResult,
+    type IResultsProcessorService,
+} from './processor/index.js';
+
+// Test Generation Service
+export {
+    TestGenerationService,
+    createTestGenerationService,
+    type TestGenerationConfig,
+    type ITestGenerationService,
+} from './testgen/index.js';
+
+// Orchestration Service
+export {
+    OrchestrationService,
+    createOrchestrationService,
+    type ScanOperationOptions,
+    type ScanOperationResult,
+    type TestGenOperationOptions,
+    type IOrchestrationService,
+} from './orchestration/index.js';
