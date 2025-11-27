@@ -8,9 +8,9 @@ export class StagehandScanner {
     constructor(private config: StagehandConfig) { }
 
     get page() {
-        // @ts-ignore - Accessing internal context if needed, or just return null if not available easily
-        // The roadmap suggests context.pages()[0]
-        return this.stagehand?.context?.pages()[0] || null;
+        if (!this.stagehand) return null;
+        // @ts-ignore - Stagehand exposes page directly
+        return this.stagehand.page || this.stagehand.context?.pages()[0] || null;
     }
 
     async init(url: string): Promise<void> {
@@ -21,15 +21,12 @@ export class StagehandScanner {
         try {
             const options = {
                 env: "LOCAL" as const,
-                model: this.config.model || "anthropic/claude-3-5-sonnet-latest",
+                model: this.config.model || "openai/gpt-4o-mini",
                 verbose: (this.config.verbose ? 2 : 0) as 0 | 2,
             };
 
             this.stagehand = new Stagehand(options);
             await this.stagehand.init();
-
-            // Don't navigate here - let the launcher handle navigation
-            // The page will be available via the getter
         } catch (error) {
             logger.error(`Failed to initialize Stagehand: ${error instanceof Error ? error.message : String(error)}`);
             throw error;
@@ -46,11 +43,15 @@ export class StagehandScanner {
         try {
             // Use observe to find elements without interacting
             // API expects 'description' parameter, not 'instruction'
+            logger.debug('Calling stagehand.observe()...');
             const actions = await this.stagehand.observe(
                 "find all interactive elements including buttons, links, form inputs, custom controls, and widgets"
             );
 
             logger.debug(`Stagehand returned ${actions?.length || 0} actions`);
+            if (actions && actions.length > 0) {
+                logger.debug(`First action: ${JSON.stringify(actions[0])}`);
+            }
 
             if (!actions || actions.length === 0) {
                 logger.warn('Stagehand observe returned no actions');

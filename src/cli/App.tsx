@@ -3,10 +3,14 @@ import { Box, Text, useApp } from 'ink';
 import Spinner from 'ink-spinner';
 import Scanner from './components/Scanner.js';
 import Results from './components/Results.js';
+import TestGenerator from './components/TestGenerator.js';
+import TestGenerationResults from './components/TestGenerationResults.js';
 import { runScan } from '../browser/launcher.js';
-import type { ScanResults } from '../types.js';
+import { runTestGeneration } from '../browser/test-generator-launcher.js';
+import type { ScanResults, TestGenerationResults as TestGenResults } from '../types.js';
 
 interface AppProps {
+    mode: 'scan' | 'generate-test';
     url: string;
     browser: 'chromium' | 'firefox' | 'webkit';
     output?: string;
@@ -17,143 +21,181 @@ interface AppProps {
     tags?: string[];
     keyboardNav?: boolean;
     tree?: boolean;
-    stagehand?: boolean;
+    generateTest?: boolean;
+    testFile?: string;
     stagehandModel?: string;
     stagehandVerbose?: boolean;
-    generateTest?: string;
 }
 
 type ScanState = 'idle' | 'scanning' | 'complete' | 'error';
+type TestGenState = 'idle' | 'initializing' | 'navigating' | 'discovering' | 'generating' | 'complete' | 'error';
 
-const App: React.FC<AppProps> = ({ url, browser, output, ci, threshold, headless, ai, tags, keyboardNav, tree, stagehand, stagehandModel, stagehandVerbose, generateTest }) => {
+const App: React.FC<AppProps> = ({ mode, url, browser, output, ci, threshold, headless, ai, tags, keyboardNav, tree, generateTest, testFile, stagehandModel, stagehandVerbose }) => {
     const { exit } = useApp();
-    const [state, setState] = useState<ScanState>('idle');
-    const [results, setResults] = useState<ScanResults | null>(null);
+    const [scanState, setScanState] = useState<ScanState>('idle');
+    const [testGenState, setTestGenState] = useState<TestGenState>('idle');
+    const [scanResults, setScanResults] = useState<ScanResults | null>(null);
+    const [testGenResults, setTestGenResults] = useState<TestGenResults | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [aiPromptFilePath, setAiPromptFilePath] = useState<string | null>(null);
 
     useEffect(() => {
         let cancelled = false;
 
-        const performScan = async () => {
-            setState('scanning');
+        if (mode === 'generate-test') {
+            // Test generation mode
+            const performTestGeneration = async () => {
+                setTestGenState('initializing');
 
-            try {
-                const scanResults = await runScan({
-                    url,
-                    browser,
-                    headless,
-                    tags,
-                    includeKeyboardTests: keyboardNav,
-                    stagehand: {
-                        enabled: !!stagehand,
+                try {
+                    if (!testFile) {
+                        throw new Error('Test output file not specified');
+                    }
+
+                    setTestGenState('navigating');
+
+                    const results = await runTestGeneration({
+                        url,
+                        outputFile: testFile,
                         model: stagehandModel,
                         verbose: stagehandVerbose,
-                        generateTestFile: generateTest,
-                    },
-                });
+                    });
 
-                if (cancelled) return;
+                    if (cancelled) return;
 
-                setResults(scanResults);
-                setState('complete');
+                    setTestGenResults(results);
+                    setTestGenState('complete');
 
-                // Handle CI mode
-                if (ci) {
-                    const totalViolations = scanResults.summary.totalViolations;
-                    if (totalViolations > threshold) {
+                    // Exit after completion
+                    exit();
+                } catch (err) {
+                    if (cancelled) return;
+
+                    setTestGenState('error');
+                    setError(err instanceof Error ? err.message : String(err));
+                    process.exitCode = 1;
+                    exit();
+                }
+            };
+
+            performTestGeneration();
+        } else {
+            // Accessibility scan mode
+            const performScan = async () => {
+                setScanState('scanning');
+
+                try {
+                    const results = await runScan({
+                        url,
+                        browser,
+                        headless,
+                        tags,
+                        includeKeyboardTests: keyboardNav,
+                    });
+
+                    if (cancelled) return;
+
+                    setScanResults(results);
+                    setScanState('complete');
+
+                    // Handle CI mode
+                    if (ci) {
+                        const totalViolations = results.summary.totalViolations;
+                        if (totalViolations > threshold) {
+                            process.exitCode = 1;
+                            exit();
+                        } else {
+                            process.exitCode = 0;
+                            exit();
+                        }
+                    } else if (!tree) {
+                        // Exit for non-interactive modes
+                        // If --tree is set, we keep running for the interactive TreeViewer
+                        exit();
+                    }
+
+                    // Handle output file
+                    if (output) {
+                        try {
+                            const fs = await import('fs/promises');
+                            const path = await import('path');
+
+                            // Ensure directory exists
+                            const dir = path.dirname(output);
+                            if (dir !== '.') {
+                                try {
+                                    await fs.mkdir(dir, { recursive: true });
+                                } catch (err) {
+                                    // Directory may already exist
+                                    if (err instanceof Error && !err.message.includes('exists')) {
+                                        throw err;
+                                    }
+                                }
+                            }
+
+                            await fs.writeFile(output, JSON.stringify(results, null, 2));
+                        } catch (err) {
+                            const errorMsg = err instanceof Error ? err.message : String(err);
+                            setScanState('error');
+                            setError(`Failed to write output file to ${output}: ${errorMsg}`);
+                            if (ci) {
+                                process.exitCode = 1;
+                                exit();
+                            }
+                            return;
+                        }
+                    }
+
+                    // Handle AI prompts
+                    if (ai) {
+                        try {
+                            const { generateAndExport } = await import('../prompts/prompt-generator.js');
+                            const promptPath = generateAndExport(
+                                results,
+                                {
+                                    template: 'fix-all',
+                                    format: 'md',
+                                    outputPath: undefined,
+                                }
+                            );
+                            setAiPromptFilePath(promptPath);
+                        } catch (err) {
+                            const errorMsg = err instanceof Error ? err.message : String(err);
+                            setScanState('error');
+                            setError(`Failed to generate AI prompt: ${errorMsg}`);
+                            if (ci) {
+                                process.exitCode = 1;
+                                exit();
+                            }
+                            return;
+                        }
+                    }
+                } catch (err) {
+                    if (cancelled) return;
+
+                    setScanState('error');
+                    setError(err instanceof Error ? err.message : String(err));
+
+                    if (ci) {
                         process.exitCode = 1;
                         exit();
                     } else {
-                        process.exitCode = 0;
+                        process.exitCode = 1;
                         exit();
                     }
-                } else if (generateTest || !tree) {
-                    // Exit for non-interactive modes (standard CLI behavior)
-                    // If --tree is set, we keep running for the interactive TreeViewer
-                    exit();
                 }
+            };
 
-                // Handle output file
-                if (output) {
-                    try {
-                        const fs = await import('fs/promises');
-                        const path = await import('path');
-
-                        // Ensure directory exists
-                        const dir = path.dirname(output);
-                        if (dir !== '.') {
-                            try {
-                                await fs.mkdir(dir, { recursive: true });
-                            } catch (err) {
-                                // Directory may already exist
-                                if (err instanceof Error && !err.message.includes('exists')) {
-                                    throw err;
-                                }
-                            }
-                        }
-
-                        await fs.writeFile(output, JSON.stringify(scanResults, null, 2));
-                    } catch (err) {
-                        const errorMsg = err instanceof Error ? err.message : String(err);
-                        setState('error');
-                        setError(`Failed to write output file to ${output}: ${errorMsg}`);
-                        if (ci) {
-                            process.exitCode = 1;
-                            exit();
-                        }
-                        return;
-                    }
-                }
-
-                // Handle AI prompts
-                if (ai) {
-                    try {
-                        const { generateAndExport } = await import('../prompts/prompt-generator.js');
-                        const promptPath = generateAndExport(
-                            scanResults,
-                            {
-                                template: 'fix-all',
-                                format: 'md',
-                                outputPath: undefined,
-                            }
-                        );
-                        setAiPromptFilePath(promptPath);
-                    } catch (err) {
-                        const errorMsg = err instanceof Error ? err.message : String(err);
-                        setState('error');
-                        setError(`Failed to generate AI prompt: ${errorMsg}`);
-                        if (ci) {
-                            process.exitCode = 1;
-                            exit();
-                        }
-                        return;
-                    }
-                }
-            } catch (err) {
-                if (cancelled) return;
-
-                setState('error');
-                setError(err instanceof Error ? err.message : String(err));
-
-                if (ci) {
-                    process.exitCode = 1;
-                    exit();
-                } else {
-                    process.exitCode = 1;
-                    exit();
-                }
-            }
-        };
-
-        performScan();
+            performScan();
+        }
 
         return () => {
             cancelled = true;
         };
-    }, [url, browser, headless, ci, threshold, output, ai, tags, keyboardNav, stagehand, stagehandModel, stagehandVerbose, generateTest]);
+    }, [mode, url, browser, headless, ci, threshold, output, ai, tags, keyboardNav, tree, generateTest, stagehandModel, stagehandVerbose]);
 
-    if (state === 'error') {
+    // Error state
+    if (scanState === 'error' || testGenState === 'error') {
         return (
             <Box flexDirection="column" padding={1}>
                 <Box>
@@ -166,12 +208,22 @@ const App: React.FC<AppProps> = ({ url, browser, output, ci, threshold, headless
         );
     }
 
-    if (state === 'scanning') {
+    // Test generation mode
+    if (mode === 'generate-test') {
+        if (testGenState === 'complete' && testGenResults) {
+            return <TestGenerationResults results={testGenResults} />;
+        }
+
+        return <TestGenerator url={url} stage={testGenState} elementsFound={testGenResults?.elementsDiscovered} />;
+    }
+
+    // Scan mode
+    if (scanState === 'scanning') {
         return <Scanner url={url} browser={browser} />;
     }
 
-    if (state === 'complete' && results) {
-        return <Results results={results} outputFile={output} aiPromptFile={aiPromptFilePath || undefined} showTree={tree} />;
+    if (scanState === 'complete' && scanResults) {
+        return <Results results={scanResults} outputFile={output} aiPromptFile={aiPromptFilePath || undefined} showTree={tree} />;
     }
 
     return (
