@@ -9,6 +9,12 @@ import App from './cli/App.js';
 import { validateUrl, validateTags, validateThreshold, validateBrowser } from './utils/validation.js';
 import { createOrchestrationService } from './services/index.js';
 import { EXIT_CODES, setExitCode, exitWithCode } from './utils/exit-codes.js';
+import { updateConfig, loadEnvConfig, hasEnvConfig } from './config/index.js';
+
+// Load configuration from environment variables (REACT_A11Y_*)
+if (hasEnvConfig()) {
+    updateConfig(loadEnvConfig());
+}
 
 const cli = meow(
     `

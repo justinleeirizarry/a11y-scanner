@@ -15,6 +15,6 @@ export default defineConfig({
                 'src/scanner/browser-bundle.ts', // Browser context, tested separately
             ],
         },
-        include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+        include: ['src/**/*.test.ts', 'src/**/*.test.tsx', 'test/**/*.test.ts'],
     },
 });

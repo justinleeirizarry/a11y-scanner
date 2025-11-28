@@ -5,9 +5,15 @@ import { z } from "zod";
 import { createOrchestrationService, createResultsProcessorService } from "./services/index.js";
 import { logger } from "./utils/logger.js";
 import { EXIT_CODES, exitWithCode } from "./utils/exit-codes.js";
+import { updateConfig, loadEnvConfig, hasEnvConfig } from "./config/index.js";
 
 // Configure logger to use stderr to avoid corrupting JSON-RPC on stdout
 logger.setUseStderr(true);
+
+// Load configuration from environment variables (REACT_A11Y_*)
+if (hasEnvConfig()) {
+    updateConfig(loadEnvConfig());
+}
 
 // Create server instance
 const server = new McpServer({
