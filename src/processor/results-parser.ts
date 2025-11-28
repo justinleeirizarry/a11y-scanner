@@ -48,7 +48,8 @@ export function processResults(options: ProcessOptions): ScanResults {
         passes,
         incomplete,
         inapplicable,
-        keyboardTests
+        keyboardTests,
+        wcag22
     } = rawData;
 
     // Count unique components with violations
@@ -73,6 +74,9 @@ export function processResults(options: ProcessOptions): ScanResults {
     // Calculate keyboard issues if keyboard tests were run
     const keyboardIssues = keyboardTests?.summary.totalIssues;
 
+    // Calculate WCAG 2.2 issues if checks were run
+    const wcag22Issues = wcag22?.summary.totalViolations;
+
     // Calculate severity breakdown by instances
     const violationsBySeverity = {
         critical: attributedViolations.filter(v => v.impact === 'critical').reduce((acc, v) => acc + v.nodes.length, 0),
@@ -83,6 +87,16 @@ export function processResults(options: ProcessOptions): ScanResults {
 
     // Calculate WCAG level breakdown
     const violationsByWcagLevel = countViolationsByWcagLevel(attributedViolations);
+
+    // Add WCAG 2.2 violations to the level counts
+    if (wcag22 && violationsByWcagLevel) {
+        violationsByWcagLevel.wcag22aa += wcag22.targetSize.length +
+            wcag22.focusObscured.length +
+            wcag22.dragging.length +
+            wcag22.authentication.length;
+        // Focus Appearance is AAA
+        violationsByWcagLevel.wcag2aaa += wcag22.focusAppearance.length;
+    }
 
     // Calculate summary statistics
     const summary = {
@@ -95,6 +109,7 @@ export function processResults(options: ProcessOptions): ScanResults {
         violationsByWcagLevel,
         componentsWithViolations: componentsWithViolationsSet.size,
         keyboardIssues,
+        wcag22Issues,
     };
 
     return {
@@ -107,6 +122,7 @@ export function processResults(options: ProcessOptions): ScanResults {
         incomplete,
         inapplicable,
         keyboardTests,
+        wcag22,
         summary,
     };
 }

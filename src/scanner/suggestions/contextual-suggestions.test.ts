@@ -251,5 +251,80 @@ describe('contextual-suggestions', () => {
                 expect(fix).toBeNull();
             });
         });
+
+        describe('WCAG 2.2 violations', () => {
+            it('generates fix for target-size', () => {
+                const node = {
+                    html: '<button class="small-btn">X</button>',
+                    htmlSnippet: '<button class="small-btn">X</button>',
+                };
+
+                const fix = generateContextualFix('target-size', node);
+
+                expect(fix).not.toBeNull();
+                expect(fix?.issue).toContain('24');
+                expect(fix?.suggestion).toContain('padding');
+                expect(fix?.reactSuggestion).toContain('minWidth');
+            });
+
+            it('generates fix for focus-obscured', () => {
+                const node = {
+                    html: '<a href="/page">Link</a>',
+                    htmlSnippet: '<a href="/page">Link</a>',
+                };
+
+                const fix = generateContextualFix('focus-obscured', node);
+
+                expect(fix).not.toBeNull();
+                expect(fix?.issue).toContain('sticky');
+                expect(fix?.suggestion).toContain('scroll-padding');
+                expect(fix?.reactSuggestion).toContain('scrollMarginTop');
+            });
+
+            it('generates fix for focus-appearance', () => {
+                const node = {
+                    html: '<button class="no-outline">Button</button>',
+                    htmlSnippet: '<button class="no-outline">Button</button>',
+                };
+
+                const fix = generateContextualFix('focus-appearance', node);
+
+                expect(fix).not.toBeNull();
+                expect(fix?.issue).toContain('2px');
+                expect(fix?.issue).toContain('3:1');
+                expect(fix?.suggestion).toContain('outline');
+                expect(fix?.fixed).toContain('outline:');
+            });
+
+            it('generates fix for dragging-movement', () => {
+                const node = {
+                    html: '<div draggable="true">Drag me</div>',
+                    htmlSnippet: '<div draggable="true">Drag me</div>',
+                };
+
+                const fix = generateContextualFix('dragging-movement', node);
+
+                expect(fix).not.toBeNull();
+                expect(fix?.issue).toContain('single-pointer');
+                expect(fix?.suggestion).toContain('buttons');
+                expect(fix?.reactSuggestion).toContain('Move up');
+                expect(fix?.reactSuggestion).toContain('Move down');
+            });
+
+            it('generates fix for accessible-authentication', () => {
+                const node = {
+                    html: '<img src="/captcha.png" alt="captcha" />',
+                    htmlSnippet: '<img src="/captcha.png" alt="captcha" />',
+                };
+
+                const fix = generateContextualFix('accessible-authentication', node);
+
+                expect(fix).not.toBeNull();
+                expect(fix?.issue).toContain('cognitive');
+                expect(fix?.suggestion).toContain('alternative');
+                expect(fix?.reactSuggestion).toContain('reCAPTCHA');
+                expect(fix?.reactSuggestion).toContain('passkey');
+            });
+        });
     });
 });

@@ -246,6 +246,55 @@ const SUGGESTION_GENERATORS: Record<string, SuggestionGenerator> = {
             reactSuggestion: '<main>\n  <header>{/* page header */}</header>\n  <nav>{/* navigation */}</nav>\n  {/* main content */}\n  <aside>{/* sidebar */}</aside>\n  <footer>{/* footer */}</footer>\n</main>',
         };
     },
+
+    // WCAG 2.2 Suggestions
+    'target-size': (element, node) => {
+        return {
+            current: node.htmlSnippet,
+            issue: 'Interactive target is smaller than 24×24 CSS pixels',
+            suggestion: 'Increase the clickable area to at least 24×24 pixels using padding or min-width/min-height',
+            fixed: insertAttribute(node.htmlSnippet, 'style="min-width: 44px; min-height: 44px; padding: 10px;"'),
+            reactSuggestion: `<${element.tag} style={{ minWidth: '44px', minHeight: '44px', padding: '10px' }}>\n  {children}\n</${element.tag}>`,
+        };
+    },
+
+    'focus-obscured': (_element: ParsedElement, node: ViolationNode) => {
+        return {
+            current: node.htmlSnippet,
+            issue: 'Element may be hidden by sticky/fixed elements when focused',
+            suggestion: 'Add scroll-padding-top to account for sticky headers, or use scroll-margin on focusable elements',
+            fixed: '<style>html { scroll-padding-top: 80px; }</style>',
+            reactSuggestion: '// Add to your global CSS:\nhtml { scroll-padding-top: 80px; }\n\n// Or on individual elements:\n<button style={{ scrollMarginTop: \'80px\' }}>...</button>',
+        };
+    },
+
+    'focus-appearance': (element, node) => {
+        return {
+            current: node.htmlSnippet,
+            issue: 'Focus indicator does not meet WCAG 2.2 requirements (2px perimeter, 3:1 contrast)',
+            suggestion: 'Add a visible focus outline with at least 2px thickness and 3:1 contrast ratio',
+            fixed: insertAttribute(node.htmlSnippet, 'style="outline: 2px solid #005fcc; outline-offset: 2px;"'),
+            reactSuggestion: `<${element.tag}\n  className="focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"\n>\n  {children}\n</${element.tag}>\n\n// Or with CSS:\n.focusable:focus-visible {\n  outline: 2px solid #005fcc;\n  outline-offset: 2px;\n}`,
+        };
+    },
+
+    'dragging-movement': (element, node) => {
+        return {
+            current: node.htmlSnippet,
+            issue: 'Drag operation has no single-pointer alternative',
+            suggestion: 'Add buttons or inputs to achieve the same result without dragging',
+            reactSuggestion: `<div>\n  <${element.tag} draggable="true">{item}</${element.tag}>\n  <button aria-label="Move up" onClick={moveUp}>↑</button>\n  <button aria-label="Move down" onClick={moveDown}>↓</button>\n</div>\n\n// Or use a library with keyboard support like @dnd-kit/core`,
+        };
+    },
+
+    'accessible-authentication': (_element: ParsedElement, node: ViolationNode) => {
+        return {
+            current: node.htmlSnippet,
+            issue: 'Authentication requires cognitive function test without accessible alternative',
+            suggestion: 'Provide an accessible alternative (audio CAPTCHA, passkey, magic link) or remove the cognitive test',
+            reactSuggestion: '// Options to fix:\n// 1. Use reCAPTCHA v3 (invisible) instead of image CAPTCHA\n// 2. Add audio CAPTCHA alternative\n// 3. Offer passkey/WebAuthn authentication\n// 4. Use magic link authentication\n// 5. Ensure password fields allow paste (for password managers)\n\n<input\n  type="password"\n  autoComplete="current-password"\n  // Never use onPaste={e => e.preventDefault()}\n/>',
+        };
+    },
 };
 
 /**

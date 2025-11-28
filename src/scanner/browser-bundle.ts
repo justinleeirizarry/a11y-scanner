@@ -18,6 +18,7 @@ import {
 } from './axe/attribution.js';
 import { runKeyboardTests } from './keyboard/index.js';
 import { buildAccessibilityTree } from './axe/tree-builder.js';
+import { runWCAG22Checks } from './wcag22/index.js';
 
 // Initialize Bippy instrumentation immediately
 try {
@@ -104,6 +105,17 @@ export async function scan(options: { tags?: string[]; includeKeyboardTests?: bo
         }
     }
 
+    // Run WCAG 2.2 custom checks
+    let wcag22Results = null;
+    try {
+        wcag22Results = runWCAG22Checks();
+    } catch (error) {
+        console.error('❌ Failed to run WCAG 2.2 checks:', error);
+        if (error instanceof Error) {
+            console.error('Error stack:', error.stack);
+        }
+    }
+
     // Build accessibility tree
     console.log('🌳 Building accessibility tree...');
     const accessibilityTree = buildAccessibilityTree();
@@ -116,6 +128,7 @@ export async function scan(options: { tags?: string[]; includeKeyboardTests?: bo
         incomplete: attributedIncomplete,
         inapplicable: axeResults.inapplicable,
         keyboardTests,
+        wcag22: wcag22Results,
         accessibilityTree,
     };
 }

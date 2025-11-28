@@ -265,6 +265,7 @@ export interface ScanResults {
     }>;
     accessibilityTree?: any; // Playwright accessibility snapshot
     keyboardTests?: KeyboardTestResults; // Keyboard navigation test results
+    wcag22?: WCAG22Results;  // WCAG 2.2 custom check results
     summary: {
         totalComponents: number;
         totalViolations: number;
@@ -289,6 +290,7 @@ export interface ScanResults {
         };
         componentsWithViolations: number;
         keyboardIssues?: number; // Total keyboard issues found
+        wcag22Issues?: number;   // Total WCAG 2.2 issues found
     };
 }
 
@@ -315,6 +317,7 @@ export interface BrowserScanData {
         tags: string[];
     }>;
     keyboardTests?: KeyboardTestResults; // Keyboard test results from browser
+    wcag22?: WCAG22Results;              // WCAG 2.2 custom check results
     accessibilityTree?: any; // Playwright accessibility snapshot
 }
 
@@ -336,4 +339,34 @@ export interface PromptExportOptions {
     template: string;
     format: 'txt' | 'md' | 'json';
     outputPath?: string;
+}
+
+// WCAG 2.2 Check Results
+export interface WCAG22Results {
+    targetSize: WCAG22ViolationSummary[];
+    focusObscured: WCAG22ViolationSummary[];
+    focusAppearance: WCAG22ViolationSummary[];
+    dragging: WCAG22ViolationSummary[];
+    authentication: WCAG22ViolationSummary[];
+    summary: {
+        totalViolations: number;
+        byLevel: {
+            A: number;
+            AA: number;
+            AAA: number;
+        };
+        byCriterion: Record<string, number>;
+    };
+}
+
+export interface WCAG22ViolationSummary {
+    id: string;
+    criterion: string;
+    level: 'A' | 'AA' | 'AAA';
+    element: string;
+    selector: string;
+    html: string;
+    impact: 'critical' | 'serious' | 'moderate' | 'minor';
+    description: string;
+    details: Record<string, any>;
 }
