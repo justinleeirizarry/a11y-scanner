@@ -3,9 +3,9 @@
  * It runs in the browser context and uses Bippy + axe-core
  */
 
-// @ts-ignore - these will be bundled
+// @ts-ignore - axe-core is bundled as IIFE by esbuild and TypeScript cannot resolve the runtime import
 import axe from 'axe-core';
-// @ts-ignore - Bippy utilities for better fiber handling
+// @ts-ignore - Bippy is bundled as IIFE by esbuild and TypeScript cannot resolve the runtime import
 import { instrument } from 'bippy';
 
 // Import modular scanner components
@@ -19,6 +19,7 @@ import {
 import { runKeyboardTests } from './keyboard/index.js';
 import { buildAccessibilityTree } from './axe/tree-builder.js';
 import { runWCAG22Checks } from './wcag22/index.js';
+import type { BrowserScanData, BrowserScanOptions, ComponentInfo, ScanError } from '../types.js';
 
 // Initialize Bippy instrumentation immediately
 try {
@@ -29,20 +30,17 @@ try {
     console.warn('Failed to initialize Bippy instrumentation:', e);
 }
 
-declare global {
-    interface Window {
-        ReactA11yScanner: {
-            scan: (options?: { tags?: string[]; includeKeyboardTests?: boolean }) => Promise<any>;
-        };
-    }
-}
+// Note: Window.ReactA11yScanner type is declared globally in src/types.ts
 
 /**
  * Main scan function - called from Node context
  */
-export async function scan(options: { tags?: string[]; includeKeyboardTests?: boolean } = {}) {
+export async function scan(options: BrowserScanOptions = {}): Promise<BrowserScanData> {
     // Note: console.log is intentional here as this runs in browser context
     // and needs to be visible in browser console for debugging
+
+    // Track non-fatal errors for debugging
+    const errors: ScanError[] = [];
 
     // Find React root
     const root = findReactRoot();
@@ -53,7 +51,7 @@ export async function scan(options: { tags?: string[]; includeKeyboardTests?: bo
     console.log('✓ Found React root');
 
     // Traverse fiber tree to get components with timeout protection
-    let components: any[] = [];
+    let components: ComponentInfo[] = [];
     try {
         // Add a safeguard - limit traversal to prevent infinite loops
         const MAX_COMPONENTS = 10000;
@@ -63,7 +61,15 @@ export async function scan(options: { tags?: string[]; includeKeyboardTests?: bo
             components = components.slice(0, MAX_COMPONENTS);
         }
     } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorStack = error instanceof Error ? error.stack : undefined;
         console.error('[react-a11y-scanner] Fiber traversal failed:', error);
+        errors.push({
+            phase: 'fiber-traversal',
+            message: errorMessage,
+            stack: errorStack,
+            recoverable: true,
+        });
         components = [];
     }
     console.log(`✓ Found ${components.length} components`);
@@ -71,6 +77,16 @@ export async function scan(options: { tags?: string[]; includeKeyboardTests?: bo
     // Run axe accessibility scan (full results)
     const axeResults = await runAxeFullScan(options.tags);
     console.log(`✓ Found ${axeResults.violations.length} violations, ${axeResults.passes.length} passes, ${axeResults.incomplete.length} incomplete`);
+
+    // Check if axe had an error
+    if (axeResults.error) {
+        errors.push({
+            phase: 'axe-scan',
+            message: axeResults.error.message,
+            stack: axeResults.error.stack,
+            recoverable: true,
+        });
+    }
 
     // Build DOM-to-component map for attribution
     const domToComponentMap = buildDomToComponentMap(components);
@@ -90,7 +106,7 @@ export async function scan(options: { tags?: string[]; includeKeyboardTests?: bo
     }
 
     // Run keyboard tests if requested
-    let keyboardTests = null;
+    let keyboardTests: BrowserScanData['keyboardTests'] = undefined;
     if (options.includeKeyboardTests) {
         console.log('🎹 Starting keyboard tests...');
         console.warn('⚠️  Keyboard testing is experimental and may not detect all issues');
@@ -98,28 +114,51 @@ export async function scan(options: { tags?: string[]; includeKeyboardTests?: bo
             keyboardTests = runKeyboardTests();
             console.log(`✓ Keyboard tests complete: ${keyboardTests.summary.totalIssues} issues found`);
         } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            const errorStack = error instanceof Error ? error.stack : undefined;
             console.error('❌ Failed to run keyboard tests:', error);
-            if (error instanceof Error) {
-                console.error('Error stack:', error.stack);
-            }
+            errors.push({
+                phase: 'keyboard-tests',
+                message: errorMessage,
+                stack: errorStack,
+                recoverable: true,
+            });
         }
     }
 
     // Run WCAG 2.2 custom checks
-    let wcag22Results = null;
+    let wcag22Results: BrowserScanData['wcag22'] = undefined;
     try {
         wcag22Results = runWCAG22Checks();
     } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorStack = error instanceof Error ? error.stack : undefined;
         console.error('❌ Failed to run WCAG 2.2 checks:', error);
-        if (error instanceof Error) {
-            console.error('Error stack:', error.stack);
-        }
+        errors.push({
+            phase: 'wcag22-checks',
+            message: errorMessage,
+            stack: errorStack,
+            recoverable: true,
+        });
     }
 
     // Build accessibility tree
     console.log('🌳 Building accessibility tree...');
-    const accessibilityTree = buildAccessibilityTree();
-    console.log('✓ Accessibility tree built');
+    let accessibilityTree;
+    try {
+        accessibilityTree = buildAccessibilityTree();
+        console.log('✓ Accessibility tree built');
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorStack = error instanceof Error ? error.stack : undefined;
+        console.error('❌ Failed to build accessibility tree:', error);
+        errors.push({
+            phase: 'tree-building',
+            message: errorMessage,
+            stack: errorStack,
+            recoverable: true,
+        });
+    }
 
     return {
         components,
@@ -130,6 +169,7 @@ export async function scan(options: { tags?: string[]; includeKeyboardTests?: bo
         keyboardTests,
         wcag22: wcag22Results,
         accessibilityTree,
+        errors: errors.length > 0 ? errors : undefined,
     };
 }
 

@@ -181,9 +181,12 @@ export class OrchestrationService implements IOrchestrationService {
             try {
                 await mkdir(dir, { recursive: true });
             } catch (err) {
-                // Directory may already exist
-                if (err instanceof Error && !err.message.includes('exists')) {
-                    throw err;
+                // Only ignore EEXIST error (directory already exists)
+                if (err instanceof Error) {
+                    const nodeError = err as NodeJS.ErrnoException;
+                    if (nodeError.code !== 'EEXIST') {
+                        throw err;
+                    }
                 }
             }
         }

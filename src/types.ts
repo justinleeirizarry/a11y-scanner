@@ -303,6 +303,14 @@ export interface ScanOptions {
     includeKeyboardTests?: boolean; // Enable keyboard navigation testing
 }
 
+// Scan error information for debugging
+export interface ScanError {
+    phase: 'fiber-traversal' | 'axe-scan' | 'keyboard-tests' | 'wcag22-checks' | 'tree-building';
+    message: string;
+    stack?: string;
+    recoverable: boolean;
+}
+
 // Raw scan data from browser context
 export interface BrowserScanData {
     components: ComponentInfo[];
@@ -319,6 +327,7 @@ export interface BrowserScanData {
     keyboardTests?: KeyboardTestResults; // Keyboard test results from browser
     wcag22?: WCAG22Results;              // WCAG 2.2 custom check results
     accessibilityTree?: any; // Playwright accessibility snapshot
+    errors?: ScanError[];    // Non-fatal errors encountered during scan
 }
 
 // Prompt template types
@@ -369,4 +378,22 @@ export interface WCAG22ViolationSummary {
     impact: 'critical' | 'serious' | 'moderate' | 'minor';
     description: string;
     details: Record<string, any>;
+}
+
+// Browser scanner API options
+export interface BrowserScanOptions {
+    tags?: string[];
+    includeKeyboardTests?: boolean;
+}
+
+// ReactA11yScanner API exposed on window in browser context
+export interface ReactA11yScannerAPI {
+    scan: (options?: BrowserScanOptions) => Promise<BrowserScanData>;
+}
+
+// Global window augmentation for browser context
+declare global {
+    interface Window {
+        ReactA11yScanner?: ReactA11yScannerAPI;
+    }
 }

@@ -2,9 +2,8 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { createOrchestrationService } from "./services/index.js";
+import { createOrchestrationService, createResultsProcessorService } from "./services/index.js";
 import { logger } from "./utils/logger.js";
-import { formatViolations } from "./prompts/formatters.js";
 
 // Configure logger to use stderr to avoid corrupting JSON-RPC on stdout
 logger.setUseStderr(true);
@@ -39,32 +38,8 @@ server.registerTool(
                 includeKeyboardTests: true,
             });
 
-            const violationCount = results.violations.length;
-            const criticalCount = results.summary.violationsBySeverity.critical;
-
-            let summary = `## Scan Complete for ${url}\n\n`;
-            summary += `Found **${violationCount}** violations (**${criticalCount}** critical).\n\n`;
-
-            if (violationCount > 0) {
-                summary += "### Violations Summary\n";
-                summary += formatViolations(results.violations);
-            } else {
-                summary += "No accessibility violations found!";
-            }
-
-            const content: any[] = [
-                {
-                    type: "text",
-                    text: summary,
-                }
-            ];
-
-            if (include_tree && results.accessibilityTree) {
-                content.push({
-                    type: "text",
-                    text: "\n\n### Accessibility Tree\n```json\n" + JSON.stringify(results.accessibilityTree, null, 2) + "\n```"
-                });
-            }
+            const processor = createResultsProcessorService();
+            const content = processor.formatForMCP(results, { includeTree: include_tree });
 
             return {
                 content,

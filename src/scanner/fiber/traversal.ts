@@ -7,16 +7,41 @@ import { getComponentName, type FiberNode } from './component-resolver.js';
 import type { ComponentInfo } from '../../types.js';
 
 /**
+ * React DevTools global hook interface
+ * This is the structure React exposes for DevTools integration
+ */
+interface ReactDevToolsHook {
+    getFiberRoots?: (rendererId: number) => Set<FiberRoot>;
+    renderers?: Map<number, unknown>;
+}
+
+/**
+ * React Fiber Root container
+ * Contains the current fiber tree root
+ */
+interface FiberRoot {
+    current: FiberNode;
+}
+
+/**
+ * Element with potential React fiber internal properties
+ * React attaches fiber nodes to DOM elements with prefixed keys
+ */
+interface ElementWithFiber extends Element {
+    [key: string]: FiberNode | FiberRoot | unknown;
+}
+
+/**
  * Find the React root fiber node
  */
 export function findReactRoot(): FiberNode | null {
     // Try to find root via React DevTools hook
-    const hook = (window as any).__REACT_DEVTOOLS_GLOBAL_HOOK__;
+    const hook = (window as unknown as { __REACT_DEVTOOLS_GLOBAL_HOOK__?: ReactDevToolsHook }).__REACT_DEVTOOLS_GLOBAL_HOOK__;
     if (hook && hook.getFiberRoots) {
         const roots = hook.getFiberRoots(1);
         if (roots && roots.size > 0) {
-            const rootFiber = Array.from(roots)[0];
-            return (rootFiber as any).current;
+            const rootFiber = Array.from(roots)[0] as FiberRoot;
+            return rootFiber.current;
         }
     }
 
@@ -30,9 +55,9 @@ export function findReactRoot(): FiberNode | null {
         );
 
         if (fiberKey) {
-            const fiber = (element as any)[fiberKey];
+            const fiber = (element as ElementWithFiber)[fiberKey] as FiberNode;
             // Try to find the root by going up the tree
-            let current = fiber;
+            let current: FiberNode | null = fiber;
             while (current && current.return) {
                 current = current.return;
             }
@@ -46,12 +71,13 @@ export function findReactRoot(): FiberNode | null {
         const containerKeys = Object.keys(rootElement);
         for (const key of containerKeys) {
             if (key.startsWith('__react') || key.startsWith('_react')) {
-                const value = (rootElement as any)[key];
+                const value = (rootElement as unknown as ElementWithFiber)[key];
                 if (value && typeof value === 'object') {
-                    if (value.current) return value.current;
-                    if (value.return) {
-                        let current = value;
-                        while (current.return) current = current.return;
+                    const fiberValue = value as FiberNode | FiberRoot;
+                    if ('current' in fiberValue && fiberValue.current) return fiberValue.current;
+                    if ('return' in fiberValue && fiberValue.return) {
+                        let current: FiberNode | null = fiberValue as FiberNode;
+                        while (current && current.return) current = current.return;
                         return current;
                     }
                 }
@@ -129,8 +155,12 @@ export function traverseFiberTree(fiber: FiberNode | null, components: Component
 
     try {
         // Use Bippy's traverseFiber for reliable traversal
-        bippyTraverseFiber(fiber as any, (currentFiber: any) => {
-            const name = getComponentName(currentFiber as FiberNode);
+        // Note: Bippy's Fiber type is structurally compatible with our FiberNode but not identical
+        // The cast is required because Bippy uses its own internal fiber type definition
+        bippyTraverseFiber(fiber as Parameters<typeof bippyTraverseFiber>[0], (currentFiber) => {
+            // Cast to our FiberNode type for consistent handling
+            const fiberNode = currentFiber as unknown as FiberNode;
+            const name = getComponentName(fiberNode);
 
             if (name && name !== 'Anonymous' && !name.startsWith('_')) {
                 // Determine component type using Bippy's helpers
@@ -139,8 +169,8 @@ export function traverseFiberTree(fiber: FiberNode | null, components: Component
                 const componentInfo: ComponentInfo = {
                     name,
                     type: fiberType,
-                    props: currentFiber.memoizedProps,
-                    domNode: currentFiber.stateNode instanceof Element ? currentFiber.stateNode : null,
+                    props: fiberNode.memoizedProps,
+                    domNode: fiberNode.stateNode instanceof Element ? fiberNode.stateNode : null,
                     path: [...pathStack, name],
                 };
 

@@ -37,7 +37,7 @@ export class ScannerService implements IScannerService {
      */
     async isBundleInjected(page: Page): Promise<boolean> {
         return await page.evaluate(() => {
-            return typeof (window as any).ReactA11yScanner !== 'undefined';
+            return typeof window.ReactA11yScanner !== 'undefined';
         });
     }
 
@@ -98,8 +98,7 @@ export class ScannerService implements IScannerService {
                             history.pushState = () => {};
                             history.replaceState = () => {};
 
-                            // @ts-ignore - ReactA11yScanner is injected
-                            const result = window.ReactA11yScanner.scan({
+                            const result = window.ReactA11yScanner!.scan({
                                 tags: scanTags,
                                 includeKeyboardTests: runKeyboardTests,
                             });
