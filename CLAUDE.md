@@ -17,6 +17,7 @@ npm start <url>          # e.g., npm start http://localhost:3000
 
 # Run tests
 npm test                 # Run all tests once
+npm test src/path/to/file.test.ts  # Run single test file
 npm run test:watch       # Watch mode
 npm run test:ui          # Vitest UI
 npm run test:coverage    # With coverage
@@ -58,6 +59,7 @@ src/index.tsx (CLI entry with meow)
   - `keyboard/` - Keyboard accessibility testing
   - `stagehand/` - Stagehand AI integration for test generation
 - `src/browser/` - Playwright browser launcher
+- `src/services/` - Service layer (BrowserService, ScannerService, ResultsProcessorService, TestGenerationService, OrchestrationService)
 - `src/prompts/` - AI prompt generation templates
 
 ### MCP Server
@@ -67,7 +69,7 @@ The tool includes an MCP server (`src/mcp-server.ts`) exposing the `scan_url` to
 ### Operating Modes
 
 1. **Accessibility Scan** (default) - Scans page for violations, attributes to React components
-2. **Test Generation** (`--generate-test`) - Uses Stagehand AI to discover interactive elements and generate Playwright tests
+2. **Test Generation** (`--generate-test`) - Uses Stagehand AI to discover interactive elements and generate Playwright tests (requires `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` env var)
 
 ### Important Types
 

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 import { AttributedViolation } from '../../types.js';
+import { generateContextualFix, hasContextualSupport } from '../../scanner/suggestions/index.js';
 
 interface ViolationCardProps {
     violation: AttributedViolation;
@@ -12,6 +13,9 @@ export const ViolationCard: React.FC<ViolationCardProps> = ({ violation, index }
         violation.impact === 'critical' ? 'magenta' :
             violation.impact === 'serious' ? 'red' :
                 violation.impact === 'moderate' ? 'yellow' : 'blue';
+
+    // Check if we have contextual support for this violation
+    const hasContextual = hasContextualSupport(violation.id);
 
     return (
         <Box flexDirection="column" marginTop={1} padding={1}>
@@ -84,7 +88,7 @@ export const ViolationCard: React.FC<ViolationCardProps> = ({ violation, index }
                 </Text>
             </Box>
 
-            {/* List all instances */}
+            {/* List all instances with contextual fixes */}
             <Box flexDirection="column" marginLeft={2}>
                 {violation.nodes.map((node, i) => {
                     // Extract the nearest React component from the path
@@ -103,14 +107,68 @@ export const ViolationCard: React.FC<ViolationCardProps> = ({ violation, index }
                         ? filteredPath[filteredPath.length - 1]
                         : (node.component && node.component.length > 2 ? node.component : 'Unknown Component');
 
+                    // Generate contextual fix for this instance
+                    const contextualFix = hasContextual ? generateContextualFix(violation.id, {
+                        html: node.html,
+                        htmlSnippet: node.htmlSnippet,
+                        component: node.component,
+                        componentPath: node.componentPath,
+                        failureSummary: node.failureSummary,
+                        checks: node.checks,
+                    }) : null;
+
                     return (
-                        <Box key={i}>
-                            <Text color="gray">- </Text>
-                            <Text color="yellow" bold>
-                                {componentName}
-                            </Text>
-                            {node.cssSelector && (
-                                <Text color="gray" dimColor> ({node.cssSelector})</Text>
+                        <Box key={i} flexDirection="column" marginTop={1}>
+                            {/* Component and selector */}
+                            <Box>
+                                <Text color="gray">• </Text>
+                                <Text color="yellow" bold>
+                                    {componentName}
+                                </Text>
+                                {node.cssSelector && (
+                                    <Text color="gray" dimColor> ({node.cssSelector})</Text>
+                                )}
+                            </Box>
+
+                            {/* Contextual fix - Current element */}
+                            {contextualFix && (
+                                <Box flexDirection="column" marginLeft={2} marginTop={1}>
+                                    {/* Current HTML */}
+                                    <Box flexDirection="column">
+                                        <Text color="gray">Current:</Text>
+                                        <Box marginLeft={2}>
+                                            <Text color="red" dimColor>{truncateHtml(contextualFix.current, 70)}</Text>
+                                        </Box>
+                                    </Box>
+
+                                    {/* What's missing */}
+                                    <Box marginTop={1}>
+                                        <Text color="gray">Missing: </Text>
+                                        <Text>{contextualFix.issue}</Text>
+                                    </Box>
+
+                                    {/* Suggested fix */}
+                                    {contextualFix.fixed && (
+                                        <Box flexDirection="column" marginTop={1}>
+                                            <Text color="gray">Suggested:</Text>
+                                            <Box marginLeft={2}>
+                                                <Text color="green">{truncateHtml(contextualFix.fixed, 70)}</Text>
+                                            </Box>
+                                        </Box>
+                                    )}
+
+                                    {/* React suggestion for first instance only */}
+                                    {i === 0 && contextualFix.reactSuggestion && (
+                                        <Box flexDirection="column" marginTop={1}>
+                                            <Text color="gray">React/JSX:</Text>
+                                            <Box marginLeft={2} flexDirection="column">
+                                                {contextualFix.reactSuggestion.split('\n').slice(0, 3).map((line, j) => (
+                                                    <Text key={j} color="cyan" dimColor>{line}</Text>
+                                                ))}
+                                            </Box>
+                                        </Box>
+                                    )}
+                                </Box>
                             )}
                         </Box>
                     );
@@ -119,3 +177,13 @@ export const ViolationCard: React.FC<ViolationCardProps> = ({ violation, index }
         </Box>
     );
 };
+
+/**
+ * Truncate HTML to fit display width
+ */
+function truncateHtml(html: string, maxLength: number): string {
+    if (html.length <= maxLength) {
+        return html;
+    }
+    return html.substring(0, maxLength - 3) + '...';
+}
