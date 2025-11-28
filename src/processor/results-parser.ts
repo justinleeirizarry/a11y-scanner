@@ -1,4 +1,4 @@
-import type { BrowserScanData, ScanResults } from '../types.js';
+import type { BrowserScanData, ScanResults, AttributedViolation } from '../types.js';
 
 interface ProcessOptions {
     rawData: BrowserScanData;
@@ -7,11 +7,49 @@ interface ProcessOptions {
 }
 
 /**
+ * Count violations by WCAG level based on tags
+ */
+function countViolationsByWcagLevel(violations: AttributedViolation[]): ScanResults['summary']['violationsByWcagLevel'] {
+    const counts = {
+        wcag2a: 0,
+        wcag2aa: 0,
+        wcag2aaa: 0,
+        wcag21a: 0,
+        wcag21aa: 0,
+        wcag22aa: 0,
+        bestPractice: 0,
+    };
+
+    for (const violation of violations) {
+        const nodeCount = violation.nodes.length;
+        const tags = violation.tags || [];
+
+        // Count by the most specific WCAG level tag present
+        if (tags.includes('wcag2a')) counts.wcag2a += nodeCount;
+        if (tags.includes('wcag2aa')) counts.wcag2aa += nodeCount;
+        if (tags.includes('wcag2aaa')) counts.wcag2aaa += nodeCount;
+        if (tags.includes('wcag21a')) counts.wcag21a += nodeCount;
+        if (tags.includes('wcag21aa')) counts.wcag21aa += nodeCount;
+        if (tags.includes('wcag22aa')) counts.wcag22aa += nodeCount;
+        if (tags.includes('best-practice')) counts.bestPractice += nodeCount;
+    }
+
+    return counts;
+}
+
+/**
  * Process raw scan data into structured results
  */
 export function processResults(options: ProcessOptions): ScanResults {
     const { rawData, url, browser } = options;
-    const { components, violations: attributedViolations, keyboardTests } = rawData;
+    const {
+        components,
+        violations: attributedViolations,
+        passes,
+        incomplete,
+        inapplicable,
+        keyboardTests
+    } = rawData;
 
     // Count unique components with violations
     const componentsWithViolationsSet = new Set<string>();
@@ -27,6 +65,11 @@ export function processResults(options: ProcessOptions): ScanResults {
     // Calculate total violations (sum of all instances)
     const totalViolations = attributedViolations.reduce((acc, v) => acc + v.nodes.length, 0);
 
+    // Calculate totals for passes, incomplete, inapplicable
+    const totalPasses = passes?.length || 0;
+    const totalIncomplete = incomplete?.length || 0;
+    const totalInapplicable = inapplicable?.length || 0;
+
     // Calculate keyboard issues if keyboard tests were run
     const keyboardIssues = keyboardTests?.summary.totalIssues;
 
@@ -38,11 +81,18 @@ export function processResults(options: ProcessOptions): ScanResults {
         minor: attributedViolations.filter(v => v.impact === 'minor').reduce((acc, v) => acc + v.nodes.length, 0),
     };
 
+    // Calculate WCAG level breakdown
+    const violationsByWcagLevel = countViolationsByWcagLevel(attributedViolations);
+
     // Calculate summary statistics
     const summary = {
         totalComponents: components.length,
         totalViolations,
+        totalPasses,
+        totalIncomplete,
+        totalInapplicable,
         violationsBySeverity,
+        violationsByWcagLevel,
         componentsWithViolations: componentsWithViolationsSet.size,
         keyboardIssues,
     };
@@ -53,6 +103,9 @@ export function processResults(options: ProcessOptions): ScanResults {
         browser,
         components,
         violations: attributedViolations,
+        passes,
+        incomplete,
+        inapplicable,
         keyboardTests,
         summary,
     };

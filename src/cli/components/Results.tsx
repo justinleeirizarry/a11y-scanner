@@ -24,7 +24,7 @@ const Results: React.FC<ResultsProps> = ({ results, outputFile, aiPromptFile, re
         );
     }
 
-    const { violations, summary } = results;
+    const { violations, incomplete, summary } = results;
 
     return (
         <Box flexDirection="column" padding={1}>
@@ -84,6 +84,44 @@ const Results: React.FC<ResultsProps> = ({ results, outputFile, aiPromptFile, re
                     {violations.map((violation, idx) => (
                         <ViolationCard key={idx} violation={violation} index={idx + 1} />
                     ))}
+                </Box>
+            )}
+
+            {/* Incomplete - Manual Review Needed */}
+            {incomplete && incomplete.length > 0 && (
+                <Box flexDirection="column" marginTop={2}>
+                    <Box marginBottom={1}>
+                        <Text bold underline color="yellow">Manual Review Required ({incomplete.length})</Text>
+                    </Box>
+                    <Text color="gray" dimColor>
+                        These items could not be automatically verified and require manual testing:
+                    </Text>
+                    {incomplete.slice(0, 5).map((item, idx) => (
+                        <Box key={idx} flexDirection="column" marginTop={1} marginLeft={1}>
+                            <Box>
+                                <Text color="yellow">• </Text>
+                                <Text bold>{item.id}</Text>
+                                <Text color="gray"> - {item.description}</Text>
+                            </Box>
+                            {item.nodes.length > 0 && item.nodes[0].message && (
+                                <Box marginLeft={2}>
+                                    <Text color="gray" dimColor>Reason: {item.nodes[0].message}</Text>
+                                </Box>
+                            )}
+                            <Box marginLeft={2}>
+                                <Text color="gray" dimColor>
+                                    {item.nodes.length} element{item.nodes.length !== 1 ? 's' : ''} to check
+                                </Text>
+                            </Box>
+                        </Box>
+                    ))}
+                    {incomplete.length > 5 && (
+                        <Box marginTop={1} marginLeft={1}>
+                            <Text color="gray" dimColor>
+                                ... and {incomplete.length - 5} more (see JSON output for full list)
+                            </Text>
+                        </Box>
+                    )}
                 </Box>
             )}
         </Box>

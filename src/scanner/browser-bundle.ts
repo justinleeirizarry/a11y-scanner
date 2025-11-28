@@ -10,8 +10,12 @@ import { instrument } from 'bippy';
 
 // Import modular scanner components
 import { findReactRoot, traverseFiberTree, buildDomToComponentMap } from './fiber/traversal.js';
-import { runAxeScan } from './axe/runner.js';
-import { attributeViolationsToComponents } from './axe/attribution.js';
+import { runAxeFullScan } from './axe/runner.js';
+import {
+    attributeViolationsToComponents,
+    attributePassesToComponents,
+    attributeIncompleteToComponents
+} from './axe/attribution.js';
 import { runKeyboardTests } from './keyboard/index.js';
 import { buildAccessibilityTree } from './axe/tree-builder.js';
 
@@ -63,16 +67,26 @@ export async function scan(options: { tags?: string[]; includeKeyboardTests?: bo
     }
     console.log(`✓ Found ${components.length} components`);
 
-    // Run axe accessibility scan
-    const violations = await runAxeScan(options.tags);
-    console.log(`✓ Found ${violations.length} violations`);
+    // Run axe accessibility scan (full results)
+    const axeResults = await runAxeFullScan(options.tags);
+    console.log(`✓ Found ${axeResults.violations.length} violations, ${axeResults.passes.length} passes, ${axeResults.incomplete.length} incomplete`);
 
     // Build DOM-to-component map for attribution
     const domToComponentMap = buildDomToComponentMap(components);
 
     // Attribute violations to components
-    const attributedViolations = attributeViolationsToComponents(violations, domToComponentMap);
+    const attributedViolations = attributeViolationsToComponents(axeResults.violations, domToComponentMap);
     console.log(`✓ Attributed violations to components`);
+
+    // Attribute passes to components (lighter attribution)
+    const attributedPasses = attributePassesToComponents(axeResults.passes, domToComponentMap);
+    console.log(`✓ Attributed ${attributedPasses.length} passing rules`);
+
+    // Attribute incomplete results (needs manual review)
+    const attributedIncomplete = attributeIncompleteToComponents(axeResults.incomplete, domToComponentMap);
+    if (attributedIncomplete.length > 0) {
+        console.log(`⚠️  ${attributedIncomplete.length} rules need manual review`);
+    }
 
     // Run keyboard tests if requested
     let keyboardTests = null;
@@ -98,6 +112,9 @@ export async function scan(options: { tags?: string[]; includeKeyboardTests?: bo
     return {
         components,
         violations: attributedViolations,
+        passes: attributedPasses,
+        incomplete: attributedIncomplete,
+        inapplicable: axeResults.inapplicable,
         keyboardTests,
         accessibilityTree,
     };

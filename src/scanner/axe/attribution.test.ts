@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { attributeViolationsToComponents } from './attribution.js';
 import { findComponentForElement } from '../fiber/traversal.js';
 import { generateFixSuggestion } from '../suggestions/fix-generator.js';
-import type { AxeViolation } from './runner.js';
+import type { AxeViolation } from '../../types.js';
 
 // Mock dependencies
 vi.mock('../fiber/traversal.js', () => ({
@@ -29,6 +29,7 @@ describe('Attribution', () => {
             description: 'Contrast is low',
             help: 'Fix contrast',
             helpUrl: 'http://example.com',
+            tags: ['wcag2aa', 'wcag143'],
             nodes: [{
                 html: '<div></div>',
                 target: ['div'],
@@ -71,6 +72,7 @@ describe('Attribution', () => {
             description: 'Contrast is low',
             help: 'Fix contrast',
             helpUrl: 'http://example.com',
+            tags: ['wcag2aa'],
             nodes: [{
                 html: '<div></div>',
                 target: ['div'],
@@ -94,6 +96,7 @@ describe('Attribution', () => {
             description: 'Contrast is low',
             help: 'Fix contrast',
             helpUrl: 'http://example.com',
+            tags: ['wcag2aa'],
             nodes: [{
                 html: '<div></div>',
                 target: ['#missing'],

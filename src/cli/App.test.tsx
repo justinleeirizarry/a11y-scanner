@@ -51,6 +51,7 @@ describe('App Component', () => {
             description: `Violation ${i}`,
             help: 'Fix it',
             helpUrl: 'http://example.com',
+            tags: ['wcag2aa'],
             nodes: [{
                 component: 'Button',
                 componentPath: ['App', 'Button'],
@@ -67,6 +68,9 @@ describe('App Component', () => {
         summary: {
             totalComponents: 1,
             totalViolations: violationCount,
+            totalPasses: 10,
+            totalIncomplete: 0,
+            totalInapplicable: 5,
             violationsBySeverity: {
                 critical: 0,
                 serious: violationCount,

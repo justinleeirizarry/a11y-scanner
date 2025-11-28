@@ -24,6 +24,7 @@ describe('processResults', () => {
         description: `Test violation ${id}`,
         help: 'Help text',
         helpUrl: 'https://example.com',
+        tags: ['wcag2aa'],
         nodes: Array(nodeCount).fill(null).map(() => ({
             component: componentName,
             componentPath: ['App', componentName],
@@ -288,6 +289,7 @@ describe('processResults', () => {
                 description: 'Test',
                 help: 'Help',
                 helpUrl: 'https://example.com',
+                tags: ['wcag2aa'],
                 nodes: [],
             }];
 

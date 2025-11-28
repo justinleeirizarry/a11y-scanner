@@ -28,7 +28,15 @@ export class ResultsProcessorService implements IResultsProcessorService {
      * (Extracted from results-parser.ts)
      */
     process(data: BrowserScanData, metadata: ScanMetadata): ScanResults {
-        const { components, violations: attributedViolations, keyboardTests, accessibilityTree } = data;
+        const {
+            components,
+            violations: attributedViolations,
+            passes,
+            incomplete,
+            inapplicable,
+            keyboardTests,
+            accessibilityTree
+        } = data;
         const { url, browser, timestamp } = metadata;
 
         // Count unique components with violations
@@ -44,6 +52,11 @@ export class ResultsProcessorService implements IResultsProcessorService {
 
         // Calculate total violations (sum of all instances)
         const totalViolations = attributedViolations.reduce((acc, v) => acc + v.nodes.length, 0);
+
+        // Calculate totals for passes, incomplete, inapplicable
+        const totalPasses = passes?.length || 0;
+        const totalIncomplete = incomplete?.length || 0;
+        const totalInapplicable = inapplicable?.length || 0;
 
         // Calculate keyboard issues if keyboard tests were run
         const keyboardIssues = keyboardTests?.summary.totalIssues;
@@ -64,11 +77,18 @@ export class ResultsProcessorService implements IResultsProcessorService {
                 .reduce((acc, v) => acc + v.nodes.length, 0),
         };
 
+        // Calculate WCAG level breakdown
+        const violationsByWcagLevel = this.countViolationsByWcagLevel(attributedViolations);
+
         // Calculate summary statistics
         const summary = {
             totalComponents: components.length,
             totalViolations,
+            totalPasses,
+            totalIncomplete,
+            totalInapplicable,
             violationsBySeverity,
+            violationsByWcagLevel,
             componentsWithViolations: componentsWithViolationsSet.size,
             keyboardIssues,
         };
@@ -79,10 +99,43 @@ export class ResultsProcessorService implements IResultsProcessorService {
             browser,
             components,
             violations: attributedViolations,
+            passes,
+            incomplete,
+            inapplicable,
             accessibilityTree,
             keyboardTests,
             summary,
         };
+    }
+
+    /**
+     * Count violations by WCAG level based on tags
+     */
+    private countViolationsByWcagLevel(violations: BrowserScanData['violations']): ScanResults['summary']['violationsByWcagLevel'] {
+        const counts = {
+            wcag2a: 0,
+            wcag2aa: 0,
+            wcag2aaa: 0,
+            wcag21a: 0,
+            wcag21aa: 0,
+            wcag22aa: 0,
+            bestPractice: 0,
+        };
+
+        for (const violation of violations) {
+            const nodeCount = violation.nodes.length;
+            const tags = violation.tags || [];
+
+            if (tags.includes('wcag2a')) counts.wcag2a += nodeCount;
+            if (tags.includes('wcag2aa')) counts.wcag2aa += nodeCount;
+            if (tags.includes('wcag2aaa')) counts.wcag2aaa += nodeCount;
+            if (tags.includes('wcag21a')) counts.wcag21a += nodeCount;
+            if (tags.includes('wcag21aa')) counts.wcag21aa += nodeCount;
+            if (tags.includes('wcag22aa')) counts.wcag22aa += nodeCount;
+            if (tags.includes('best-practice')) counts.bestPractice += nodeCount;
+        }
+
+        return counts;
     }
 
     /**

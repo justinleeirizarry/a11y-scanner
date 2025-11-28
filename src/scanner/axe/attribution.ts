@@ -4,8 +4,17 @@
  */
 
 import { getFiberFromHostInstance, getFiberStack, getDisplayName } from 'bippy';
-import type { AxeViolation } from './runner.js';
-import type { ComponentInfo } from '../../types.js';
+import type {
+    AxeResult,
+    AxeViolation,
+    AxeCheckResult,
+    ComponentInfo,
+    AttributedViolation,
+    AttributedPass,
+    AttributedIncomplete,
+    AttributedCheck,
+    RelatedNode
+} from '../../types.js';
 import { findComponentForElement } from '../fiber/traversal.js';
 import { filterUserComponents, isFrameworkComponent } from '../fiber/framework-filter.js';
 import { generateCssSelector } from '../utils/css-selector.js';
@@ -23,17 +32,15 @@ export interface AttributedViolationNode {
     target: string[];
     failureSummary: string;
     isFrameworkComponent: boolean;
+    checks?: {
+        any?: AttributedCheck[];
+        all?: AttributedCheck[];
+        none?: AttributedCheck[];
+    };
 }
 
-export interface AttributedViolation {
-    id: string;
-    impact: 'critical' | 'serious' | 'moderate' | 'minor';
-    description: string;
-    help: string;
-    helpUrl: string;
-    nodes: AttributedViolationNode[];
-    fixSuggestion?: FixSuggestion;
-}
+// Re-export for backwards compatibility
+export type { AttributedViolation } from '../../types.js';
 
 /**
  * Try to get component info directly from DOM element using Bippy
@@ -63,6 +70,24 @@ function getComponentFromElement(element: Element): ComponentInfo | null {
     } catch {
         return null;
     }
+}
+
+/**
+ * Convert axe check results to attributed checks with snippets
+ */
+function convertChecks(checks: AxeCheckResult[] | undefined): AttributedCheck[] | undefined {
+    if (!checks || checks.length === 0) return undefined;
+
+    return checks.map(check => ({
+        id: check.id,
+        impact: check.impact,
+        message: check.message,
+        relatedNodes: check.relatedNodes?.map(rn => ({
+            html: rn.html,
+            target: rn.target,
+            htmlSnippet: extractHtmlSnippet(rn.html)
+        }))
+    }));
 }
 
 /**
@@ -107,6 +132,14 @@ export function attributeViolationsToComponents(
             const cssSelector = element ? generateCssSelector(element) : node.target[0];
             const htmlSnippet = extractHtmlSnippet(node.html);
 
+            // Build checks object if any check data exists
+            const hasChecks = node.any?.length || node.all?.length || node.none?.length;
+            const checks = hasChecks ? {
+                any: convertChecks(node.any),
+                all: convertChecks(node.all),
+                none: convertChecks(node.none)
+            } : undefined;
+
             attributedNodes.push({
                 component: component?.name || null,
                 componentPath: component?.path || [],
@@ -116,8 +149,9 @@ export function attributeViolationsToComponents(
                 htmlSnippet,
                 cssSelector,
                 target: node.target,
-                failureSummary: node.failureSummary,
+                failureSummary: node.failureSummary || '',
                 isFrameworkComponent: isFramework,
+                checks,
             });
         }
 
@@ -130,10 +164,100 @@ export function attributeViolationsToComponents(
             description: violation.description,
             help: violation.help,
             helpUrl: violation.helpUrl,
+            tags: violation.tags || [],
             nodes: attributedNodes,
             fixSuggestion,
         });
     }
 
     return attributed;
+}
+
+/**
+ * Attribute passes to React components (lighter attribution - just component name)
+ */
+export function attributePassesToComponents(
+    passes: AxeResult[],
+    domToComponentMap: Map<Element, ComponentInfo>
+): AttributedPass[] {
+    return passes.map(pass => ({
+        id: pass.id,
+        impact: pass.impact,
+        description: pass.description,
+        help: pass.help,
+        helpUrl: pass.helpUrl,
+        tags: pass.tags || [],
+        nodes: pass.nodes.map(node => {
+            const selector = node.target[0];
+            let component: ComponentInfo | null = null;
+
+            try {
+                const element = document.querySelector(selector);
+                if (element) {
+                    component = getComponentFromElement(element) ||
+                        findComponentForElement(element, domToComponentMap);
+                }
+            } catch {
+                // Ignore selector errors
+            }
+
+            return {
+                component: component?.name || null,
+                html: node.html,
+                htmlSnippet: extractHtmlSnippet(node.html),
+                target: node.target
+            };
+        })
+    }));
+}
+
+/**
+ * Attribute incomplete results to React components
+ */
+export function attributeIncompleteToComponents(
+    incomplete: AxeResult[],
+    domToComponentMap: Map<Element, ComponentInfo>
+): AttributedIncomplete[] {
+    return incomplete.map(item => ({
+        id: item.id,
+        impact: item.impact,
+        description: item.description,
+        help: item.help,
+        helpUrl: item.helpUrl,
+        tags: item.tags || [],
+        nodes: item.nodes.map(node => {
+            const selector = node.target[0];
+            let component: ComponentInfo | null = null;
+
+            try {
+                const element = document.querySelector(selector);
+                if (element) {
+                    component = getComponentFromElement(element) ||
+                        findComponentForElement(element, domToComponentMap);
+                }
+            } catch {
+                // Ignore selector errors
+            }
+
+            // Build checks object if any check data exists
+            const hasChecks = node.any?.length || node.all?.length || node.none?.length;
+            const checks = hasChecks ? {
+                any: convertChecks(node.any),
+                all: convertChecks(node.all),
+                none: convertChecks(node.none)
+            } : undefined;
+
+            // Get reason for manual review from checks
+            const message = node.any?.[0]?.message || node.all?.[0]?.message || undefined;
+
+            return {
+                component: component?.name || null,
+                html: node.html,
+                htmlSnippet: extractHtmlSnippet(node.html),
+                target: node.target,
+                message,
+                checks
+            };
+        })
+    }));
 }

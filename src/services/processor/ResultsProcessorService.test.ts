@@ -16,6 +16,7 @@ describe('ResultsProcessorService', () => {
         description: 'Elements must have sufficient color contrast',
         help: 'Color contrast insufficient',
         helpUrl: 'https://example.com',
+        tags: ['wcag2aa', 'wcag143'],
         nodes: [
             {
                 component: 'Button',

@@ -33,21 +33,45 @@ export const ViolationCard: React.FC<ViolationCardProps> = ({ violation, index }
                 </Box>
             </Box>
 
+            {/* WCAG Tags */}
+            {violation.tags && violation.tags.length > 0 && (
+                <Box marginTop={1} flexDirection="row" gap={1}>
+                    {violation.tags
+                        .filter(tag => tag.startsWith('wcag') || tag === 'best-practice')
+                        .slice(0, 4) // Limit to 4 tags for display
+                        .map((tag, i) => {
+                            const isWcagA = tag === 'wcag2a' || tag === 'wcag21a';
+                            const isWcagAA = tag.includes('aa') && !tag.includes('aaa');
+                            const isWcagAAA = tag.includes('aaa');
+                            const color = isWcagAAA ? 'cyan' : isWcagAA ? 'yellow' : isWcagA ? 'red' : 'gray';
+                            return (
+                                <Text key={i} color={color} dimColor>[{tag}]</Text>
+                            );
+                        })}
+                </Box>
+            )}
+
             {/* Description */}
             <Box marginTop={1}>
                 <Text>{violation.description}</Text>
             </Box>
 
-            {/* Fix Suggestion */}
-            {violation.fixSuggestion && (
-                <Box marginTop={1} flexDirection="column" padding={1}>
-                    <Text color="green" bold>💡 How to Fix:</Text>
-                    <Text>{violation.fixSuggestion.summary}</Text>
+            {/* Help URL - Link to axe-core docs */}
+            {violation.helpUrl && (
+                <Box marginTop={1}>
+                    <Text color="gray">Docs: </Text>
+                    <Text color="blue" underline>{violation.helpUrl}</Text>
+                </Box>
+            )}
 
-                    {violation.fixSuggestion.codeExample && (
-                        <Box marginTop={1} flexDirection="column">
-                            <Text color="gray" dimColor>Example:</Text>
-                            <Text color="blue">{violation.fixSuggestion.codeExample}</Text>
+            {/* Fix Suggestion - summary only, no generic code examples */}
+            {violation.fixSuggestion && (
+                <Box marginTop={1} flexDirection="column" paddingLeft={1}>
+                    <Text color="green" bold>How to Fix:</Text>
+                    <Text>{violation.fixSuggestion.summary}</Text>
+                    {violation.fixSuggestion.userImpact && (
+                        <Box marginTop={1}>
+                            <Text color="gray" dimColor>Impact: {violation.fixSuggestion.userImpact}</Text>
                         </Box>
                     )}
                 </Box>

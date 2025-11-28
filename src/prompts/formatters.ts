@@ -19,6 +19,41 @@ export function formatViolationSummary(violations: AttributedViolation[]): strin
 }
 
 /**
+ * Filter component path to remove minified/internal names
+ */
+function filterComponentPath(pathParts: string[]): string[] {
+    return pathParts
+        .filter(name => name.length > 2) // Filter minified single/double letter names
+        .filter(name =>
+            !name.includes('Anonymous') &&
+            !name.startsWith('__')
+        );
+}
+
+/**
+ * Format WCAG tags for display
+ */
+function formatWcagTags(tags: string[]): string {
+    const wcagTags = tags.filter(t => t.startsWith('wcag') || t === 'best-practice');
+    if (wcagTags.length === 0) return '';
+
+    const formatted = wcagTags.map(tag => {
+        if (tag === 'best-practice') return 'Best Practice';
+        // Convert wcag2aa to WCAG 2.0 AA, wcag21a to WCAG 2.1 A, etc.
+        const match = tag.match(/wcag(\d)(\d)?([a-z]+)/);
+        if (match) {
+            const major = match[1];
+            const minor = match[2] || '0';
+            const level = match[3].toUpperCase();
+            return `WCAG ${major}.${minor} ${level}`;
+        }
+        return tag;
+    });
+
+    return formatted.join(', ');
+}
+
+/**
  * Format detailed violations for prompts
  */
 export function formatViolations(violations: AttributedViolation[]): string {
@@ -29,25 +64,22 @@ export function formatViolations(violations: AttributedViolation[]): string {
             ? firstNode.userComponentPath
             : firstNode?.componentPath || [];
 
-        // Filter out minified components and internal wrappers
-        pathParts = pathParts.filter(name => {
-            // Keep meaningful names (longer than 2 chars)
-            if (name.length > 2) return true;
-            // Filter out single/double letter minified names
-            return false;
-        }).filter(name =>
-            // Filter out common internal wrappers
-            !name.includes('Anonymous') &&
-            !name.startsWith('__')
-        );
-
+        pathParts = filterComponentPath(pathParts);
         const userPath = pathParts.length > 0 ? pathParts.join(' > ') : 'Unknown';
 
         let output = `### ${idx + 1}. ${violation.id} (${violation.impact})\n\n`;
         output += `**Description:** ${violation.description}\n`;
-        output += `**Help:** [${violation.help}](${violation.helpUrl})\n\n`;
+        output += `**Help:** [${violation.help}](${violation.helpUrl})\n`;
 
-        output += `**Component Path:** \`${userPath}\`\n`;
+        // Add WCAG tags
+        if (violation.tags && violation.tags.length > 0) {
+            const wcagFormatted = formatWcagTags(violation.tags);
+            if (wcagFormatted) {
+                output += `**WCAG:** ${wcagFormatted}\n`;
+            }
+        }
+
+        output += `\n**Component Path:** \`${userPath}\`\n`;
 
         if (firstNode?.cssSelector) {
             output += `**Selector:** \`${firstNode.cssSelector}\`\n`;
@@ -61,15 +93,41 @@ export function formatViolations(violations: AttributedViolation[]): string {
             output += `\n**Failure Summary:**\n> ${firstNode.failureSummary.split('\n').join('\n> ')}\n`;
         }
 
-        if (violation.fixSuggestion) {
-            output += `\n**How to Fix:**\n${violation.fixSuggestion.summary}\n`;
-            if (violation.fixSuggestion.codeExample) {
-                output += `\n**Example:**\n\`\`\`jsx\n${violation.fixSuggestion.codeExample}\n\`\`\`\n`;
+        // Add check details if available (more specific failure info)
+        if (firstNode?.checks) {
+            const checkMessages: string[] = [];
+            firstNode.checks.any?.forEach(c => c.message && checkMessages.push(c.message));
+            firstNode.checks.all?.forEach(c => c.message && checkMessages.push(c.message));
+            firstNode.checks.none?.forEach(c => c.message && checkMessages.push(c.message));
+
+            if (checkMessages.length > 0) {
+                output += `\n**Specific Issues:**\n`;
+                checkMessages.slice(0, 3).forEach(msg => {
+                    output += `- ${msg}\n`;
+                });
             }
         }
 
+        if (violation.fixSuggestion) {
+            output += `\n**How to Fix:**\n${violation.fixSuggestion.summary}\n`;
+            if (violation.fixSuggestion.userImpact) {
+                output += `\n**User Impact:** ${violation.fixSuggestion.userImpact}\n`;
+            }
+        }
+
+        // Show all instances if multiple
         if (violation.nodes.length > 1) {
-            output += `\n*Found in ${violation.nodes.length} instances total.*\n`;
+            output += `\n**All Instances (${violation.nodes.length}):**\n`;
+            violation.nodes.slice(0, 5).forEach((node, i) => {
+                const nodePath = filterComponentPath(
+                    node.userComponentPath?.length ? node.userComponentPath : node.componentPath || []
+                );
+                const component = nodePath.length > 0 ? nodePath[nodePath.length - 1] : node.component || 'Unknown';
+                output += `${i + 1}. \`${component}\` - ${node.cssSelector || node.target[0]}\n`;
+            });
+            if (violation.nodes.length > 5) {
+                output += `   ... and ${violation.nodes.length - 5} more\n`;
+            }
         }
 
         return output;

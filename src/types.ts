@@ -1,15 +1,42 @@
 // Axe-core types
-export interface AxeViolation {
+
+// Check result from axe-core (detailed test information)
+export interface AxeCheckResult {
     id: string;
-    impact: 'critical' | 'serious' | 'moderate' | 'minor';
+    impact: 'critical' | 'serious' | 'moderate' | 'minor' | null;
+    message: string;
+    data?: any;
+    relatedNodes?: Array<{
+        html: string;
+        target: string[];
+    }>;
+}
+
+// Node result from axe-core
+export interface AxeNodeResult {
+    html: string;
+    target: string[];
+    failureSummary?: string;
+    impact?: 'critical' | 'serious' | 'moderate' | 'minor' | null;
+    any?: AxeCheckResult[];  // Checks where any one passing would pass the node
+    all?: AxeCheckResult[];  // Checks that must all pass
+    none?: AxeCheckResult[]; // Checks that must all fail (none should pass)
+}
+
+// Base axe result structure (used for violations, passes, incomplete)
+export interface AxeResult {
+    id: string;
+    impact: 'critical' | 'serious' | 'moderate' | 'minor' | null;
     description: string;
     help: string;
     helpUrl: string;
-    nodes: Array<{
-        html: string;
-        target: string[];
-        failureSummary: string;
-    }>;
+    tags: string[];  // WCAG criteria tags (wcag2a, wcag2aa, best-practice, etc.)
+    nodes: AxeNodeResult[];
+}
+
+// Alias for backwards compatibility
+export interface AxeViolation extends AxeResult {
+    impact: 'critical' | 'serious' | 'moderate' | 'minor'; // Violations always have impact
 }
 
 // Component information from Bippy
@@ -27,11 +54,25 @@ export interface ComponentInfo {
 export interface FixSuggestion {
     summary: string;
     details: string;
-    codeExample?: string;
     wcagCriteria?: string; // e.g., "1.4.3 Contrast (Minimum)"
     wcagLevel?: 'A' | 'AA' | 'AAA';
     userImpact?: string; // Description of who is affected and how
     priority?: 'critical' | 'high' | 'medium' | 'low';
+}
+
+// Related node information (elements connected to a violation)
+export interface RelatedNode {
+    html: string;
+    target: string[];
+    htmlSnippet?: string;
+}
+
+// Check detail for attributed violations
+export interface AttributedCheck {
+    id: string;
+    impact: 'critical' | 'serious' | 'moderate' | 'minor' | null;
+    message: string;
+    relatedNodes?: RelatedNode[];
 }
 
 // Violation attributed to a component
@@ -41,6 +82,7 @@ export interface AttributedViolation {
     description: string;
     help: string;
     helpUrl: string;
+    tags: string[];  // WCAG criteria (wcag2a, wcag2aa, wcag21aa, best-practice, etc.)
     nodes: Array<{
         component: string | null;
         componentPath: string[];
@@ -52,8 +94,52 @@ export interface AttributedViolation {
         target: string[];
         failureSummary: string;
         isFrameworkComponent: boolean;
+        // Detailed check results
+        checks?: {
+            any?: AttributedCheck[];  // Any one of these passing would fix the issue
+            all?: AttributedCheck[];  // All of these must pass
+            none?: AttributedCheck[]; // None of these should pass
+        };
     }>;
     fixSuggestion?: FixSuggestion;
+}
+
+// Pass result attributed to components (rules that passed)
+export interface AttributedPass {
+    id: string;
+    impact: 'critical' | 'serious' | 'moderate' | 'minor' | null;
+    description: string;
+    help: string;
+    helpUrl: string;
+    tags: string[];
+    nodes: Array<{
+        component: string | null;
+        html: string;
+        htmlSnippet: string;
+        target: string[];
+    }>;
+}
+
+// Incomplete result (needs manual review)
+export interface AttributedIncomplete {
+    id: string;
+    impact: 'critical' | 'serious' | 'moderate' | 'minor' | null;
+    description: string;
+    help: string;
+    helpUrl: string;
+    tags: string[];
+    nodes: Array<{
+        component: string | null;
+        html: string;
+        htmlSnippet: string;
+        target: string[];
+        message?: string; // Why manual review is needed
+        checks?: {
+            any?: AttributedCheck[];
+            all?: AttributedCheck[];
+            none?: AttributedCheck[];
+        };
+    }>;
 }
 
 // Keyboard testing types
@@ -168,16 +254,38 @@ export interface ScanResults {
     browser: string;
     components: ComponentInfo[];
     violations: AttributedViolation[];
+    passes?: AttributedPass[];      // Rules that passed (what's working)
+    incomplete?: AttributedIncomplete[]; // Needs manual review
+    inapplicable?: Array<{          // Rules that don't apply to this page
+        id: string;
+        description: string;
+        help: string;
+        helpUrl: string;
+        tags: string[];
+    }>;
     accessibilityTree?: any; // Playwright accessibility snapshot
     keyboardTests?: KeyboardTestResults; // Keyboard navigation test results
     summary: {
         totalComponents: number;
         totalViolations: number;
+        totalPasses: number;        // Number of rules that passed
+        totalIncomplete: number;    // Number needing manual review
+        totalInapplicable: number;  // Number of rules not applicable
         violationsBySeverity: {
             critical: number;
             serious: number;
             moderate: number;
             minor: number;
+        };
+        // WCAG level breakdown
+        violationsByWcagLevel?: {
+            wcag2a: number;
+            wcag2aa: number;
+            wcag2aaa: number;
+            wcag21a: number;
+            wcag21aa: number;
+            wcag22aa: number;
+            bestPractice: number;
         };
         componentsWithViolations: number;
         keyboardIssues?: number; // Total keyboard issues found
@@ -197,6 +305,15 @@ export interface ScanOptions {
 export interface BrowserScanData {
     components: ComponentInfo[];
     violations: AttributedViolation[];
+    passes?: AttributedPass[];           // Rules that passed
+    incomplete?: AttributedIncomplete[]; // Needs manual review
+    inapplicable?: Array<{               // Rules that don't apply
+        id: string;
+        description: string;
+        help: string;
+        helpUrl: string;
+        tags: string[];
+    }>;
     keyboardTests?: KeyboardTestResults; // Keyboard test results from browser
     accessibilityTree?: any; // Playwright accessibility snapshot
 }
