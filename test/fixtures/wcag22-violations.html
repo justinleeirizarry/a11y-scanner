@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WCAG 2.2 Test Fixture - Intentional Violations</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f5f5f5;
+    }
+
+    /* ========================================
+       WCAG 2.4.11 - Focus Not Obscured
+       Sticky header that covers focused elements
+       ======================================== */
+    .sticky-header {
+      position: sticky;
+      top: 0;
+      background: #333;
+      color: white;
+      padding: 20px;
+      z-index: 1000;
+      height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Cookie banner that obscures focus */
+    .cookie-banner {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #222;
+      color: white;
+      padding: 20px;
+      z-index: 1000;
+    }
+
+    .main-content {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .card {
+      background: white;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .card h2 {
+      margin-top: 0;
+      color: #333;
+      border-bottom: 2px solid #007bff;
+      padding-bottom: 10px;
+    }
+
+    .violation-label {
+      background: #dc3545;
+      color: white;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      margin-left: 10px;
+    }
+
+    /* ========================================
+       WCAG 2.5.8 - Target Size (Minimum)
+       Buttons smaller than 24x24 CSS pixels
+       ======================================== */
+    .tiny-button {
+      width: 16px;
+      height: 16px;
+      padding: 0;
+      font-size: 10px;
+      background: #dc3545;
+      color: white;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .small-icon-button {
+      width: 20px;
+      height: 20px;
+      padding: 0;
+      background: #6c757d;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    /* Adequate target size for comparison */
+    .good-button {
+      min-width: 44px;
+      min-height: 44px;
+      padding: 10px 20px;
+      background: #28a745;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    /* ========================================
+       WCAG 2.4.13 - Focus Appearance
+       Missing or insufficient focus indicators
+       ======================================== */
+    .no-focus-indicator {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      outline: none !important;
+    }
+
+    .no-focus-indicator:focus {
+      outline: none !important;
+      box-shadow: none !important;
+    }
+
+    .low-contrast-focus {
+      background: #e9ecef;
+      color: #333;
+      border: 1px solid #dee2e6;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .low-contrast-focus:focus {
+      outline: 1px solid #f0f0f0; /* Very low contrast focus indicator */
+    }
+
+    /* ========================================
+       WCAG 2.5.7 - Dragging Movements
+       Draggable elements without keyboard alternative
+       ======================================== */
+    .sortable-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .sortable-item {
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      padding: 15px;
+      margin: 5px 0;
+      cursor: grab;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .sortable-item:active {
+      cursor: grabbing;
+    }
+
+    .drag-handle {
+      color: #6c757d;
+      font-size: 20px;
+    }
+
+    /* Good example with keyboard controls */
+    .sortable-item-accessible {
+      background: #d4edda;
+      border: 1px solid #c3e6cb;
+      padding: 15px;
+      margin: 5px 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .move-buttons {
+      display: flex;
+      gap: 5px;
+    }
+
+    .move-btn {
+      min-width: 32px;
+      min-height: 32px;
+      padding: 5px;
+      background: #28a745;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    /* ========================================
+       WCAG 1.4.13 - Content on Hover or Focus
+       Tooltips that are not dismissible/hoverable
+       ======================================== */
+    .tooltip-trigger {
+      position: relative;
+      display: inline-block;
+      padding: 10px 20px;
+      background: #17a2b8;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .tooltip-bad {
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #333;
+      color: white;
+      padding: 10px;
+      border-radius: 4px;
+      white-space: nowrap;
+      display: none;
+      pointer-events: none; /* Cannot hover over tooltip content */
+      z-index: 100;
+    }
+
+    .tooltip-trigger:hover .tooltip-bad,
+    .tooltip-trigger:focus .tooltip-bad {
+      display: block;
+    }
+
+    /* Good tooltip that's hoverable and dismissible */
+    .tooltip-good {
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #333;
+      color: white;
+      padding: 10px;
+      border-radius: 4px;
+      white-space: nowrap;
+      display: none;
+      pointer-events: auto; /* Can hover over tooltip */
+      z-index: 100;
+    }
+
+    .tooltip-trigger:hover .tooltip-good,
+    .tooltip-trigger:focus .tooltip-good,
+    .tooltip-good:hover {
+      display: block;
+    }
+
+    /* ========================================
+       WCAG 3.3.8 - Accessible Authentication
+       CAPTCHA without accessible alternative
+       ======================================== */
+    .captcha-container {
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      padding: 20px;
+      text-align: center;
+      margin: 10px 0;
+    }
+
+    .captcha-image {
+      background: linear-gradient(45deg, #ddd 25%, transparent 25%),
+                  linear-gradient(-45deg, #ddd 25%, transparent 25%),
+                  linear-gradient(45deg, transparent 75%, #ddd 75%),
+                  linear-gradient(-45deg, transparent 75%, #ddd 75%);
+      background-size: 20px 20px;
+      width: 200px;
+      height: 60px;
+      margin: 0 auto 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Courier New', monospace;
+      font-size: 24px;
+      font-weight: bold;
+      color: #333;
+      letter-spacing: 5px;
+      text-decoration: line-through;
+      font-style: italic;
+    }
+
+    .puzzle-captcha {
+      border: 2px dashed #6c757d;
+      padding: 20px;
+      margin: 10px 0;
+    }
+
+    .puzzle-pieces {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin: 10px 0;
+    }
+
+    .puzzle-piece {
+      width: 50px;
+      height: 50px;
+      background: #007bff;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: grab;
+      border-radius: 4px;
+    }
+
+    /* ========================================
+       WCAG 2.5.2 - Pointer Cancellation
+       Actions that trigger on mousedown instead of click
+       ======================================== */
+    .mousedown-button {
+      background: #ffc107;
+      color: #333;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    /* ========================================
+       Spacing and layout
+       ======================================== */
+    .button-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin: 10px 0;
+    }
+
+    .link-list {
+      padding: 0;
+      margin: 0;
+      list-style: none;
+    }
+
+    .link-list li {
+      margin: 5px 0;
+    }
+
+    .link-list a {
+      color: #007bff;
+      text-decoration: underline;
+    }
+
+    /* Focus-obscured test area - links that will be covered by header */
+    .focus-test-area {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid #dee2e6;
+    }
+
+    input, select {
+      padding: 8px 12px;
+      border: 1px solid #dee2e6;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+    }
+
+    .form-group {
+      margin: 15px 0;
+    }
+
+    .info-text {
+      color: #6c757d;
+      font-size: 14px;
+      margin: 10px 0;
+    }
+
+    .code {
+      background: #f8f9fa;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: monospace;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    // ========================================
+    // WCAG 2.4.11 - Focus Not Obscured
+    // Sticky header component
+    // ========================================
+    function StickyHeader() {
+      return (
+        <header className="sticky-header">
+          <div>
+            <strong>WCAG 2.2 Test Fixture</strong>
+            <span className="violation-label">2.4.11 Focus Obscured</span>
+          </div>
+          <nav>
+            <a href="#target-size" style={{ color: 'white', marginRight: '15px' }}>Target Size</a>
+            <a href="#focus-appearance" style={{ color: 'white', marginRight: '15px' }}>Focus</a>
+            <a href="#dragging" style={{ color: 'white', marginRight: '15px' }}>Dragging</a>
+            <a href="#auth" style={{ color: 'white' }}>Auth</a>
+          </nav>
+        </header>
+      );
+    }
+
+    // Cookie banner that obscures focus at bottom
+    function CookieBanner() {
+      const [visible, setVisible] = useState(true);
+
+      if (!visible) return null;
+
+      return (
+        <div className="cookie-banner">
+          <span>This site uses cookies. </span>
+          <button
+            onClick={() => setVisible(false)}
+            style={{ marginLeft: '10px', padding: '5px 15px' }}
+          >
+            Accept
+          </button>
+        </div>
+      );
+    }
+
+    // ========================================
+    // WCAG 2.5.8 - Target Size (Minimum)
+    // ========================================
+    function TargetSizeSection() {
+      return (
+        <div id="target-size" className="card">
+          <h2>
+            2.5.8 Target Size (Minimum)
+            <span className="violation-label">VIOLATION</span>
+          </h2>
+          <p className="info-text">
+            Interactive targets must be at least 24x24 CSS pixels.
+            The buttons below are intentionally too small.
+          </p>
+
+          <h3>Violations - Too Small (&lt;24px)</h3>
+          <div className="button-row">
+            <button className="tiny-button" aria-label="Close">X</button>
+            <span className="code">16x16px</span>
+
+            <button className="small-icon-button" aria-label="Info">i</button>
+            <span className="code">20x20px</span>
+
+            <button className="tiny-button" aria-label="Delete">-</button>
+            <span className="code">16x16px</span>
+          </div>
+
+          <h3>Passing - Adequate Size (44px+)</h3>
+          <div className="button-row">
+            <button className="good-button">Submit</button>
+            <span className="code">44x44px minimum</span>
+          </div>
+
+          <h3>Edge Case - Inline Links (Exempt)</h3>
+          <p>
+            This paragraph contains <a href="#">an inline link</a> which is exempt
+            from target size requirements because it's part of a text block.
+          </p>
+        </div>
+      );
+    }
+
+    // ========================================
+    // WCAG 2.4.13 - Focus Appearance
+    // ========================================
+    function FocusAppearanceSection() {
+      return (
+        <div id="focus-appearance" className="card">
+          <h2>
+            2.4.13 Focus Appearance
+            <span className="violation-label">VIOLATION</span>
+          </h2>
+          <p className="info-text">
+            Focus indicators must be visible with sufficient contrast.
+            Tab through these buttons to see the issues.
+          </p>
+
+          <h3>Violations - Missing/Poor Focus Indicators</h3>
+          <div className="button-row">
+            <button className="no-focus-indicator">No Focus Outline</button>
+            <span className="code">outline: none</span>
+          </div>
+          <div className="button-row">
+            <button className="low-contrast-focus">Low Contrast Focus</button>
+            <span className="code">1px #f0f0f0 outline</span>
+          </div>
+
+          <h3>Passing - Visible Focus</h3>
+          <div className="button-row">
+            <button style={{ padding: '10px 20px' }}>Default Focus (browser)</button>
+          </div>
+
+          <h3>Focus Obscured Test Area</h3>
+          <p className="info-text">
+            These links may be obscured by the sticky header when focused and scrolled into view.
+          </p>
+          <div className="focus-test-area">
+            <ul className="link-list">
+              <li><a href="#link1">Link that may be obscured 1</a></li>
+              <li><a href="#link2">Link that may be obscured 2</a></li>
+              <li><a href="#link3">Link that may be obscured 3</a></li>
+            </ul>
+          </div>
+        </div>
+      );
+    }
+
+    // ========================================
+    // WCAG 2.5.7 - Dragging Movements
+    // ========================================
+    function DraggingSection() {
+      const [items, setItems] = useState(['Item 1', 'Item 2', 'Item 3', 'Item 4']);
+      const [accessibleItems, setAccessibleItems] = useState(['Apple', 'Banana', 'Cherry']);
+
+      const moveItem = (index, direction) => {
+        const newItems = [...accessibleItems];
+        const newIndex = index + direction;
+        if (newIndex >= 0 && newIndex < newItems.length) {
+          [newItems[index], newItems[newIndex]] = [newItems[newIndex], newItems[index]];
+          setAccessibleItems(newItems);
+        }
+      };
+
+      return (
+        <div id="dragging" className="card">
+          <h2>
+            2.5.7 Dragging Movements
+            <span className="violation-label">VIOLATION</span>
+          </h2>
+          <p className="info-text">
+            Draggable elements must have a single-pointer (non-drag) alternative.
+          </p>
+
+          <h3>Violation - Drag Only (No Keyboard Alternative)</h3>
+          <ul className="sortable-list">
+            {items.map((item, index) => (
+              <li
+                key={index}
+                className="sortable-item"
+                draggable="true"
+                data-testid={`drag-item-${index}`}
+              >
+                <span className="drag-handle">&#9776;</span>
+                <span>{item}</span>
+                <span className="info-text">(drag to reorder - no keyboard alternative)</span>
+              </li>
+            ))}
+          </ul>
+
+          <h3>Passing - With Move Buttons</h3>
+          <ul className="sortable-list">
+            {accessibleItems.map((item, index) => (
+              <li key={index} className="sortable-item-accessible">
+                <span>{item}</span>
+                <div className="move-buttons">
+                  <button
+                    className="move-btn"
+                    onClick={() => moveItem(index, -1)}
+                    aria-label={`Move ${item} up`}
+                    disabled={index === 0}
+                  >
+                    ↑
+                  </button>
+                  <button
+                    className="move-btn"
+                    onClick={() => moveItem(index, 1)}
+                    aria-label={`Move ${item} down`}
+                    disabled={index === accessibleItems.length - 1}
+                  >
+                    ↓
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      );
+    }
+
+    // ========================================
+    // WCAG 1.4.13 - Content on Hover or Focus
+    // ========================================
+    function TooltipSection() {
+      return (
+        <div id="tooltips" className="card">
+          <h2>
+            1.4.13 Content on Hover or Focus
+            <span className="violation-label">VIOLATION</span>
+          </h2>
+          <p className="info-text">
+            Additional content on hover/focus must be dismissible, hoverable, and persistent.
+          </p>
+
+          <h3>Violation - Non-Hoverable Tooltip</h3>
+          <div className="button-row">
+            <button className="tooltip-trigger">
+              Hover for Info
+              <span className="tooltip-bad">
+                This tooltip disappears when you try to hover over it!
+                It also can't be dismissed with Escape.
+              </span>
+            </button>
+            <span className="code">pointer-events: none</span>
+          </div>
+
+          <h3>Passing - Hoverable Tooltip</h3>
+          <div className="button-row">
+            <button className="tooltip-trigger" aria-describedby="good-tooltip">
+              Hover for Info (Good)
+              <span className="tooltip-good" id="good-tooltip" role="tooltip">
+                This tooltip stays visible when you hover over it!
+              </span>
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // ========================================
+    // WCAG 3.3.8 - Accessible Authentication
+    // ========================================
+    function AuthenticationSection() {
+      const [captchaInput, setCaptchaInput] = useState('');
+
+      return (
+        <div id="auth" className="card">
+          <h2>
+            3.3.8 Accessible Authentication
+            <span className="violation-label">VIOLATION</span>
+          </h2>
+          <p className="info-text">
+            Authentication must not require cognitive function tests (memorization,
+            puzzles, calculations) without an accessible alternative.
+          </p>
+
+          <h3>Violation - Image CAPTCHA (No Audio Alternative)</h3>
+          <form>
+            <div className="form-group">
+              <label htmlFor="username">Username</label>
+              <input type="text" id="username" name="username" />
+            </div>
+            <div className="form-group">
+              <label htmlFor="password">Password</label>
+              <input type="password" id="password" name="password" />
+            </div>
+            <div className="captcha-container">
+              <p><strong>Prove you're human:</strong></p>
+              <div className="captcha-image" aria-label="CAPTCHA image">
+                X7k9P2
+              </div>
+              <input
+                type="text"
+                placeholder="Enter the text above"
+                value={captchaInput}
+                onChange={(e) => setCaptchaInput(e.target.value)}
+                aria-label="Enter CAPTCHA text"
+              />
+              <p className="info-text">No audio alternative provided</p>
+            </div>
+            <button type="submit" className="good-button">Login</button>
+          </form>
+
+          <h3>Violation - Puzzle CAPTCHA</h3>
+          <div className="puzzle-captcha">
+            <p><strong>Drag the pieces to complete the puzzle:</strong></p>
+            <div className="puzzle-pieces">
+              <div className="puzzle-piece" draggable="true">1</div>
+              <div className="puzzle-piece" draggable="true">2</div>
+              <div className="puzzle-piece" draggable="true">3</div>
+            </div>
+            <p className="info-text">Requires visual recognition and drag interaction</p>
+          </div>
+        </div>
+      );
+    }
+
+    // ========================================
+    // WCAG 2.5.2 - Pointer Cancellation
+    // ========================================
+    function PointerCancellationSection() {
+      const [count, setCount] = useState(0);
+      const [badCount, setBadCount] = useState(0);
+
+      return (
+        <div id="pointer" className="card">
+          <h2>
+            2.5.2 Pointer Cancellation
+            <span className="violation-label">VIOLATION</span>
+          </h2>
+          <p className="info-text">
+            Actions should trigger on click (up-event), not mousedown,
+            so users can cancel by moving away before releasing.
+          </p>
+
+          <h3>Violation - Triggers on mousedown</h3>
+          <div className="button-row">
+            <button
+              className="mousedown-button"
+              onMouseDown={() => setBadCount(c => c + 1)}
+            >
+              Click Me (mousedown)
+            </button>
+            <span>Count: {badCount}</span>
+            <span className="code">Cannot cancel action</span>
+          </div>
+
+          <h3>Passing - Triggers on click (up-event)</h3>
+          <div className="button-row">
+            <button
+              className="good-button"
+              onClick={() => setCount(c => c + 1)}
+            >
+              Click Me (click)
+            </button>
+            <span>Count: {count}</span>
+            <span className="code">Can cancel by dragging away</span>
+          </div>
+        </div>
+      );
+    }
+
+    // ========================================
+    // Main App
+    // ========================================
+    function App() {
+      return (
+        <div>
+          <StickyHeader />
+          <main className="main-content">
+            <div className="card">
+              <h1>WCAG 2.2 Violations Test Page</h1>
+              <p>
+                This page contains <strong>intentional accessibility violations</strong> for
+                testing the react-a11y-scanner's WCAG 2.2 detection capabilities.
+              </p>
+              <p>
+                Each section demonstrates a specific WCAG 2.2 criterion with both
+                failing and passing examples.
+              </p>
+            </div>
+
+            <TargetSizeSection />
+            <FocusAppearanceSection />
+            <DraggingSection />
+            <TooltipSection />
+            <AuthenticationSection />
+            <PointerCancellationSection />
+
+            {/* Extra content to enable scrolling for focus-obscured testing */}
+            <div className="card" style={{ marginBottom: '200px' }}>
+              <h2>Scroll Test Area</h2>
+              <p>
+                Scroll down and tab through the page. When the sticky header covers
+                a focused element, that's a WCAG 2.4.11 violation.
+              </p>
+              <ul className="link-list">
+                {Array.from({ length: 20 }, (_, i) => (
+                  <li key={i}>
+                    <a href={`#test-link-${i}`}>Test Link {i + 1} - May be obscured when scrolled</a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </main>
+          <CookieBanner />
+        </div>
+      );
+    }
+
+    // Render the app
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
