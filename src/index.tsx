@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// Suppress dotenv v17+ promotional messages before loading
-process.env.DOTENV_CONFIG_QUIET = 'true';
-import 'dotenv/config';
+import { configDotenv } from 'dotenv';
+// Use configDotenv with quiet mode to suppress dotenv v17+ promotional messages
+configDotenv({ quiet: true });
 import React from 'react';
 import { render } from 'ink';
 import meow from 'meow';

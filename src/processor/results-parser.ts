@@ -1,40 +1,10 @@
-import type { BrowserScanData, ScanResults, AttributedViolation } from '../types.js';
+import type { BrowserScanData, ScanResults } from '../types.js';
+import { countViolationsByWcagLevel, addWcag22ToLevelCounts } from '../utils/wcag-utils.js';
 
 interface ProcessOptions {
     rawData: BrowserScanData;
     url: string;
     browser: string;
-}
-
-/**
- * Count violations by WCAG level based on tags
- */
-function countViolationsByWcagLevel(violations: AttributedViolation[]): ScanResults['summary']['violationsByWcagLevel'] {
-    const counts = {
-        wcag2a: 0,
-        wcag2aa: 0,
-        wcag2aaa: 0,
-        wcag21a: 0,
-        wcag21aa: 0,
-        wcag22aa: 0,
-        bestPractice: 0,
-    };
-
-    for (const violation of violations) {
-        const nodeCount = violation.nodes.length;
-        const tags = violation.tags || [];
-
-        // Count by the most specific WCAG level tag present
-        if (tags.includes('wcag2a')) counts.wcag2a += nodeCount;
-        if (tags.includes('wcag2aa')) counts.wcag2aa += nodeCount;
-        if (tags.includes('wcag2aaa')) counts.wcag2aaa += nodeCount;
-        if (tags.includes('wcag21a')) counts.wcag21a += nodeCount;
-        if (tags.includes('wcag21aa')) counts.wcag21aa += nodeCount;
-        if (tags.includes('wcag22aa')) counts.wcag22aa += nodeCount;
-        if (tags.includes('best-practice')) counts.bestPractice += nodeCount;
-    }
-
-    return counts;
 }
 
 /**
@@ -89,13 +59,8 @@ export function processResults(options: ProcessOptions): ScanResults {
     const violationsByWcagLevel = countViolationsByWcagLevel(attributedViolations);
 
     // Add WCAG 2.2 violations to the level counts
-    if (wcag22 && violationsByWcagLevel) {
-        violationsByWcagLevel.wcag22aa += wcag22.targetSize.length +
-            wcag22.focusObscured.length +
-            wcag22.dragging.length +
-            wcag22.authentication.length;
-        // Focus Appearance is AAA
-        violationsByWcagLevel.wcag2aaa += wcag22.focusAppearance.length;
+    if (wcag22) {
+        addWcag22ToLevelCounts(violationsByWcagLevel, wcag22);
     }
 
     // Calculate summary statistics

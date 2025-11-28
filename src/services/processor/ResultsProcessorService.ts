@@ -5,6 +5,7 @@
  */
 import type { BrowserScanData, ScanResults } from '../../types.js';
 import { formatViolations } from '../../prompts/formatters.js';
+import { countViolationsByWcagLevel, addWcag22ToLevelCounts } from '../../utils/wcag-utils.js';
 import type {
     ScanMetadata,
     MCPToolContent,
@@ -35,6 +36,7 @@ export class ResultsProcessorService implements IResultsProcessorService {
             incomplete,
             inapplicable,
             keyboardTests,
+            wcag22,
             accessibilityTree
         } = data;
         const { url, browser, timestamp } = metadata;
@@ -78,7 +80,15 @@ export class ResultsProcessorService implements IResultsProcessorService {
         };
 
         // Calculate WCAG level breakdown
-        const violationsByWcagLevel = this.countViolationsByWcagLevel(attributedViolations);
+        const violationsByWcagLevel = countViolationsByWcagLevel(attributedViolations);
+
+        // Add WCAG 2.2 violations to the level counts
+        if (wcag22) {
+            addWcag22ToLevelCounts(violationsByWcagLevel, wcag22);
+        }
+
+        // Calculate WCAG 2.2 issues if checks were run
+        const wcag22Issues = wcag22?.summary.totalViolations;
 
         // Calculate summary statistics
         const summary = {
@@ -91,6 +101,7 @@ export class ResultsProcessorService implements IResultsProcessorService {
             violationsByWcagLevel,
             componentsWithViolations: componentsWithViolationsSet.size,
             keyboardIssues,
+            wcag22Issues,
         };
 
         return {
@@ -104,38 +115,9 @@ export class ResultsProcessorService implements IResultsProcessorService {
             inapplicable,
             accessibilityTree,
             keyboardTests,
+            wcag22,
             summary,
         };
-    }
-
-    /**
-     * Count violations by WCAG level based on tags
-     */
-    private countViolationsByWcagLevel(violations: BrowserScanData['violations']): ScanResults['summary']['violationsByWcagLevel'] {
-        const counts = {
-            wcag2a: 0,
-            wcag2aa: 0,
-            wcag2aaa: 0,
-            wcag21a: 0,
-            wcag21aa: 0,
-            wcag22aa: 0,
-            bestPractice: 0,
-        };
-
-        for (const violation of violations) {
-            const nodeCount = violation.nodes.length;
-            const tags = violation.tags || [];
-
-            if (tags.includes('wcag2a')) counts.wcag2a += nodeCount;
-            if (tags.includes('wcag2aa')) counts.wcag2aa += nodeCount;
-            if (tags.includes('wcag2aaa')) counts.wcag2aaa += nodeCount;
-            if (tags.includes('wcag21a')) counts.wcag21a += nodeCount;
-            if (tags.includes('wcag21aa')) counts.wcag21aa += nodeCount;
-            if (tags.includes('wcag22aa')) counts.wcag22aa += nodeCount;
-            if (tags.includes('best-practice')) counts.bestPractice += nodeCount;
-        }
-
-        return counts;
     }
 
     /**
