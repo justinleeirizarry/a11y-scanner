@@ -6,6 +6,7 @@ import Results from './components/Results.js';
 import TestGenerator from './components/TestGenerator.js';
 import TestGenerationResults from './components/TestGenerationResults.js';
 import { createOrchestrationService } from '../services/index.js';
+import { EXIT_CODES, setExitCode } from '../utils/exit-codes.js';
 import type { ScanResults, TestGenerationResults as TestGenResults } from '../types.js';
 
 interface AppProps {
@@ -73,7 +74,7 @@ const App: React.FC<AppProps> = ({ mode, url, browser, output, ci, threshold, he
 
                     setTestGenState('error');
                     setError(err instanceof Error ? err.message : String(err));
-                    process.exitCode = 1;
+                    setExitCode(EXIT_CODES.RUNTIME_ERROR);
                     exit();
                 }
             };
@@ -103,7 +104,7 @@ const App: React.FC<AppProps> = ({ mode, url, browser, output, ci, threshold, he
 
                     // Handle CI mode exit
                     if (ci) {
-                        process.exitCode = ciPassed ? 0 : 1;
+                        setExitCode(ciPassed ? EXIT_CODES.SUCCESS : EXIT_CODES.VIOLATIONS_FOUND);
                         exit();
                     } else if (!tree) {
                         // Exit for non-interactive modes
@@ -129,7 +130,7 @@ const App: React.FC<AppProps> = ({ mode, url, browser, output, ci, threshold, he
                             setScanState('error');
                             setError(`Failed to generate AI prompt: ${errorMsg}`);
                             if (ci) {
-                                process.exitCode = 1;
+                                setExitCode(EXIT_CODES.RUNTIME_ERROR);
                                 exit();
                             }
                             return;
@@ -141,7 +142,7 @@ const App: React.FC<AppProps> = ({ mode, url, browser, output, ci, threshold, he
                     setScanState('error');
                     setError(err instanceof Error ? err.message : String(err));
 
-                    process.exitCode = 1;
+                    setExitCode(EXIT_CODES.RUNTIME_ERROR);
                     exit();
                 }
             };

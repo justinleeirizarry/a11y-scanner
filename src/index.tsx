@@ -8,6 +8,7 @@ import meow from 'meow';
 import App from './cli/App.js';
 import { validateUrl, validateTags, validateThreshold, validateBrowser } from './utils/validation.js';
 import { createOrchestrationService } from './services/index.js';
+import { EXIT_CODES, setExitCode, exitWithCode } from './utils/exit-codes.js';
 
 const cli = meow(
     `
@@ -106,7 +107,7 @@ const cli = meow(
 if (cli.input.length === 0) {
     console.error('❌ Error: URL is required\n');
     cli.showHelp();
-    process.exit(1);
+    exitWithCode(EXIT_CODES.VALIDATION_ERROR);
 }
 
 const url = cli.input[0];
@@ -115,14 +116,14 @@ const url = cli.input[0];
 const urlValidation = validateUrl(url);
 if (!urlValidation.valid) {
     console.error(`❌ Error: ${urlValidation.error}\n`);
-    process.exit(1);
+    exitWithCode(EXIT_CODES.VALIDATION_ERROR);
 }
 
 // Validate browser type
 const browserValidation = validateBrowser(cli.flags.browser);
 if (!browserValidation.valid) {
     console.error(`❌ Error: ${browserValidation.error}\n`);
-    process.exit(1);
+    exitWithCode(EXIT_CODES.VALIDATION_ERROR);
 }
 
 // Validate tags if provided
@@ -130,7 +131,7 @@ if (cli.flags.tags) {
     const tagsValidation = validateTags(cli.flags.tags);
     if (!tagsValidation.valid) {
         console.error(`❌ Error: ${tagsValidation.error}\n`);
-        process.exit(1);
+        exitWithCode(EXIT_CODES.VALIDATION_ERROR);
     }
 }
 
@@ -138,7 +139,7 @@ if (cli.flags.tags) {
 const thresholdValidation = validateThreshold(cli.flags.threshold);
 if (!thresholdValidation.valid) {
     console.error(`❌ Error: ${thresholdValidation.error}\n`);
-    process.exit(1);
+    exitWithCode(EXIT_CODES.VALIDATION_ERROR);
 }
 
 // Determine mode: test generation or accessibility scan
@@ -187,7 +188,7 @@ if (isTestGenerationMode) {
     if (conflictingFlags.length > 0) {
         console.error(`❌ Error: Cannot use ${conflictingFlags.map(f => f.name).join(', ')} with --generate-test\n`);
         console.error('Test generation mode is mutually exclusive with accessibility scan options.\n');
-        process.exit(1);
+        exitWithCode(EXIT_CODES.VALIDATION_ERROR);
     }
 }
 
@@ -211,7 +212,7 @@ if (!isTTY) {
 
                 // Output JSON to stdout
                 console.log(JSON.stringify(testResults, null, 2));
-                process.exitCode = testResults.success ? 0 : 1;
+                setExitCode(testResults.success ? EXIT_CODES.SUCCESS : EXIT_CODES.RUNTIME_ERROR);
             } else {
                 // Accessibility scan mode
                 const { results, ciPassed } = await orchestration.performScan({
@@ -239,9 +240,9 @@ if (!isTTY) {
 
                 // Handle CI mode
                 if (cli.flags.ci) {
-                    process.exitCode = ciPassed ? 0 : 1;
+                    setExitCode(ciPassed ? EXIT_CODES.SUCCESS : EXIT_CODES.VIOLATIONS_FOUND);
                 } else {
-                    process.exitCode = 0;
+                    setExitCode(EXIT_CODES.SUCCESS);
                 }
             }
         } catch (error) {
@@ -249,7 +250,7 @@ if (!isTTY) {
                 error: error instanceof Error ? error.message : String(error),
                 stack: error instanceof Error ? error.stack : undefined,
             }, null, 2));
-            process.exitCode = 1;
+            setExitCode(EXIT_CODES.RUNTIME_ERROR);
         }
     })();
 } else {
@@ -279,13 +280,13 @@ if (!isTTY) {
         try {
             await waitUntilExit();
             // Exit code will be set by the App component
-            process.exit(process.exitCode || 0);
+            exitWithCode((process.exitCode ?? EXIT_CODES.SUCCESS) as 0 | 1 | 2);
         } catch (error) {
             console.error('❌ Fatal error:', error instanceof Error ? error.message : String(error));
             if (error instanceof Error && error.stack) {
                 console.error('\nStack trace:', error.stack);
             }
-            process.exit(1);
+            exitWithCode(EXIT_CODES.RUNTIME_ERROR);
         }
     })();
 }

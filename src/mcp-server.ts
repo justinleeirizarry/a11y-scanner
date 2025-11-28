@@ -4,6 +4,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import { createOrchestrationService, createResultsProcessorService } from "./services/index.js";
 import { logger } from "./utils/logger.js";
+import { EXIT_CODES, exitWithCode } from "./utils/exit-codes.js";
 
 // Configure logger to use stderr to avoid corrupting JSON-RPC on stdout
 logger.setUseStderr(true);
@@ -68,5 +69,5 @@ async function main() {
 
 main().catch((error) => {
     console.error("Fatal error in main():", error);
-    process.exit(1);
+    exitWithCode(EXIT_CODES.RUNTIME_ERROR);
 });

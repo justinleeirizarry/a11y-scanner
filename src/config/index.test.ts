@@ -66,6 +66,20 @@ describe('Config Management', () => {
             expect(config.browser.timeout).toBe(originalTimeout); // Should preserve other values
         });
 
+        it('should deep merge nested partial updates', () => {
+            // With deep merge, we only need to specify the changed values
+            updateConfig({
+                browser: {
+                    timeout: 50000 as any, // Cast needed due to const type in DEFAULT_CONFIG
+                },
+            });
+
+            const config = getConfig();
+            expect(config.browser.timeout).toBe(50000);
+            expect(config.browser.headless).toBe(DEFAULT_CONFIG.browser.headless);
+            expect(config.browser.stabilizationDelay).toBe(DEFAULT_CONFIG.browser.stabilizationDelay);
+        });
+
         it('should allow multiple updates', () => {
             updateConfig({
                 browser: {
