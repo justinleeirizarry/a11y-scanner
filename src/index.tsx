@@ -21,7 +21,6 @@ const cli = meow(
     `
   Usage
     $ react-a11y-scanner <url>
-    $ a11y-scan <url>
 
   Accessibility Scan Options
     --browser, -b      Browser to use (chromium, firefox, webkit) [default: chromium]
@@ -43,15 +42,15 @@ const cli = meow(
 
   Examples
     # Accessibility Scanning
-    $ a11y-scan https://example.com
-    $ a11y-scan https://example.com --browser firefox
-    $ a11y-scan https://example.com --output report.json --ci
-    $ a11y-scan https://example.com --ai --tree
+    $ react-a11y-scanner https://example.com
+    $ react-a11y-scanner https://example.com --browser firefox
+    $ react-a11y-scanner https://example.com --output report.json --ci
+    $ react-a11y-scanner https://example.com --ai --tree
 
     # Test Generation
-    $ a11y-scan https://example.com --generate-test
-    $ a11y-scan https://example.com --generate-test --test-file tests/a11y.spec.ts
-    $ a11y-scan https://example.com --generate-test --stagehand-model openai/gpt-4o
+    $ react-a11y-scanner https://example.com --generate-test
+    $ react-a11y-scanner https://example.com --generate-test --test-file tests/a11y.spec.ts
+    $ react-a11y-scanner https://example.com --generate-test --stagehand-model openai/gpt-4o
 `,
     {
         importMeta: import.meta,
@@ -282,6 +281,20 @@ if (!isTTY) {
                         return value;
                     }, 2);
                     console.log(jsonOutput);
+                }
+
+                // Handle AI prompt generation
+                if (cli.flags.ai) {
+                    const { generateAndExport } = await import('./prompts/prompt-generator.js');
+                    const promptPath = generateAndExport(
+                        results,
+                        {
+                            template: 'fix-all',
+                            format: 'md',
+                            outputPath: undefined,
+                        }
+                    );
+                    console.error(`AI prompt written to: ${promptPath}`);
                 }
 
                 // Handle CI mode

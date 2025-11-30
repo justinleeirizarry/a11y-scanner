@@ -22,7 +22,20 @@ test('Accessibility Interaction Test', async ({ page }) => {
 
     // 3. Initial Accessibility Scan
     const initialResults = await new AxeBuilder({ page }).analyze();
-    console.log(\`Initial violations: \${initialResults.violations.length}\`);
+    console.log(\`\\n📊 Initial Accessibility Scan: \${initialResults.violations.length} violations found\`);
+    if (initialResults.violations.length > 0) {
+        initialResults.violations.forEach((v, i) => {
+            console.log(\`  \${i + 1}. [\${v.impact?.toUpperCase()}] \${v.id}: \${v.description}\`);
+            console.log(\`     Help: \${v.helpUrl}\`);
+            v.nodes.slice(0, 3).forEach(node => {
+                console.log(\`     → \${node.html.substring(0, 100)}\${node.html.length > 100 ? '...' : ''}\`);
+            });
+            if (v.nodes.length > 3) {
+                console.log(\`     ... and \${v.nodes.length - 3} more instances\`);
+            }
+        });
+    }
+    console.log('');
 
     // 4. Interact with discovered elements
     ${interactions}
@@ -83,8 +96,14 @@ test('Accessibility Interaction Test', async ({ page }) => {
         action += `\n    try {`;
         action += `\n        const el${index} = page.locator('${locator}').first();`;
 
+        // Check visibility first to avoid long timeouts on hidden elements
+        action += `\n        const isVisible${index} = await el${index}.isVisible();`;
+        action += `\n        if (!isVisible${index}) {`;
+        action += `\n            console.log(\`⏭️  Skipped (not visible): ${element.description}\`);`;
+        action += `\n            throw new Error('Element not visible');`;
+        action += `\n        }`;
+
         // Scroll into view to handle elements below fold or in responsive layouts
-        // Use a timeout to avoid hanging on hidden elements
         action += `\n        await el${index}.scrollIntoViewIfNeeded({ timeout: 3000 }).catch(() => {});`;
 
         switch (element.type) {
@@ -108,7 +127,14 @@ test('Accessibility Interaction Test', async ({ page }) => {
 
         // Add an accessibility check after interaction with unique variable name
         action += `\n        const results${index} = await new AxeBuilder({ page }).analyze();`;
-        action += `\n        console.log(\`✅ ${element.description}: \${results${index}.violations.length} violations\`);`;
+        action += `\n        if (results${index}.violations.length > 0) {`;
+        action += `\n            console.log(\`❌ ${element.description}: \${results${index}.violations.length} violations\`);`;
+        action += `\n            results${index}.violations.forEach(v => {`;
+        action += `\n                console.log(\`   [\${v.impact?.toUpperCase()}] \${v.id}: \${v.description}\`);`;
+        action += `\n            });`;
+        action += `\n        } else {`;
+        action += `\n            console.log(\`✅ ${element.description}: No violations\`);`;
+        action += `\n        }`;
 
         // Close any modals/overlays that might have opened
         action += `\n        await page.keyboard.press('Escape');`;
@@ -121,7 +147,10 @@ test('Accessibility Interaction Test', async ({ page }) => {
 
         // Catch block to handle failures
         action += `\n    } catch (error) {`;
-        action += `\n        console.log(\`⚠️  Skipped: ${element.description} - \${error.message}\`);`;
+        action += `\n        // Only log if not already logged by visibility check`;
+        action += `\n        if (error.message !== 'Element not visible') {`;
+        action += `\n            console.log(\`⚠️  Skipped: ${element.description} - \${error.message.split('\\n')[0]}\`);`;
+        action += `\n        }`;
         action += `\n        // Try to recover by going back to original URL`;
         action += `\n        try { await page.goto(originalUrl, { waitUntil: 'networkidle', timeout: 5000 }); } catch {}`;
         action += `\n    }`;

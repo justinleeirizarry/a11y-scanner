@@ -44,7 +44,7 @@ export function exportPrompt(
             break;
 
         case 'md':
-            content = `# Accessibility Violations - AI Fix Prompt\n\n${prompt}`;
+            content = prompt;
             defaultFilename = 'a11y-prompt.md';
             break;
 

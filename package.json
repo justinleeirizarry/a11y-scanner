@@ -10,7 +10,6 @@
     },
     "bin": {
         "react-a11y-scanner": "./bin/cli.js",
-        "a11y-scan": "./bin/cli.js",
         "mcp-server": "./dist/mcp-server.js"
     },
     "scripts": {

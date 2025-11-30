@@ -39,13 +39,13 @@ npm install -g react-a11y-scanner
 ### Quick Scan
 
 ```bash
-a11y-scan https://example.com
+react-a11y-scanner https://example.com
 ```
 
 Or scan your local app:
 
 ```bash
-a11y-scan http://localhost:3000
+react-a11y-scanner http://localhost:3000
 ```
 
 > **Note:** For best results, scan **production builds** (not dev mode with HMR).
@@ -54,25 +54,25 @@ a11y-scan http://localhost:3000
 
 ```bash
 # Use Firefox
-a11y-scan https://example.com --browser firefox
+react-a11y-scanner https://example.com --browser firefox
 
 # Export JSON report
-a11y-scan https://example.com --output report.json
+react-a11y-scanner https://example.com --output report.json
 
 # CI mode (exit code 1 if violations found)
-a11y-scan https://example.com --ci --threshold 0
+react-a11y-scanner https://example.com --ci --threshold 0
 
 # Show component hierarchy tree view
-a11y-scan https://example.com --tree
+react-a11y-scanner https://example.com --tree
 
 # Generate AI prompt for fixes
-a11y-scan https://example.com --ai
+react-a11y-scanner https://example.com --ai
 
 # Quiet mode - minimal output
-a11y-scan https://example.com --quiet
+react-a11y-scanner https://example.com --quiet
 
 # Disable keyboard navigation tests
-a11y-scan https://example.com --keyboard-nav=false
+react-a11y-scanner https://example.com --keyboard-nav=false
 ```
 
 ### All Options
@@ -106,8 +106,7 @@ Use the scanner with Claude Desktop by adding to your config (`~/Library/Applica
 {
   "mcpServers": {
     "react-a11y-scanner": {
-      "command": "npx",
-      "args": ["react-a11y-scanner", "mcp-server"]
+      "command": "mcp-server"
     }
   }
 }

@@ -103,17 +103,7 @@ const App: React.FC<AppProps> = ({ mode, url, browser, output, ci, threshold, he
                     setScanResults(results);
                     setScanState('complete');
 
-                    // Handle CI mode exit
-                    if (ci) {
-                        setExitCode(ciPassed ? EXIT_CODES.SUCCESS : EXIT_CODES.VIOLATIONS_FOUND);
-                        exit();
-                    } else if (!tree) {
-                        // Exit for non-interactive modes
-                        // If --tree is set, we keep running for the interactive TreeViewer
-                        exit();
-                    }
-
-                    // Handle AI prompts
+                    // Handle AI prompts (must happen before exit)
                     if (ai) {
                         try {
                             const { generateAndExport } = await import('../prompts/prompt-generator.js');
@@ -136,6 +126,16 @@ const App: React.FC<AppProps> = ({ mode, url, browser, output, ci, threshold, he
                             }
                             return;
                         }
+                    }
+
+                    // Handle CI mode exit
+                    if (ci) {
+                        setExitCode(ciPassed ? EXIT_CODES.SUCCESS : EXIT_CODES.VIOLATIONS_FOUND);
+                        exit();
+                    } else if (!tree) {
+                        // Exit for non-interactive modes
+                        // If --tree is set, we keep running for the interactive TreeViewer
+                        exit();
                     }
                 } catch (err) {
                     if (cancelled) return;

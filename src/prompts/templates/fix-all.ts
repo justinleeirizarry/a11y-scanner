@@ -1,5 +1,5 @@
 import type { PromptTemplate } from '../../types.js';
-import { formatViolationSummary, formatViolations } from '../formatters.js';
+import { formatViolations } from '../formatters.js';
 
 export const fixAllTemplate: PromptTemplate = {
     name: 'fix-all',
@@ -7,30 +7,30 @@ export const fixAllTemplate: PromptTemplate = {
     render: (context) => {
         const { violations, url, summary } = context;
 
-        // Format WCAG level breakdown if available
-        let wcagBreakdown = '';
-        if (summary.violationsByWcagLevel) {
-            const levels = summary.violationsByWcagLevel;
-            const parts: string[] = [];
-            const levelA = (levels.wcag2a || 0) + (levels.wcag21a || 0);
-            const levelAA = (levels.wcag2aa || 0) + (levels.wcag21aa || 0) + (levels.wcag22aa || 0);
-            if (levelA > 0) parts.push(`Level A: ${levelA}`);
-            if (levelAA > 0) parts.push(`Level AA: ${levelAA}`);
-            if (levels.wcag2aaa && levels.wcag2aaa > 0) parts.push(`Level AAA: ${levels.wcag2aaa}`);
-            if (levels.bestPractice && levels.bestPractice > 0) parts.push(`Best Practice: ${levels.bestPractice}`);
-            if (parts.length > 0) {
-                wcagBreakdown = `\n### By WCAG Level\n${parts.map(p => `- ${p}`).join('\n')}\n`;
-            }
-        }
+        // Count violations (rules) by severity from the violations array
+        const rulesBySeverity = violations.reduce((acc, v) => {
+            acc[v.impact] = (acc[v.impact] || 0) + 1;
+            return acc;
+        }, {} as Record<string, number>);
+
+        // Format severity breakdown for rules
+        const severityLines: string[] = [];
+        if (rulesBySeverity.critical) severityLines.push(`- Critical: ${rulesBySeverity.critical}`);
+        if (rulesBySeverity.serious) severityLines.push(`- Serious: ${rulesBySeverity.serious}`);
+        if (rulesBySeverity.moderate) severityLines.push(`- Moderate: ${rulesBySeverity.moderate}`);
+        if (rulesBySeverity.minor) severityLines.push(`- Minor: ${rulesBySeverity.minor}`);
+
+        // Count total instances across all violations
+        const totalInstances = violations.reduce((acc, v) => acc + v.nodes.length, 0);
 
         // Add passes context if available
         const passesNote = summary.totalPasses > 0
-            ? `\n> Note: ${summary.totalPasses} accessibility rules are already passing.\n`
+            ? `\n> ${summary.totalPasses} accessibility rules are passing.`
             : '';
 
         // Add incomplete note if needed
         const incompleteNote = summary.totalIncomplete > 0
-            ? `\n> ${summary.totalIncomplete} items need manual review (not included below).\n`
+            ? `\n> ${summary.totalIncomplete} items need manual review (not included below).`
             : '';
 
         return `# Accessibility Fix Request
@@ -44,12 +44,13 @@ I need you to fix ALL accessibility violations in my application.
 ### Summary
 - **Total Components:** ${summary.totalComponents}
 - **Components with Issues:** ${summary.componentsWithViolations}
-- **Total Violations:** ${summary.totalViolations}
-- **Rules Passing:** ${summary.totalPasses || 0}
+- **Violated Rules:** ${violations.length}
+- **Total Instances:** ${totalInstances}
 
-### Violations by Severity
-${formatViolationSummary(violations)}
-${wcagBreakdown}${passesNote}${incompleteNote}
+### Rules by Severity
+${severityLines.length > 0 ? severityLines.join('\n') : '- None'}
+${passesNote}${incompleteNote}
+
 ## Detailed Violations
 ${formatViolations(violations)}
 

@@ -142,6 +142,94 @@ const FIX_SUGGESTIONS: Record<string, FixSuggestion> = {
         wcagLevel: 'A',
         userImpact: 'Duplicate IDs break form labels and ARIA references.',
         priority: 'high'
+    },
+    'landmark-unique': {
+        summary: 'Add unique labels to duplicate landmarks',
+        details: 'When multiple landmarks of the same type exist, each must have a unique aria-label or aria-labelledby.',
+        wcagCriteria: '1.3.1 Info and Relationships',
+        wcagLevel: 'A',
+        userImpact: 'Screen reader users cannot distinguish between multiple navigation regions.',
+        priority: 'medium'
+    },
+    'nested-interactive': {
+        summary: 'Remove nested interactive elements',
+        details: 'Interactive elements (buttons, links) cannot be nested inside each other.',
+        wcagCriteria: '4.1.2 Name, Role, Value',
+        wcagLevel: 'A',
+        userImpact: 'Nested interactive elements cause unpredictable behavior with assistive technologies.',
+        priority: 'critical'
+    },
+    'aria-hidden-focus': {
+        summary: 'Remove focusable elements from aria-hidden regions',
+        details: 'Elements with aria-hidden="true" should not contain focusable elements.',
+        wcagCriteria: '4.1.2 Name, Role, Value',
+        wcagLevel: 'A',
+        userImpact: 'Keyboard users can focus invisible elements causing confusion.',
+        priority: 'critical'
+    },
+    'focus-order-semantics': {
+        summary: 'Fix focus order to match visual order',
+        details: 'Tab order should follow the visual reading order of the page.',
+        wcagCriteria: '2.4.3 Focus Order',
+        wcagLevel: 'A',
+        userImpact: 'Keyboard users experience confusing navigation order.',
+        priority: 'high'
+    },
+    'scrollable-region-focusable': {
+        summary: 'Make scrollable regions keyboard accessible',
+        details: 'Scrollable regions need tabindex="0" to be keyboard accessible.',
+        wcagCriteria: '2.1.1 Keyboard',
+        wcagLevel: 'A',
+        userImpact: 'Keyboard users cannot scroll content in these regions.',
+        priority: 'high'
+    },
+    'bypass': {
+        summary: 'Add skip navigation link',
+        details: 'Provide a skip link to bypass repeated navigation and jump to main content.',
+        wcagCriteria: '2.4.1 Bypass Blocks',
+        wcagLevel: 'A',
+        userImpact: 'Keyboard users must tab through all navigation on every page.',
+        priority: 'high'
+    },
+    'empty-heading': {
+        summary: 'Add content to empty headings',
+        details: 'Heading elements must have text content.',
+        wcagCriteria: '1.3.1 Info and Relationships',
+        wcagLevel: 'A',
+        userImpact: 'Screen readers announce empty headings causing confusion.',
+        priority: 'medium'
+    },
+    'frame-title': {
+        summary: 'Add title to iframe',
+        details: 'All iframes must have a descriptive title attribute.',
+        wcagCriteria: '4.1.2 Name, Role, Value',
+        wcagLevel: 'A',
+        userImpact: 'Screen reader users cannot identify iframe content.',
+        priority: 'high'
+    },
+    'input-image-alt': {
+        summary: 'Add alt text to image button',
+        details: 'Image inputs must have an alt attribute describing their function.',
+        wcagCriteria: '1.1.1 Non-text Content',
+        wcagLevel: 'A',
+        userImpact: 'Screen reader users cannot determine button purpose.',
+        priority: 'critical'
+    },
+    'select-name': {
+        summary: 'Add label to select element',
+        details: 'Select elements must have an associated label.',
+        wcagCriteria: '3.3.2 Labels or Instructions',
+        wcagLevel: 'A',
+        userImpact: 'Screen reader users cannot identify what to select.',
+        priority: 'critical'
+    },
+    'tabindex': {
+        summary: 'Remove positive tabindex values',
+        details: 'Avoid tabindex values greater than 0 as they disrupt natural tab order.',
+        wcagCriteria: '2.4.3 Focus Order',
+        wcagLevel: 'A',
+        userImpact: 'Positive tabindex creates unpredictable keyboard navigation.',
+        priority: 'medium'
     }
 };
 

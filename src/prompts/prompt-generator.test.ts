@@ -64,13 +64,13 @@ describe('Prompt Generator', () => {
             );
         });
 
-        it('should write md file with header', () => {
+        it('should write md file', () => {
             const prompt = 'My Prompt';
             exportPrompt(prompt, { format: 'md', template: 'fix-all' });
 
             expect(fs.writeFileSync).toHaveBeenCalledWith(
                 'a11y-prompt.md',
-                expect.stringContaining('# Accessibility Violations'),
+                'My Prompt',
                 'utf-8'
             );
         });

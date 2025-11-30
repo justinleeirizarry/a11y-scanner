@@ -1,6 +1,19 @@
 import type { AttributedViolation } from '../types.js';
 
 /**
+ * Escape HTML tags in text for markdown display
+ * Converts <tag> to `<tag>` so they render as code instead of being stripped
+ */
+function escapeHtmlTags(text: string): string {
+    // Match opening tags like <ul>, <li>, <script> (with optional space/attributes before >)
+    // and closing tags like </ul>, </li>
+    return text
+        .replace(/<([a-zA-Z][a-zA-Z0-9-]*)>/g, '`<$1>`')
+        .replace(/<([a-zA-Z][a-zA-Z0-9-]*)\s/g, '`<$1>` ')
+        .replace(/<\/([a-zA-Z][a-zA-Z0-9-]*)>/g, '`</$1>`');
+}
+
+/**
  * Format violations summary for prompts
  */
 export function formatViolationSummary(violations: AttributedViolation[]): string {
@@ -19,15 +32,53 @@ export function formatViolationSummary(violations: AttributedViolation[]): strin
 }
 
 /**
- * Filter component path to remove minified/internal names
+ * DOM element names to filter out from component paths
+ */
+const DOM_ELEMENTS = new Set([
+    'div', 'span', 'p', 'a', 'button', 'input', 'form', 'label',
+    'ul', 'ol', 'li', 'nav', 'main', 'header', 'footer', 'section', 'article', 'aside',
+    'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+    'table', 'thead', 'tbody', 'tr', 'td', 'th',
+    'img', 'svg', 'path', 'circle', 'ellipse', 'line', 'rect', 'polygon', 'polyline', 'g',
+    'video', 'audio', 'source', 'canvas',
+    'code', 'pre', 'kbd', 'blockquote', 'strong', 'em', 'b', 'i',
+    'select', 'option', 'textarea', 'fieldset', 'legend',
+    'dl', 'dt', 'dd', 'figure', 'figcaption', 'hr', 'br',
+]);
+
+/**
+ * Internal/library component names to filter out
+ */
+const INTERNAL_COMPONENTS = new Set([
+    'Provider', 'Consumer', 'Context', 'Fragment',
+    'Suspense', 'Lazy', 'Memo', 'ForwardRef',
+    'ContextMenuProvider', 'PopperProvider', 'MenuProvider', 'MenuPortalProvider',
+    'Presence', 'Primitive', 'Slot',
+]);
+
+/**
+ * Filter component path to show only meaningful user components
  */
 function filterComponentPath(pathParts: string[]): string[] {
     return pathParts
-        .filter(name => name.length > 2) // Filter minified single/double letter names
-        .filter(name =>
-            !name.includes('Anonymous') &&
-            !name.startsWith('__')
-        );
+        .filter(name => {
+            // Filter minified single/double letter names
+            if (name.length <= 2) return false;
+
+            // Filter DOM elements (lowercase)
+            if (DOM_ELEMENTS.has(name.toLowerCase())) return false;
+
+            // Filter internal components
+            if (INTERNAL_COMPONENTS.has(name)) return false;
+
+            // Filter names with dots (like Primitive.span)
+            if (name.includes('.')) return false;
+
+            // Filter Anonymous and __ prefixed
+            if (name.includes('Anonymous') || name.startsWith('__')) return false;
+
+            return true;
+        });
 }
 
 /**
@@ -68,8 +119,8 @@ export function formatViolations(violations: AttributedViolation[]): string {
         const userPath = pathParts.length > 0 ? pathParts.join(' > ') : 'Unknown';
 
         let output = `### ${idx + 1}. ${violation.id} (${violation.impact})\n\n`;
-        output += `**Description:** ${violation.description}\n`;
-        output += `**Help:** [${violation.help}](${violation.helpUrl})\n`;
+        output += `**Description:** ${escapeHtmlTags(violation.description)}\n`;
+        output += `**Help:** [${escapeHtmlTags(violation.help)}](${violation.helpUrl})\n`;
 
         // Add WCAG tags
         if (violation.tags && violation.tags.length > 0) {
@@ -90,7 +141,7 @@ export function formatViolations(violations: AttributedViolation[]): string {
         }
 
         if (firstNode?.failureSummary) {
-            output += `\n**Failure Summary:**\n> ${firstNode.failureSummary.split('\n').join('\n> ')}\n`;
+            output += `\n**Failure Summary:**\n> ${escapeHtmlTags(firstNode.failureSummary).split('\n').join('\n> ')}\n`;
         }
 
         // Add check details if available (more specific failure info)
@@ -103,7 +154,7 @@ export function formatViolations(violations: AttributedViolation[]): string {
             if (checkMessages.length > 0) {
                 output += `\n**Specific Issues:**\n`;
                 checkMessages.slice(0, 3).forEach(msg => {
-                    output += `- ${msg}\n`;
+                    output += `- ${escapeHtmlTags(msg)}\n`;
                 });
             }
         }

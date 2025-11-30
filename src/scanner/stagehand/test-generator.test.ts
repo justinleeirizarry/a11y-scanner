@@ -34,12 +34,15 @@ describe('TestGenerator', () => {
             expect(test).toContain('setViewportSize({ width: 1920, height: 1080 })');
         });
 
-        it('should include initial accessibility scan', () => {
+        it('should include initial accessibility scan with detailed output', () => {
             const elements: ElementDiscovery[] = [];
             const test = generator.generateTest('http://example.com', elements);
 
             expect(test).toContain('new AxeBuilder({ page }).analyze()');
-            expect(test).toContain('Initial violations');
+            expect(test).toContain('Initial Accessibility Scan');
+            expect(test).toContain('violations.forEach');
+            expect(test).toContain('v.impact');
+            expect(test).toContain('v.helpUrl');
         });
 
         it('should include element count in completion message', () => {
@@ -188,6 +191,16 @@ describe('TestGenerator', () => {
             expect(test).toContain('scrollIntoViewIfNeeded');
         });
 
+        it('should check visibility before interaction', () => {
+            const elements: ElementDiscovery[] = [
+                { selector: '#btn', description: 'Button', type: 'button' }
+            ];
+            const test = generator.generateTest('http://example.com', elements);
+
+            expect(test).toContain('isVisible()');
+            expect(test).toContain('Skipped (not visible)');
+        });
+
         it('should press Escape after interaction', () => {
             const elements: ElementDiscovery[] = [
                 { selector: '#btn', description: 'Button', type: 'button' }
@@ -229,13 +242,15 @@ describe('TestGenerator', () => {
             expect(test.match(/new AxeBuilder/g)?.length).toBeGreaterThanOrEqual(3); // initial + 2 elements
         });
 
-        it('should log violation count after each interaction', () => {
+        it('should log detailed violations after each interaction', () => {
             const elements: ElementDiscovery[] = [
                 { selector: '#btn', description: 'Test button', type: 'button' }
             ];
             const test = generator.generateTest('http://example.com', elements);
 
-            expect(test).toContain('violations');
+            expect(test).toContain('violations.length > 0');
+            expect(test).toContain('No violations');
+            expect(test).toContain('v.impact');
         });
     });
 
