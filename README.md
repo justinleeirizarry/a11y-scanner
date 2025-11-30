@@ -65,7 +65,7 @@ react-a11y-scanner https://example.com --ci --threshold 0
 # Show component hierarchy tree view
 react-a11y-scanner https://example.com --tree
 
-# Generate AI prompt for fixes
+# Generate AI prompt for fixes (see examples/sample-ai-prompt-output.md)
 react-a11y-scanner https://example.com --ai
 
 # Quiet mode - minimal output
