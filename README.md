@@ -129,7 +129,10 @@ MIT
 
 ## Credits
 
-- [Ink](https://github.com/vadimdemedes/ink) - Terminal UI framework
-- [Playwright](https://playwright.dev/) - Browser automation
-- [axe-core](https://github.com/dequelabs/axe-core) - Accessibility testing
-- [Bippy](https://github.com/itsjoekent/bippy) - React Fiber inspection
+Built with these excellent tools:
+
+- <img src="https://github.com/vadimdemedes/ink/raw/master/media/logo.png" height="16" alt="" /> **[Ink](https://github.com/vadimdemedes/ink)** - Terminal UI framework
+- <img src="https://playwright.dev/img/playwright-logo.svg" height="16" alt="" /> **[Playwright](https://playwright.dev/)** - Browser automation
+- <img src="https://static.npmjs.com/attachments/ck3uwed1cmso79y74pjugy10f-axe-core-npm-logo.png" height="16" alt="" /> **[axe-core](https://github.com/dequelabs/axe-core)** - Accessibility testing engine
+- <img src="https://github.com/aidenybai/bippy/raw/main/.github/public/bippy.png" height="16" alt="" /> **[Bippy](https://github.com/aidenybai/bippy)** - React Fiber inspection
+- <img src="https://www.stagehand.dev/logos/alt-logo.svg" height="16" alt="" /> **[Stagehand](https://github.com/browserbase/stagehand)** - AI browser automation
