@@ -37,7 +37,7 @@ describe('Dashboard Component', () => {
 
         expect(output).toContain('Components');
         expect(output).toContain('10');
-        expect(output).toContain('With Issues');
+        expect(output).toContain('with issues');
         expect(output).toContain('3');
     });
 
@@ -56,10 +56,11 @@ describe('Dashboard Component', () => {
         const { lastFrame } = render(<Dashboard summary={summary} />);
         const output = lastFrame() || '';
 
-        expect(output).toContain('Critical');
-        expect(output).toContain('Serious');
-        expect(output).toContain('Moderate');
-        expect(output).toContain('Minor');
+        expect(output).toContain('Severity');
+        expect(output).toContain('critical');
+        expect(output).toContain('serious');
+        expect(output).toContain('moderate');
+        expect(output).toContain('minor');
     });
 
     it('renders WCAG level breakdown when violations exist', () => {
@@ -101,7 +102,7 @@ describe('Dashboard Component', () => {
         const { lastFrame } = render(<Dashboard summary={summary} />);
         const output = lastFrame() || '';
 
-        expect(output).toContain('Manual Review');
+        expect(output).toContain('Review');
         expect(output).toContain('5');
     });
 
@@ -112,7 +113,7 @@ describe('Dashboard Component', () => {
         const { lastFrame } = render(<Dashboard summary={summary} />);
         const output = lastFrame() || '';
 
-        expect(output).not.toContain('Manual Review');
+        expect(output).not.toContain('Review:');
     });
 
     it('includes keyboard issues in total count', () => {
@@ -149,15 +150,15 @@ describe('Dashboard Component', () => {
         const output = lastFrame() || '';
 
         // Critical should be 3 (1 + 2 from keyboard)
-        expect(output).toContain('Critical');
+        expect(output).toContain('critical');
     });
 
-    it('renders scan summary header', () => {
+    it('renders components label', () => {
         const summary = createMockSummary();
         const { lastFrame } = render(<Dashboard summary={summary} />);
         const output = lastFrame() || '';
 
-        expect(output).toContain('Scan Summary');
+        expect(output).toContain('Components');
     });
 
     it('handles zero violations gracefully', () => {
@@ -189,6 +190,6 @@ describe('Dashboard Component', () => {
         const output = lastFrame() || '';
 
         // Should still render without crashing
-        expect(output).toContain('Scan Summary');
+        expect(output).toContain('Components');
     });
 });

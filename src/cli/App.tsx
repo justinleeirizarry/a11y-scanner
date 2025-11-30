@@ -21,6 +21,7 @@ interface AppProps {
     tags?: string[];
     keyboardNav?: boolean;
     tree?: boolean;
+    quiet?: boolean;
     generateTest?: boolean;
     testFile?: string;
     stagehandModel?: string;
@@ -30,7 +31,7 @@ interface AppProps {
 type ScanState = 'idle' | 'scanning' | 'complete' | 'error';
 type TestGenState = 'idle' | 'initializing' | 'navigating' | 'discovering' | 'generating' | 'complete' | 'error';
 
-const App: React.FC<AppProps> = ({ mode, url, browser, output, ci, threshold, headless, ai, tags, keyboardNav, tree, generateTest, testFile, stagehandModel, stagehandVerbose }) => {
+const App: React.FC<AppProps> = ({ mode, url, browser, output, ci, threshold, headless, ai, tags, keyboardNav, tree, quiet, generateTest, testFile, stagehandModel, stagehandVerbose }) => {
     const { exit } = useApp();
     const [scanState, setScanState] = useState<ScanState>('idle');
     const [testGenState, setTestGenState] = useState<TestGenState>('idle');
@@ -180,11 +181,24 @@ const App: React.FC<AppProps> = ({ mode, url, browser, output, ci, threshold, he
 
     // Scan mode
     if (scanState === 'scanning') {
+        // In quiet mode, show minimal scanning indicator
+        if (quiet) {
+            return (
+                <Box>
+                    <Text color="gray">Scanning {url}...</Text>
+                </Box>
+            );
+        }
         return <Scanner url={url} browser={browser} />;
     }
 
     if (scanState === 'complete' && scanResults) {
-        return <Results results={scanResults} outputFile={output} aiPromptFile={aiPromptFilePath || undefined} showTree={tree} />;
+        return <Results results={scanResults} outputFile={output} aiPromptFile={aiPromptFilePath || undefined} showTree={tree} quiet={quiet} />;
+    }
+
+    // In quiet mode, show nothing during initialization
+    if (quiet) {
+        return null;
     }
 
     return (

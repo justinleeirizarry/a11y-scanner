@@ -10,6 +10,7 @@ import { validateUrl, validateTags, validateThreshold, validateBrowser } from '.
 import { createOrchestrationService } from './services/index.js';
 import { EXIT_CODES, setExitCode, exitWithCode } from './utils/exit-codes.js';
 import { updateConfig, loadEnvConfig, hasEnvConfig } from './config/index.js';
+import { logger, LogLevel } from './utils/logger.js';
 
 // Load configuration from environment variables (REACT_A11Y_*)
 if (hasEnvConfig()) {
@@ -32,6 +33,7 @@ const cli = meow(
     --tags             Comma-separated list of axe-core tags (e.g. wcag2a,best-practice)
     --keyboard-nav     Run keyboard navigation tests [default: true]
     --tree             Show component hierarchy view
+    --quiet, -q        Minimal output - show only summary line
 
   Test Generation (mutually exclusive with scan options)
     --generate-test    Enable test generation mode (skips accessibility scan)
@@ -89,6 +91,11 @@ const cli = meow(
             },
             tree: {
                 type: 'boolean',
+                default: false,
+            },
+            quiet: {
+                type: 'boolean',
+                shortFlag: 'q',
                 default: false,
             },
             stagehandModel: {
@@ -201,6 +208,11 @@ if (isTestGenerationMode) {
 // Check if stdout is a TTY (interactive terminal)
 const isTTY = process.stdout.isTTY === true;
 
+// Set logger to silent in quiet mode
+if (cli.flags.quiet) {
+    logger.setLevel(LogLevel.SILENT);
+}
+
 // If not a TTY (non-interactive), use JSON output mode
 if (!isTTY) {
     (async () => {
@@ -231,18 +243,46 @@ if (!isTTY) {
                     ciThreshold: cli.flags.threshold,
                 });
 
-                // Output JSON to stdout with circular reference handling
-                const seen = new WeakSet();
-                const jsonOutput = JSON.stringify(results, (key, value) => {
-                    if (typeof value === 'object' && value !== null) {
-                        if (seen.has(value)) {
-                            return '[Circular]';
-                        }
-                        seen.add(value);
+                // In quiet mode, output plain text; otherwise full JSON
+                if (cli.flags.quiet) {
+                    const { summary, violations } = results;
+                    const statusIcon = summary.totalViolations > 0 ? '✗' : '✓';
+                    console.log(`${statusIcon} ${url} - ${summary.totalViolations} violations, ${summary.totalPasses} passes`);
+
+                    if (summary.totalViolations > 0) {
+                        const { violationsBySeverity } = summary;
+                        const severityParts = [];
+                        if (violationsBySeverity.critical > 0) severityParts.push(`${violationsBySeverity.critical} critical`);
+                        if (violationsBySeverity.serious > 0) severityParts.push(`${violationsBySeverity.serious} serious`);
+                        if (violationsBySeverity.moderate > 0) severityParts.push(`${violationsBySeverity.moderate} moderate`);
+                        if (violationsBySeverity.minor > 0) severityParts.push(`${violationsBySeverity.minor} minor`);
+                        if (severityParts.length > 0) console.log(severityParts.join(' '));
                     }
-                    return value;
-                }, 2);
-                console.log(jsonOutput);
+
+                    for (const violation of violations) {
+                        console.log(`[${violation.impact}] ${violation.id}: ${violation.description}`);
+                        for (const node of violation.nodes) {
+                            const componentName = node.userComponentPath?.length
+                                ? node.userComponentPath[node.userComponentPath.length - 1]
+                                : node.component || 'Unknown';
+                            console.log(`  - ${componentName}${node.cssSelector ? ` (${node.cssSelector})` : ''}`);
+                        }
+                        if (violation.helpUrl) console.log(`  Docs: ${violation.helpUrl}`);
+                    }
+                } else {
+                    // Output JSON to stdout with circular reference handling
+                    const seen = new WeakSet();
+                    const jsonOutput = JSON.stringify(results, (key, value) => {
+                        if (typeof value === 'object' && value !== null) {
+                            if (seen.has(value)) {
+                                return '[Circular]';
+                            }
+                            seen.add(value);
+                        }
+                        return value;
+                    }, 2);
+                    console.log(jsonOutput);
+                }
 
                 // Handle CI mode
                 if (cli.flags.ci) {
@@ -274,6 +314,7 @@ if (!isTTY) {
             tags={cli.flags.tags ? cli.flags.tags.split(',') : undefined}
             keyboardNav={cli.flags.keyboardNav}
             tree={cli.flags.tree}
+            quiet={cli.flags.quiet}
             generateTest={cli.flags.generateTest}
             testFile={testOutputFile}
             stagehandModel={cli.flags.stagehandModel}

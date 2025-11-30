@@ -30,11 +30,11 @@ export const KeyboardResults: React.FC<KeyboardResultsProps> = ({ results }) => 
                                 {summary.totalIssues}
                             </Text>
                             <Text color="gray"> (</Text>
-                            <Text color="magenta">{summary.criticalIssues} critical</Text>
+                            <Text color="red">{summary.criticalIssues} critical</Text>
                             <Text color="gray">, </Text>
-                            <Text color="red">{summary.seriousIssues} serious</Text>
+                            <Text color="yellow">{summary.seriousIssues} serious</Text>
                             <Text color="gray">, </Text>
-                            <Text color="yellow">{summary.moderateIssues} moderate</Text>
+                            <Text color="cyan">{summary.moderateIssues} moderate</Text>
                             <Text color="gray">)</Text>
                         </Text>
                     </Box>
