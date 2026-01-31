@@ -10,7 +10,7 @@ import type { BrowserScanData } from '../../types.js';
 import { getConfig } from '../../config/index.js';
 import { logger } from '../../utils/logger.js';
 import { withRetry } from '../../utils/retry.js';
-import { BrowserLaunchError } from '../../errors/index.js';
+import { BrowserLaunchError, ScanDataError } from '../../errors/index.js';
 import type { ScanOptions, IScannerService } from './types.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -126,7 +126,7 @@ export class ScannerService implements IScannerService {
 
         // Validate that we got results
         if (!rawData) {
-            throw new Error('No scan data returned from browser');
+            throw new ScanDataError('No scan data returned from browser');
         }
 
         // Validate results have expected structure

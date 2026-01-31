@@ -7,7 +7,7 @@ import { mkdir, writeFile } from 'fs/promises';
 import { dirname } from 'path';
 import type { ScanResults, TestGenerationResults } from '../../types.js';
 import { logger } from '../../utils/logger.js';
-import { ReactNotDetectedError } from '../../errors/index.js';
+import { ReactNotDetectedError, ServiceStateError } from '../../errors/index.js';
 import { BrowserService, createBrowserService } from '../browser/index.js';
 import { ScannerService, createScannerService } from '../scanner/index.js';
 import { ResultsProcessorService, createResultsProcessorService } from '../processor/index.js';
@@ -75,7 +75,7 @@ export class OrchestrationService implements IOrchestrationService {
             // Get page for scanning
             const page = this.browserService.getPage();
             if (!page) {
-                throw new Error('Failed to get browser page');
+                throw new ServiceStateError('BrowserService', 'launched with page', 'page unavailable');
             }
 
             // Run scan

@@ -155,3 +155,33 @@ export class BrowserLaunchError extends ScanError {
         this.name = 'BrowserLaunchError';
     }
 }
+
+/**
+ * Service is in an invalid state for the requested operation
+ */
+export class ServiceStateError extends ScanError {
+    constructor(service: string, expectedState: string, actualState: string) {
+        super(
+            `${service} is ${actualState}, expected ${expectedState}`,
+            'SERVICE_STATE_ERROR',
+            false,
+            { service, expectedState, actualState }
+        );
+        this.name = 'ServiceStateError';
+    }
+}
+
+/**
+ * Scan data is invalid or missing
+ */
+export class ScanDataError extends ScanError {
+    constructor(reason: string) {
+        super(
+            `Invalid scan data: ${reason}`,
+            'SCAN_DATA_ERROR',
+            false,
+            { reason }
+        );
+        this.name = 'ScanDataError';
+    }
+}

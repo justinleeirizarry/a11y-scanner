@@ -2,8 +2,10 @@
  * Orchestration Service Types
  */
 import type { ScanResults, TestGenerationResults } from '../../types.js';
+import type { BrowserType } from '../browser/types.js';
 
-export type BrowserType = 'chromium' | 'firefox' | 'webkit';
+// Re-export for backwards compatibility
+export type { BrowserType };
 
 export interface ScanOperationOptions {
     url: string;

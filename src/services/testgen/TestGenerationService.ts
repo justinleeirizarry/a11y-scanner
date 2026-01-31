@@ -8,6 +8,7 @@ import { StagehandScanner } from '../../scanner/stagehand/index.js';
 import { TestGenerator } from '../../scanner/stagehand/test-generator.js';
 import type { ElementDiscovery } from '../../types.js';
 import { logger } from '../../utils/logger.js';
+import { ServiceStateError } from '../../errors/index.js';
 import type { TestGenerationConfig, ITestGenerationService } from './types.js';
 
 /**
@@ -64,7 +65,7 @@ export class TestGenerationService implements ITestGenerationService {
      */
     async navigateTo(url: string): Promise<void> {
         if (!this.scanner) {
-            throw new Error('TestGenerationService not initialized. Call init() first.');
+            throw new ServiceStateError('TestGenerationService', 'initialized', 'not initialized');
         }
 
         // Initialize Stagehand with the URL
@@ -72,7 +73,7 @@ export class TestGenerationService implements ITestGenerationService {
 
         const page = this.getPage();
         if (!page) {
-            throw new Error('Failed to get Stagehand page');
+            throw new ServiceStateError('TestGenerationService', 'initialized with page', 'page unavailable');
         }
 
         logger.info(`Navigating to ${url}...`);
@@ -87,7 +88,7 @@ export class TestGenerationService implements ITestGenerationService {
      */
     async discoverElements(): Promise<ElementDiscovery[]> {
         if (!this.scanner) {
-            throw new Error('TestGenerationService not initialized. Call init() first.');
+            throw new ServiceStateError('TestGenerationService', 'initialized', 'not initialized');
         }
 
         logger.info('Discovering interactive elements...');

@@ -49,6 +49,12 @@ react-a11y-scanner http://localhost:3000
 ```
 
 > **Note:** For best results, scan **production builds** (not dev mode with HMR).
+>
+> **Tip:** To get readable component names in violation reports, disable name mangling in your bundler:
+>
+> - **Next.js:** `next build --no-mangling`
+> - **Vite:** Set `esbuild: { keepNames: true }` in vite.config.js
+> - **Webpack/Terser:** Set `terserOptions: { keep_classnames: true, keep_fnames: true }` in TerserPlugin config
 
 ### Options
 

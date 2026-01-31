@@ -6,7 +6,7 @@
 import { chromium, firefox, webkit, type Browser, type Page } from 'playwright';
 import { getConfig } from '../../config/index.js';
 import { logger } from '../../utils/logger.js';
-import { BrowserLaunchError, ReactNotDetectedError } from '../../errors/index.js';
+import { BrowserLaunchError, ReactNotDetectedError, ServiceStateError } from '../../errors/index.js';
 import type {
     BrowserServiceConfig,
     BrowserType,
@@ -52,7 +52,7 @@ export class BrowserService implements IBrowserService {
      */
     async launch(config: BrowserServiceConfig): Promise<void> {
         if (this.browser) {
-            throw new Error('Browser already launched. Call close() before launching again.');
+            throw new ServiceStateError('BrowserService', 'not launched', 'already launched');
         }
 
         this.config = config;
@@ -125,7 +125,7 @@ export class BrowserService implements IBrowserService {
      */
     async navigate(url: string, options?: NavigateOptions): Promise<void> {
         if (!this.page) {
-            throw new Error('Browser not launched. Call launch() first.');
+            throw new ServiceStateError('BrowserService', 'launched', 'not launched');
         }
 
         const globalConfig = getConfig();
@@ -148,7 +148,7 @@ export class BrowserService implements IBrowserService {
      */
     async waitForStability(): Promise<StabilityCheckResult> {
         if (!this.page) {
-            throw new Error('Browser not launched. Call launch() first.');
+            throw new ServiceStateError('BrowserService', 'launched', 'not launched');
         }
 
         const globalConfig = getConfig();
@@ -207,7 +207,7 @@ export class BrowserService implements IBrowserService {
      */
     async detectReact(): Promise<boolean> {
         if (!this.page) {
-            throw new Error('Browser not launched. Call launch() first.');
+            throw new ServiceStateError('BrowserService', 'launched', 'not launched');
         }
 
         return await this.page.evaluate(() => {

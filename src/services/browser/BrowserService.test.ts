@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BrowserService, createBrowserService } from './BrowserService.js';
 import { chromium, firefox, webkit } from 'playwright';
 import * as configModule from '../../config/index.js';
-import { BrowserLaunchError } from '../../errors/index.js';
+import { BrowserLaunchError, ServiceStateError } from '../../errors/index.js';
 
 // Mock Playwright
 vi.mock('playwright', () => ({
@@ -103,7 +103,7 @@ describe('BrowserService', () => {
 
             await expect(
                 service.launch({ browserType: 'chromium', headless: true })
-            ).rejects.toThrow('Browser already launched');
+            ).rejects.toThrow(ServiceStateError);
         });
 
         it('should throw BrowserLaunchError on launch failure', async () => {
@@ -136,7 +136,7 @@ describe('BrowserService', () => {
 
         it('should throw error if browser not launched', async () => {
             await expect(service.navigate('http://localhost:3000')).rejects.toThrow(
-                'Browser not launched'
+                ServiceStateError
             );
         });
 
@@ -192,7 +192,7 @@ describe('BrowserService', () => {
         });
 
         it('should throw error if browser not launched', async () => {
-            await expect(service.waitForStability()).rejects.toThrow('Browser not launched');
+            await expect(service.waitForStability()).rejects.toThrow(ServiceStateError);
         });
     });
 
@@ -216,7 +216,7 @@ describe('BrowserService', () => {
         });
 
         it('should throw error if browser not launched', async () => {
-            await expect(service.detectReact()).rejects.toThrow('Browser not launched');
+            await expect(service.detectReact()).rejects.toThrow(ServiceStateError);
         });
     });
 
