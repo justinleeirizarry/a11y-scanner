@@ -5,6 +5,7 @@
  * Verifies the scan_url tool works correctly through the MCP protocol.
  */
 import { describe, it, expect, beforeAll } from 'vitest';
+import { Effect } from 'effect';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import {
@@ -39,7 +40,7 @@ describe('MCP Server Integration', () => {
                 includeKeyboardTests: true,
             }, AppLayer);
 
-            const content = processor.formatForMCP(results, { includeTree: false });
+            const content = Effect.runSync(processor.formatForMCP(results, { includeTree: false }));
 
             // Verify MCP response structure
             expect(content).toBeInstanceOf(Array);
@@ -66,8 +67,8 @@ describe('MCP Server Integration', () => {
                 headless: true,
             }, AppLayer);
 
-            const contentWithTree = processor.formatForMCP(results, { includeTree: true });
-            const contentWithoutTree = processor.formatForMCP(results, { includeTree: false });
+            const contentWithTree = Effect.runSync(processor.formatForMCP(results, { includeTree: true }));
+            const contentWithoutTree = Effect.runSync(processor.formatForMCP(results, { includeTree: false }));
 
             // Content with tree should be larger
             const withTreeLength = JSON.stringify(contentWithTree).length;
@@ -126,7 +127,7 @@ describe('MCP Server Integration', () => {
 
         it('should format violations for MCP consumption', () => {
             const processor = createResultsProcessorService();
-            const content = processor.formatForMCP(scanResults, { includeTree: false });
+            const content = Effect.runSync(processor.formatForMCP(scanResults, { includeTree: false }));
 
             // Should have summary section
             const hasViolationCount = content.some(
@@ -140,7 +141,7 @@ describe('MCP Server Integration', () => {
 
         it('should include component information in formatted output', () => {
             const processor = createResultsProcessorService();
-            const content = processor.formatForMCP(scanResults, { includeTree: false });
+            const content = Effect.runSync(processor.formatForMCP(scanResults, { includeTree: false }));
 
             // Should reference React components
             const hasComponentInfo = content.some(
@@ -151,7 +152,7 @@ describe('MCP Server Integration', () => {
 
         it('should format WCAG tags appropriately', () => {
             const processor = createResultsProcessorService();
-            const content = processor.formatForMCP(scanResults, { includeTree: false });
+            const content = Effect.runSync(processor.formatForMCP(scanResults, { includeTree: false }));
 
             // Join all text content
             const fullText = content.map((c) => c.text).join('\n');
@@ -181,7 +182,7 @@ describe('MCP Server Integration', () => {
             expect(results.browser).toBe('chromium');
 
             // Should be able to format results
-            const content = processor.formatForMCP(results, { includeTree: false });
+            const content = Effect.runSync(processor.formatForMCP(results, { includeTree: false }));
             expect(content).toBeInstanceOf(Array);
         }, 60000);
 

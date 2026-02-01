@@ -5,6 +5,7 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render } from 'ink-testing-library';
+import { Effect } from 'effect';
 import App from './App.js';
 
 // Mock functions - defined at module level for hoisting
@@ -56,12 +57,12 @@ describe('App Component', () => {
         vi.resetAllMocks();
         originalExitCode = process.exitCode;
         process.exitCode = undefined;
-        // Reset test generation service mocks
-        mockTestGenService.init.mockResolvedValue(undefined);
-        mockTestGenService.navigateTo.mockResolvedValue(undefined);
-        mockTestGenService.discoverElements.mockResolvedValue([]);
-        mockTestGenService.generateTest.mockReturnValue('// test content');
-        mockTestGenService.close.mockResolvedValue(undefined);
+        // Reset test generation service mocks to return Effects
+        mockTestGenService.init.mockReturnValue(Effect.succeed(undefined));
+        mockTestGenService.navigateTo.mockReturnValue(Effect.succeed(undefined));
+        mockTestGenService.discoverElements.mockReturnValue(Effect.succeed([]));
+        mockTestGenService.generateTest.mockReturnValue(Effect.succeed('// test content'));
+        mockTestGenService.close.mockReturnValue(Effect.succeed(undefined));
     });
 
     afterEach(() => {
@@ -369,9 +370,9 @@ describe('App Component', () => {
 
     describe('Test Generation Mode', () => {
         it('should call test generation service with correct options', async () => {
-            mockTestGenService.discoverElements.mockResolvedValue([
+            mockTestGenService.discoverElements.mockReturnValue(Effect.succeed([
                 { selector: '#btn', description: 'Submit button', type: 'button' }
-            ]);
+            ]));
 
             const { unmount } = render(
                 <App
@@ -405,7 +406,7 @@ describe('App Component', () => {
         });
 
         it('should handle test generation errors', async () => {
-            mockTestGenService.discoverElements.mockRejectedValue(new Error('Stagehand failed'));
+            mockTestGenService.discoverElements.mockReturnValue(Effect.fail(new Error('Stagehand failed')));
 
             const { lastFrame, unmount } = render(
                 <App
@@ -431,9 +432,9 @@ describe('App Component', () => {
         });
 
         it('should display test generation results on success', async () => {
-            mockTestGenService.discoverElements.mockResolvedValue([
+            mockTestGenService.discoverElements.mockReturnValue(Effect.succeed([
                 { selector: '#btn', description: 'Submit button', type: 'button' }
-            ]);
+            ]));
 
             const { lastFrame, unmount } = render(
                 <App

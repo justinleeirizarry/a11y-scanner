@@ -15,57 +15,69 @@ import {
     EffectScanDataError,
 } from '../../errors/effect-errors.js';
 
-// Mock the underlying services
-vi.mock('../browser/index.js', () => ({
-    createBrowserService: vi.fn(() => ({
-        launch: vi.fn(),
-        getPage: vi.fn(),
-        getBrowser: vi.fn(),
-        isLaunched: vi.fn(() => false),
-        navigate: vi.fn(),
-        waitForStability: vi.fn(),
-        detectReact: vi.fn(),
-        close: vi.fn(),
-    })),
-}));
+// Mock the browser service to return Effects like the real implementation
+vi.mock('../browser/index.js', async () => {
+    const { Effect } = await import('effect');
+    const { EffectBrowserNotLaunchedError } = await import('../../errors/effect-errors.js');
+    return {
+        createBrowserService: vi.fn(() => ({
+            launch: vi.fn(() => Effect.succeed(undefined)),
+            getPage: vi.fn(() => Effect.fail(new EffectBrowserNotLaunchedError({ operation: 'getPage' }))),
+            getBrowser: vi.fn(() => Effect.fail(new EffectBrowserNotLaunchedError({ operation: 'getBrowser' }))),
+            isLaunched: vi.fn(() => Effect.succeed(false)),
+            navigate: vi.fn(() => Effect.succeed(undefined)),
+            waitForStability: vi.fn(() => Effect.succeed({ isStable: true, navigationCount: 0 })),
+            detectReact: vi.fn(() => Effect.succeed(true)),
+            close: vi.fn(() => Effect.succeed(undefined)),
+        })),
+    };
+});
 
-vi.mock('../scanner/index.js', () => ({
-    createScannerService: vi.fn(() => ({
-        isBundleInjected: vi.fn(() => Promise.resolve(false)),
-        injectBundle: vi.fn(() => Promise.resolve()),
-        scan: vi.fn(() =>
-            Promise.resolve({
+// Mock the scanner to return Effects like the real implementation
+vi.mock('../scanner/index.js', async () => {
+    const { Effect } = await import('effect');
+    return {
+        createScannerService: vi.fn(() => ({
+            isBundleInjected: vi.fn(() => Effect.succeed(false)),
+            injectBundle: vi.fn(() => Effect.succeed(undefined)),
+            scan: vi.fn(() =>
+                Effect.succeed({
+                    components: [],
+                    violations: [],
+                })
+            ),
+        })),
+    };
+});
+
+// Mock the processor to return Effects like the real implementation
+vi.mock('../processor/index.js', async () => {
+    const { Effect } = await import('effect');
+    return {
+        createResultsProcessorService: vi.fn(() => ({
+            process: vi.fn(() => Effect.succeed({
+                url: 'http://example.com',
+                timestamp: '2024-01-01T00:00:00.000Z',
+                browser: 'chromium',
                 components: [],
                 violations: [],
-            })
-        ),
-    })),
-}));
-
-vi.mock('../processor/index.js', () => ({
-    createResultsProcessorService: vi.fn(() => ({
-        process: vi.fn(() => ({
-            url: 'http://example.com',
-            timestamp: '2024-01-01T00:00:00.000Z',
-            browser: 'chromium',
-            components: [],
-            violations: [],
-            summary: {
-                totalComponents: 0,
-                totalViolations: 0,
-                totalPasses: 0,
-                totalIncomplete: 0,
-                totalInapplicable: 0,
-                violationsBySeverity: { critical: 0, serious: 0, moderate: 0, minor: 0 },
-                violationsByWcagLevel: { A: 0, AA: 0, AAA: 0 },
-                componentsWithViolations: 0,
-            },
+                summary: {
+                    totalComponents: 0,
+                    totalViolations: 0,
+                    totalPasses: 0,
+                    totalIncomplete: 0,
+                    totalInapplicable: 0,
+                    violationsBySeverity: { critical: 0, serious: 0, moderate: 0, minor: 0 },
+                    violationsByWcagLevel: { A: 0, AA: 0, AAA: 0 },
+                    componentsWithViolations: 0,
+                },
+            })),
+            formatAsJSON: vi.fn(() => Effect.succeed('{}')),
+            formatForMCP: vi.fn(() => Effect.succeed([{ type: 'text', text: 'summary' }])),
+            formatForCI: vi.fn(() => Effect.succeed({ passed: true, totalViolations: 0, criticalViolations: 0, threshold: 0, message: 'Passed' })),
         })),
-        formatAsJSON: vi.fn(() => '{}'),
-        formatForMCP: vi.fn(() => [{ type: 'text', text: 'summary' }]),
-        formatForCI: vi.fn(() => ({ passed: true, totalViolations: 0, criticalViolations: 0, threshold: 0, message: 'Passed' })),
-    })),
-}));
+    };
+});
 
 describe('Effect Service Layers', () => {
     beforeEach(() => {

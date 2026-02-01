@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Text, useApp } from 'ink';
 import Spinner from 'ink-spinner';
+import { Effect } from 'effect';
 import Scanner from './components/Scanner.js';
 import Results from './components/Results.js';
 import TestGenerator from './components/TestGenerator.js';
@@ -62,14 +63,14 @@ const App: React.FC<AppProps> = ({ mode, url, browser, output, ci, threshold, he
                     setTestGenState('navigating');
 
                     const testGenService = createTestGenerationService();
-                    await testGenService.init({ model: stagehandModel, verbose: stagehandVerbose });
-                    await testGenService.navigateTo(url);
+                    await Effect.runPromise(testGenService.init({ model: stagehandModel, verbose: stagehandVerbose }));
+                    await Effect.runPromise(testGenService.navigateTo(url));
 
                     setTestGenState('discovering');
-                    const elements = await testGenService.discoverElements();
+                    const elements = await Effect.runPromise(testGenService.discoverElements());
 
                     setTestGenState('generating');
-                    const testContent = testGenService.generateTest(url, elements);
+                    const testContent = await Effect.runPromise(testGenService.generateTest(url, elements));
 
                     // Write test file
                     const fs = await import('fs/promises');
@@ -80,7 +81,7 @@ const App: React.FC<AppProps> = ({ mode, url, browser, output, ci, threshold, he
                     }
                     await fs.writeFile(testFile, testContent);
 
-                    await testGenService.close();
+                    await Effect.runPromise(testGenService.close());
 
                     if (cancelled) return;
 

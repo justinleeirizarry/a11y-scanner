@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { Effect } from 'effect';
 import { ResultsProcessorService, createResultsProcessorService } from './ResultsProcessorService.js';
 import type { BrowserScanData, AttributedViolation } from '../../types.js';
 
@@ -72,10 +73,12 @@ describe('ResultsProcessorService', () => {
 
     describe('process', () => {
         it('should transform raw data into ScanResults', () => {
-            const result = service.process(mockScanData, {
-                url: 'http://localhost:3000',
-                browser: 'chromium',
-            });
+            const result = Effect.runSync(
+                service.process(mockScanData, {
+                    url: 'http://localhost:3000',
+                    browser: 'chromium',
+                })
+            );
 
             expect(result.url).toBe('http://localhost:3000');
             expect(result.browser).toBe('chromium');
@@ -85,10 +88,12 @@ describe('ResultsProcessorService', () => {
         });
 
         it('should calculate summary correctly', () => {
-            const result = service.process(mockScanData, {
-                url: 'http://localhost:3000',
-                browser: 'chromium',
-            });
+            const result = Effect.runSync(
+                service.process(mockScanData, {
+                    url: 'http://localhost:3000',
+                    browser: 'chromium',
+                })
+            );
 
             expect(result.summary.totalComponents).toBe(2);
             expect(result.summary.totalViolations).toBe(1);
@@ -97,20 +102,24 @@ describe('ResultsProcessorService', () => {
         });
 
         it('should include keyboard issues in summary', () => {
-            const result = service.process(mockScanData, {
-                url: 'http://localhost:3000',
-                browser: 'chromium',
-            });
+            const result = Effect.runSync(
+                service.process(mockScanData, {
+                    url: 'http://localhost:3000',
+                    browser: 'chromium',
+                })
+            );
 
             expect(result.summary.keyboardIssues).toBe(2);
         });
 
         it('should use provided timestamp if available', () => {
-            const result = service.process(mockScanData, {
-                url: 'http://localhost:3000',
-                browser: 'chromium',
-                timestamp: '2024-01-01T00:00:00.000Z',
-            });
+            const result = Effect.runSync(
+                service.process(mockScanData, {
+                    url: 'http://localhost:3000',
+                    browser: 'chromium',
+                    timestamp: '2024-01-01T00:00:00.000Z',
+                })
+            );
 
             expect(result.timestamp).toBe('2024-01-01T00:00:00.000Z');
         });
@@ -132,10 +141,12 @@ describe('ResultsProcessorService', () => {
                 ],
             };
 
-            const result = service.process(dataWithMultiple, {
-                url: 'http://localhost:3000',
-                browser: 'chromium',
-            });
+            const result = Effect.runSync(
+                service.process(dataWithMultiple, {
+                    url: 'http://localhost:3000',
+                    browser: 'chromium',
+                })
+            );
 
             expect(result.summary.totalViolations).toBe(3); // 1 + 2 nodes
             expect(result.summary.violationsBySeverity.critical).toBe(3);
@@ -145,24 +156,28 @@ describe('ResultsProcessorService', () => {
 
     describe('formatAsJSON', () => {
         it('should return pretty JSON by default', () => {
-            const result = service.process(mockScanData, {
-                url: 'http://localhost:3000',
-                browser: 'chromium',
-            });
+            const scanResult = Effect.runSync(
+                service.process(mockScanData, {
+                    url: 'http://localhost:3000',
+                    browser: 'chromium',
+                })
+            );
 
-            const json = service.formatAsJSON(result);
+            const json = Effect.runSync(service.formatAsJSON(scanResult));
 
             expect(json).toContain('\n');
             expect(json).toContain('  ');
         });
 
         it('should return compact JSON when pretty=false', () => {
-            const result = service.process(mockScanData, {
-                url: 'http://localhost:3000',
-                browser: 'chromium',
-            });
+            const scanResult = Effect.runSync(
+                service.process(mockScanData, {
+                    url: 'http://localhost:3000',
+                    browser: 'chromium',
+                })
+            );
 
-            const json = service.formatAsJSON(result, false);
+            const json = Effect.runSync(service.formatAsJSON(scanResult, false));
 
             expect(json).not.toContain('\n');
         });
@@ -171,25 +186,29 @@ describe('ResultsProcessorService', () => {
             const circular: any = { a: 1 };
             circular.self = circular;
 
-            const result = service.process(
-                { ...mockScanData, accessibilityTree: circular },
-                { url: 'http://localhost:3000', browser: 'chromium' }
+            const scanResult = Effect.runSync(
+                service.process(
+                    { ...mockScanData, accessibilityTree: circular },
+                    { url: 'http://localhost:3000', browser: 'chromium' }
+                )
             );
 
             // Should not throw
-            const json = service.formatAsJSON(result);
+            const json = Effect.runSync(service.formatAsJSON(scanResult));
             expect(json).toContain('[Circular Reference]');
         });
     });
 
     describe('formatForMCP', () => {
         it('should return MCP-formatted content', () => {
-            const result = service.process(mockScanData, {
-                url: 'http://localhost:3000',
-                browser: 'chromium',
-            });
+            const scanResult = Effect.runSync(
+                service.process(mockScanData, {
+                    url: 'http://localhost:3000',
+                    browser: 'chromium',
+                })
+            );
 
-            const content = service.formatForMCP(result);
+            const content = Effect.runSync(service.formatForMCP(scanResult));
 
             expect(content).toHaveLength(1);
             expect(content[0].type).toBe('text');
@@ -198,12 +217,14 @@ describe('ResultsProcessorService', () => {
         });
 
         it('should include accessibility tree when requested', () => {
-            const result = service.process(mockScanData, {
-                url: 'http://localhost:3000',
-                browser: 'chromium',
-            });
+            const scanResult = Effect.runSync(
+                service.process(mockScanData, {
+                    url: 'http://localhost:3000',
+                    browser: 'chromium',
+                })
+            );
 
-            const content = service.formatForMCP(result, { includeTree: true });
+            const content = Effect.runSync(service.formatForMCP(scanResult, { includeTree: true }));
 
             expect(content).toHaveLength(2);
             expect(content[1].text).toContain('Accessibility Tree');
@@ -215,12 +236,14 @@ describe('ResultsProcessorService', () => {
                 violations: [],
             };
 
-            const result = service.process(noViolations, {
-                url: 'http://localhost:3000',
-                browser: 'chromium',
-            });
+            const scanResult = Effect.runSync(
+                service.process(noViolations, {
+                    url: 'http://localhost:3000',
+                    browser: 'chromium',
+                })
+            );
 
-            const content = service.formatForMCP(result);
+            const content = Effect.runSync(service.formatForMCP(scanResult));
 
             expect(content[0].text).toContain('No accessibility violations found');
         });
@@ -228,12 +251,14 @@ describe('ResultsProcessorService', () => {
 
     describe('formatForCI', () => {
         it('should return passed when violations <= threshold', () => {
-            const result = service.process(mockScanData, {
-                url: 'http://localhost:3000',
-                browser: 'chromium',
-            });
+            const scanResult = Effect.runSync(
+                service.process(mockScanData, {
+                    url: 'http://localhost:3000',
+                    browser: 'chromium',
+                })
+            );
 
-            const ci = service.formatForCI(result, 5);
+            const ci = Effect.runSync(service.formatForCI(scanResult, 5));
 
             expect(ci.passed).toBe(true);
             expect(ci.totalViolations).toBe(1);
@@ -242,12 +267,14 @@ describe('ResultsProcessorService', () => {
         });
 
         it('should return failed when violations > threshold', () => {
-            const result = service.process(mockScanData, {
-                url: 'http://localhost:3000',
-                browser: 'chromium',
-            });
+            const scanResult = Effect.runSync(
+                service.process(mockScanData, {
+                    url: 'http://localhost:3000',
+                    browser: 'chromium',
+                })
+            );
 
-            const ci = service.formatForCI(result, 0);
+            const ci = Effect.runSync(service.formatForCI(scanResult, 0));
 
             expect(ci.passed).toBe(false);
             expect(ci.message).toContain('Failed');
@@ -259,12 +286,14 @@ describe('ResultsProcessorService', () => {
                 violations: [{ ...mockViolation, impact: 'critical' }],
             };
 
-            const result = service.process(dataWithCritical, {
-                url: 'http://localhost:3000',
-                browser: 'chromium',
-            });
+            const scanResult = Effect.runSync(
+                service.process(dataWithCritical, {
+                    url: 'http://localhost:3000',
+                    browser: 'chromium',
+                })
+            );
 
-            const ci = service.formatForCI(result, 5);
+            const ci = Effect.runSync(service.formatForCI(scanResult, 5));
 
             expect(ci.criticalViolations).toBe(1);
         });

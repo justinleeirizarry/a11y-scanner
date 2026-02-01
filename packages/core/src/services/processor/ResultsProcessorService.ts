@@ -3,6 +3,7 @@
  *
  * Combines logic from results-parser.ts, mcp-server.ts, and App.tsx
  */
+import { Effect } from 'effect';
 import type { BrowserScanData, ScanResults } from '../../types.js';
 import { formatViolations } from '../../prompts/formatters.js';
 import { countViolationsByWcagLevel, addWcag22ToLevelCounts } from '../../utils/wcag-utils.js';
@@ -22,13 +23,22 @@ import type {
  * - JSON formatting (with circular reference handling)
  * - MCP format output
  * - CI mode threshold checking
+ *
+ * All methods return Effects for composability with the Effect ecosystem.
  */
 export class ResultsProcessorService implements IResultsProcessorService {
     /**
      * Process raw scan data into structured results
      * (Extracted from results-parser.ts)
      */
-    process(data: BrowserScanData, metadata: ScanMetadata): ScanResults {
+    process(data: BrowserScanData, metadata: ScanMetadata): Effect.Effect<ScanResults> {
+        return Effect.sync(() => this._processSync(data, metadata));
+    }
+
+    /**
+     * Internal synchronous implementation
+     */
+    private _processSync(data: BrowserScanData, metadata: ScanMetadata): ScanResults {
         const {
             components,
             violations: attributedViolations,
@@ -124,7 +134,14 @@ export class ResultsProcessorService implements IResultsProcessorService {
      * Format results as JSON string
      * Handles circular references that can occur with Fiber data
      */
-    formatAsJSON(results: ScanResults, pretty = true): string {
+    formatAsJSON(results: ScanResults, pretty = true): Effect.Effect<string> {
+        return Effect.sync(() => this._formatAsJSONSync(results, pretty));
+    }
+
+    /**
+     * Internal synchronous implementation
+     */
+    private _formatAsJSONSync(results: ScanResults, pretty = true): string {
         const seen = new WeakSet();
         const replacer = (_key: string, value: any) => {
             if (typeof value === 'object' && value !== null) {
@@ -143,7 +160,14 @@ export class ResultsProcessorService implements IResultsProcessorService {
      * Format results for MCP (Model Context Protocol) output
      * (Extracted from mcp-server.ts)
      */
-    formatForMCP(results: ScanResults, options?: MCPFormatOptions): MCPToolContent[] {
+    formatForMCP(results: ScanResults, options?: MCPFormatOptions): Effect.Effect<MCPToolContent[]> {
+        return Effect.sync(() => this._formatForMCPSync(results, options));
+    }
+
+    /**
+     * Internal synchronous implementation
+     */
+    private _formatForMCPSync(results: ScanResults, options?: MCPFormatOptions): MCPToolContent[] {
         const violationCount = results.violations.length;
         const criticalCount = results.summary.violationsBySeverity.critical;
 
@@ -182,7 +206,14 @@ export class ResultsProcessorService implements IResultsProcessorService {
      * Format results for CI mode with threshold checking
      * (Extracted from App.tsx)
      */
-    formatForCI(results: ScanResults, threshold: number): CIResult {
+    formatForCI(results: ScanResults, threshold: number): Effect.Effect<CIResult> {
+        return Effect.sync(() => this._formatForCISync(results, threshold));
+    }
+
+    /**
+     * Internal synchronous implementation
+     */
+    private _formatForCISync(results: ScanResults, threshold: number): CIResult {
         const totalViolations = results.summary.totalViolations;
         const criticalViolations = results.summary.violationsBySeverity.critical;
         const passed = totalViolations <= threshold;

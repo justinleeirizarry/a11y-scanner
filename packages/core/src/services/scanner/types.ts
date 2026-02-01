@@ -1,8 +1,10 @@
 /**
  * Scanner Service Types
  */
+import type { Effect } from 'effect';
 import type { Page } from 'playwright';
 import type { BrowserScanData } from '../../types.js';
+import type { EffectScannerInjectionError, EffectScanDataError } from '../../errors/effect-errors.js';
 
 /**
  * Options for scanner execution (subset of full ScanOptions)
@@ -12,7 +14,33 @@ export interface ScanExecutionOptions {
     includeKeyboardTests?: boolean;
 }
 
+/**
+ * Effect-first Scanner Service interface
+ *
+ * All methods return Effects for composability with the Effect ecosystem.
+ */
 export interface IScannerService {
+    /**
+     * Check if the scanner bundle is already injected in the page
+     */
+    isBundleInjected(page: Page): Effect.Effect<boolean>;
+
+    /**
+     * Inject the scanner bundle into the page
+     */
+    injectBundle(page: Page): Effect.Effect<void, EffectScannerInjectionError>;
+
+    /**
+     * Run the scan on the page
+     */
+    scan(page: Page, options?: ScanExecutionOptions): Effect.Effect<BrowserScanData, EffectScannerInjectionError | EffectScanDataError>;
+}
+
+/**
+ * @deprecated Use IScannerService instead
+ * Legacy interface for backward compatibility
+ */
+export interface IScannerServiceLegacy {
     injectBundle(page: Page): Promise<void>;
     scan(page: Page, options?: ScanExecutionOptions): Promise<BrowserScanData>;
     isBundleInjected(page: Page): Promise<boolean>;

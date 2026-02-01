@@ -57,6 +57,17 @@ export {
     type EffectScanResult,
     type PerformScanError,
 
+    // Effect service tags (for dependency injection)
+    BrowserService as BrowserServiceTag,
+    ScannerService as ScannerServiceTag,
+    ResultsProcessorService as ResultsProcessorServiceTag,
+    TestGenerationService as TestGenerationServiceTag,
+    type EffectBrowserService,
+    type EffectScannerService,
+    type EffectResultsProcessorService,
+    type EffectTestGenerationService,
+    type ScanWorkflowServices,
+
     // Effect layers
     AppLayer,
     AppLayerManual,
@@ -64,6 +75,7 @@ export {
     BrowserServiceLive,
     ScannerServiceLive,
     ResultsProcessorServiceLive,
+    TestGenerationServiceLive,
 } from './services/effect/index.js';
 
 // =============================================================================
@@ -130,6 +142,7 @@ export type {
 // Errors
 // =============================================================================
 
+// Legacy class-based errors (for Promise-based code)
 export {
     ScanError,
     ReactNotDetectedError,
@@ -144,6 +157,56 @@ export {
     ServiceStateError,
     ScanDataError,
 } from './errors/index.js';
+
+// Effect-compatible errors (Data.TaggedError) - preferred for Effect workflows
+export {
+    // Effect error types (prefixed)
+    EffectReactNotDetectedError,
+    EffectBrowserLaunchError,
+    EffectBrowserNotLaunchedError,
+    EffectBrowserAlreadyLaunchedError,
+    EffectNavigationTimeoutError,
+    EffectNavigationError,
+    EffectContextDestroyedError,
+    EffectScannerInjectionError,
+    EffectMaxRetriesExceededError,
+    EffectConfigurationError,
+    EffectInvalidUrlError,
+    EffectFileSystemError,
+    EffectServiceStateError,
+    EffectScanDataError,
+    EffectTestGenNotInitializedError,
+    EffectTestGenInitError,
+    EffectTestGenNavigationError,
+    EffectTestGenDiscoveryError,
+
+    // Effect error aliases (cleaner names)
+    ReactNotDetected,
+    BrowserLaunchFailed,
+    BrowserNotLaunched,
+    BrowserAlreadyLaunched,
+    NavigationTimeout,
+    NavigationFailed,
+    ContextDestroyed,
+    ScannerInjectionFailed,
+    MaxRetriesExceeded,
+    InvalidConfiguration,
+    InvalidUrl,
+    FileSystemFailed,
+    InvalidServiceState,
+    InvalidScanData,
+    TestGenNotInitialized,
+    TestGenInitFailed,
+    TestGenNavigationFailed,
+    TestGenDiscoveryFailed,
+
+    // Error type unions
+    type BrowserErrors,
+    type ScanErrors,
+    type ValidationErrors,
+    type TestGenErrors,
+    type ScanWorkflowErrors,
+} from './errors/effect-errors.js';
 
 // =============================================================================
 // Configuration

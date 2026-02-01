@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { Effect } from "effect";
 import { z } from "zod";
 import {
     runScanAsPromise,
@@ -52,7 +53,7 @@ server.registerTool(
             }, AppLayer);
 
             const processor = createResultsProcessorService();
-            const content = processor.formatForMCP(results, { includeTree: include_tree });
+            const content = Effect.runSync(processor.formatForMCP(results, { includeTree: include_tree }));
 
             return {
                 content,

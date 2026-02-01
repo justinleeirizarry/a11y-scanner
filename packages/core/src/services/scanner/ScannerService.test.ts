@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { Effect, Exit } from 'effect';
 import { ScannerService, createScannerService } from './ScannerService.js';
 import * as configModule from '../../config/index.js';
 
@@ -52,7 +53,7 @@ describe('ScannerService', () => {
         it('should return true when bundle is injected', async () => {
             mockPage.evaluate.mockResolvedValue(true);
 
-            const result = await service.isBundleInjected(mockPage);
+            const result = await Effect.runPromise(service.isBundleInjected(mockPage));
 
             expect(result).toBe(true);
         });
@@ -60,7 +61,7 @@ describe('ScannerService', () => {
         it('should return false when bundle is not injected', async () => {
             mockPage.evaluate.mockResolvedValue(false);
 
-            const result = await service.isBundleInjected(mockPage);
+            const result = await Effect.runPromise(service.isBundleInjected(mockPage));
 
             expect(result).toBe(false);
         });
@@ -70,10 +71,12 @@ describe('ScannerService', () => {
         it('should inject bundle when not already injected', async () => {
             // First check: not injected
             mockPage.evaluate.mockResolvedValueOnce(false);
+            // Script tag added successfully
+            mockPage.addScriptTag.mockResolvedValueOnce(undefined);
             // Verification check: now injected
             mockPage.evaluate.mockResolvedValueOnce(true);
 
-            await service.injectBundle(mockPage);
+            await Effect.runPromise(service.injectBundle(mockPage));
 
             expect(mockPage.addScriptTag).toHaveBeenCalledWith({
                 path: '/mock/path/scanner-bundle.js',
@@ -83,21 +86,25 @@ describe('ScannerService', () => {
         it('should skip injection if already injected', async () => {
             mockPage.evaluate.mockResolvedValue(true);
 
-            await service.injectBundle(mockPage);
+            await Effect.runPromise(service.injectBundle(mockPage));
 
             expect(mockPage.addScriptTag).not.toHaveBeenCalled();
         });
 
-        it('should throw error on injection failure', async () => {
+        it('should fail with EffectScannerInjectionError on injection failure', async () => {
             mockPage.evaluate.mockResolvedValueOnce(false);
             mockPage.addScriptTag.mockRejectedValue(new Error('File not found'));
 
-            await expect(service.injectBundle(mockPage)).rejects.toThrow(
-                /Failed to inject scanner bundle/
-            );
+            const exit = await Effect.runPromiseExit(service.injectBundle(mockPage));
+
+            expect(Exit.isFailure(exit)).toBe(true);
+            if (Exit.isFailure(exit) && exit.cause._tag === 'Fail') {
+                expect(exit.cause.error._tag).toBe('ScannerInjectionError');
+                expect(exit.cause.error.reason).toContain('Failed to inject scanner bundle');
+            }
         });
 
-        it('should throw error if bundle fails to load in context', async () => {
+        it('should fail with EffectScannerInjectionError if bundle fails to load in context', async () => {
             // First check: not injected
             mockPage.evaluate.mockResolvedValueOnce(false);
             // Script tag added successfully
@@ -105,9 +112,13 @@ describe('ScannerService', () => {
             // Verification check: still not injected
             mockPage.evaluate.mockResolvedValueOnce(false);
 
-            await expect(service.injectBundle(mockPage)).rejects.toThrow(
-                /Scanner bundle failed to load/
-            );
+            const exit = await Effect.runPromiseExit(service.injectBundle(mockPage));
+
+            expect(Exit.isFailure(exit)).toBe(true);
+            if (Exit.isFailure(exit) && exit.cause._tag === 'Fail') {
+                expect(exit.cause.error._tag).toBe('ScannerInjectionError');
+                expect(exit.cause.error.reason).toContain('Scanner bundle failed to load');
+            }
         });
     });
 
@@ -124,7 +135,7 @@ describe('ScannerService', () => {
             // Scan execution
             mockPage.evaluate.mockResolvedValueOnce(mockScanData);
 
-            const result = await service.scan(mockPage);
+            const result = await Effect.runPromise(service.scan(mockPage));
 
             expect(result).toEqual(mockScanData);
         });
@@ -138,7 +149,7 @@ describe('ScannerService', () => {
             mockPage.evaluate.mockResolvedValueOnce(true); // Bundle check
             mockPage.evaluate.mockResolvedValueOnce(mockScanData); // Scan
 
-            await service.scan(mockPage, { tags: ['wcag2a', 'wcag2aa'] });
+            await Effect.runPromise(service.scan(mockPage, { tags: ['wcag2a', 'wcag2aa'] }));
 
             // Second evaluate call should be the scan
             expect(mockPage.evaluate).toHaveBeenCalledTimes(2);
@@ -153,18 +164,22 @@ describe('ScannerService', () => {
             mockPage.evaluate.mockResolvedValueOnce(true); // Bundle check
             mockPage.evaluate.mockResolvedValueOnce(mockScanData); // Scan
 
-            await service.scan(mockPage, { includeKeyboardTests: true });
+            await Effect.runPromise(service.scan(mockPage, { includeKeyboardTests: true }));
 
             expect(mockPage.evaluate).toHaveBeenCalledTimes(2);
         });
 
-        it('should throw error when no scan data returned', async () => {
+        it('should fail with EffectScanDataError when no scan data returned', async () => {
             mockPage.evaluate.mockResolvedValueOnce(true); // Bundle check
             mockPage.evaluate.mockResolvedValueOnce(null); // Scan returns null
 
-            await expect(service.scan(mockPage)).rejects.toThrow(
-                'No scan data returned from browser'
-            );
+            const exit = await Effect.runPromiseExit(service.scan(mockPage));
+
+            expect(Exit.isFailure(exit)).toBe(true);
+            if (Exit.isFailure(exit) && exit.cause._tag === 'Fail') {
+                expect(exit.cause.error._tag).toBe('ScanDataError');
+                expect(exit.cause.error.reason).toContain('No scan data returned from browser');
+            }
         });
 
         it('should handle invalid component data', async () => {
@@ -176,7 +191,7 @@ describe('ScannerService', () => {
             mockPage.evaluate.mockResolvedValueOnce(true); // Bundle check
             mockPage.evaluate.mockResolvedValueOnce(invalidData); // Scan
 
-            const result = await service.scan(mockPage);
+            const result = await Effect.runPromise(service.scan(mockPage));
 
             expect(result.components).toEqual([]);
         });
@@ -190,7 +205,7 @@ describe('ScannerService', () => {
             mockPage.evaluate.mockResolvedValueOnce(true); // Bundle check
             mockPage.evaluate.mockResolvedValueOnce(invalidData); // Scan
 
-            const result = await service.scan(mockPage);
+            const result = await Effect.runPromise(service.scan(mockPage));
 
             expect(result.violations).toEqual([]);
         });

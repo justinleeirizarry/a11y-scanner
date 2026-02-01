@@ -3,121 +3,37 @@
  *
  * These layers provide the actual implementations of the service interfaces.
  * They can be composed together to create the full application layer.
+ *
+ * All services now return Effects directly, so layers are simple pass-throughs.
  */
 import { Effect, Layer } from 'effect';
 import {
     BrowserService as BrowserServiceClass,
     createBrowserService,
 } from '../browser/index.js';
-import {
-    ScannerService as ScannerServiceClass,
-    createScannerService,
-} from '../scanner/index.js';
-import {
-    ResultsProcessorService as ResultsProcessorServiceClass,
-    createResultsProcessorService,
-} from '../processor/index.js';
+import { createScannerService } from '../scanner/index.js';
+import { createResultsProcessorService } from '../processor/index.js';
 import {
     BrowserService,
     ScannerService,
     ResultsProcessorService,
+    TestGenerationService,
     type EffectBrowserService,
     type EffectScannerService,
     type EffectResultsProcessorService,
+    type EffectTestGenerationService,
 } from './tags.js';
-import {
-    EffectBrowserLaunchError,
-    EffectBrowserNotLaunchedError,
-    EffectBrowserAlreadyLaunchedError,
-    EffectNavigationError,
-    EffectScannerInjectionError,
-    EffectScanDataError,
-} from '../../errors/effect-errors.js';
-import { BrowserLaunchError, ServiceStateError, ScanDataError } from '../../errors/index.js';
+import { createTestGenerationService } from '../testgen/index.js';
+import { TestGenerationService as TestGenerationServiceClass } from '../testgen/TestGenerationService.js';
 
 // ============================================================================
 // Browser Service Layer
 // ============================================================================
 
 /**
- * Creates an Effect-wrapped browser service from an instance
+ * BrowserService layer with scoped lifecycle
  *
- * This helper extracts the common logic for wrapping BrowserService methods.
- */
-const createEffectBrowserService = (instance: BrowserServiceClass): EffectBrowserService => ({
-    launch: (config) =>
-        Effect.tryPromise({
-            try: () => instance.launch(config),
-            catch: (error): EffectBrowserLaunchError | EffectBrowserAlreadyLaunchedError => {
-                if (error instanceof ServiceStateError) {
-                    return new EffectBrowserAlreadyLaunchedError({});
-                }
-                if (error instanceof BrowserLaunchError) {
-                    return new EffectBrowserLaunchError({
-                        browserType: config.browserType,
-                        reason: error.message,
-                    });
-                }
-                return new EffectBrowserLaunchError({
-                    browserType: config.browserType,
-                    reason: error instanceof Error ? error.message : String(error),
-                });
-            },
-        }),
-
-    getPage: () =>
-        Effect.sync(() => instance.getPage()).pipe(
-            Effect.flatMap((page) =>
-                page
-                    ? Effect.succeed(page)
-                    : Effect.fail(new EffectBrowserNotLaunchedError({ operation: 'getPage' }))
-            )
-        ),
-
-    getBrowser: () =>
-        Effect.sync(() => instance.getBrowser()).pipe(
-            Effect.flatMap((browser) =>
-                browser
-                    ? Effect.succeed(browser)
-                    : Effect.fail(new EffectBrowserNotLaunchedError({ operation: 'getBrowser' }))
-            )
-        ),
-
-    isLaunched: () => Effect.sync(() => instance.isLaunched()),
-
-    navigate: (url, options) =>
-        Effect.tryPromise({
-            try: () => instance.navigate(url, options),
-            catch: (error) => {
-                if (error instanceof ServiceStateError) {
-                    return new EffectBrowserNotLaunchedError({ operation: 'navigate' });
-                }
-                return new EffectNavigationError({
-                    url,
-                    reason: error instanceof Error ? error.message : String(error),
-                });
-            },
-        }),
-
-    waitForStability: () =>
-        Effect.tryPromise({
-            try: () => instance.waitForStability(),
-            catch: () => new EffectBrowserNotLaunchedError({ operation: 'waitForStability' }),
-        }),
-
-    detectReact: () =>
-        Effect.tryPromise({
-            try: () => instance.detectReact(),
-            catch: () => new EffectBrowserNotLaunchedError({ operation: 'detectReact' }),
-        }),
-
-    close: () => Effect.promise(() => instance.close()),
-});
-
-/**
- * Creates an Effect-wrapped BrowserService with scoped lifecycle
- *
- * This layer wraps the existing BrowserService class with Effect error handling.
+ * The service now returns Effects directly, so no wrapping is needed.
  * The browser is automatically closed when the scope ends.
  */
 export const BrowserServiceLive = Layer.scoped(
@@ -127,12 +43,10 @@ export const BrowserServiceLive = Layer.scoped(
 
         // Register cleanup finalizer - runs when scope ends
         yield* Effect.addFinalizer(() =>
-            Effect.promise(async () => {
-                await instance.close().catch(() => {});
-            })
+            Effect.catchAll(instance.close(), () => Effect.void)
         );
 
-        return createEffectBrowserService(instance);
+        return instance as EffectBrowserService;
     })
 );
 
@@ -141,43 +55,14 @@ export const BrowserServiceLive = Layer.scoped(
 // ============================================================================
 
 /**
- * Creates an Effect-wrapped ScannerService
+ * ScannerService layer
  *
- * This layer wraps the existing ScannerService class with Effect error handling.
+ * The service now returns Effects directly, so no wrapping is needed.
+ * This is a simple pass-through layer.
  */
 export const ScannerServiceLive = Layer.succeed(
     ScannerService,
-    (() => {
-        const instance = createScannerService() as ScannerServiceClass;
-
-        const service: EffectScannerService = {
-            isBundleInjected: (page) => Effect.promise(() => instance.isBundleInjected(page)),
-
-            injectBundle: (page) =>
-                Effect.tryPromise({
-                    try: () => instance.injectBundle(page),
-                    catch: (error) =>
-                        new EffectScannerInjectionError({
-                            reason: error instanceof Error ? error.message : String(error),
-                        }),
-                }),
-
-            scan: (page, options) =>
-                Effect.tryPromise({
-                    try: () => instance.scan(page, options),
-                    catch: (error) => {
-                        if (error instanceof ScanDataError) {
-                            return new EffectScanDataError({ reason: error.message });
-                        }
-                        return new EffectScannerInjectionError({
-                            reason: error instanceof Error ? error.message : String(error),
-                        });
-                    },
-                }),
-        };
-
-        return service;
-    })()
+    createScannerService() as EffectScannerService
 );
 
 // ============================================================================
@@ -185,28 +70,14 @@ export const ScannerServiceLive = Layer.succeed(
 // ============================================================================
 
 /**
- * Creates an Effect-wrapped ResultsProcessorService
+ * ResultsProcessorService layer
  *
- * This layer wraps the existing ResultsProcessorService class with Effect.
- * Since the processor is pure (no side effects), errors are unlikely.
+ * The service now returns Effects directly, so no wrapping is needed.
+ * This is a simple pass-through layer.
  */
 export const ResultsProcessorServiceLive = Layer.succeed(
     ResultsProcessorService,
-    (() => {
-        const instance = createResultsProcessorService() as ResultsProcessorServiceClass;
-
-        const service: EffectResultsProcessorService = {
-            process: (data, metadata) => Effect.sync(() => instance.process(data, metadata)),
-
-            formatAsJSON: (results, pretty) => Effect.sync(() => instance.formatAsJSON(results, pretty)),
-
-            formatForMCP: (results, options) => Effect.sync(() => instance.formatForMCP(results, options)),
-
-            formatForCI: (results, threshold) => Effect.sync(() => instance.formatForCI(results, threshold)),
-        };
-
-        return service;
-    })()
+    createResultsProcessorService() as EffectResultsProcessorService
 );
 
 // ============================================================================
@@ -221,5 +92,29 @@ export const ResultsProcessorServiceLive = Layer.succeed(
  */
 export const BrowserServiceManual = Layer.succeed(
     BrowserService,
-    createEffectBrowserService(createBrowserService() as BrowserServiceClass)
+    createBrowserService() as EffectBrowserService
+);
+
+// ============================================================================
+// Test Generation Service Layer
+// ============================================================================
+
+/**
+ * TestGenerationService layer with scoped lifecycle
+ *
+ * The service now returns Effects directly, so no wrapping is needed.
+ * The scanner is automatically closed when the scope ends.
+ */
+export const TestGenerationServiceLive = Layer.scoped(
+    TestGenerationService,
+    Effect.gen(function* () {
+        const instance = createTestGenerationService() as TestGenerationServiceClass;
+
+        // Register cleanup finalizer - runs when scope ends
+        yield* Effect.addFinalizer(() =>
+            Effect.catchAll(instance.close(), () => Effect.void)
+        );
+
+        return instance as EffectTestGenerationService;
+    })
 );

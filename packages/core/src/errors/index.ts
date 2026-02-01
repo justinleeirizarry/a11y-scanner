@@ -1,9 +1,19 @@
 /**
  * Error handling for the scanner
+ *
+ * This module exports two sets of errors:
+ * 1. Legacy class-based errors (extending ScanError) - for Promise-based code
+ * 2. Effect-compatible errors (Data.TaggedError) - for Effect-based code
+ *
+ * New code should prefer the Effect-compatible errors from './effect-errors'.
  */
+
+// Re-export Effect-compatible errors for Effect workflows
+export * from './effect-errors.js';
 
 /**
  * Base error class for all scanner errors
+ * @deprecated Use Effect-compatible errors from './effect-errors' for new code
  */
 export class ScanError extends Error {
     constructor(
@@ -24,6 +34,7 @@ export class ScanError extends Error {
 
 /**
  * React was not detected on the page
+ * @deprecated Use EffectReactNotDetectedError or ReactNotDetected from effect-errors for Effect workflows
  */
 export class ReactNotDetectedError extends ScanError {
     constructor(url: string) {
@@ -39,6 +50,7 @@ export class ReactNotDetectedError extends ScanError {
 
 /**
  * Page navigation timed out
+ * @deprecated Use EffectNavigationTimeoutError or NavigationTimeout from effect-errors for Effect workflows
  */
 export class NavigationTimeoutError extends ScanError {
     constructor(url: string, timeout: number) {
@@ -54,6 +66,7 @@ export class NavigationTimeoutError extends ScanError {
 
 /**
  * Browser context was destroyed during scan
+ * @deprecated Use EffectContextDestroyedError or ContextDestroyed from effect-errors for Effect workflows
  */
 export class ContextDestroyedError extends ScanError {
     constructor(message?: string) {
@@ -68,6 +81,7 @@ export class ContextDestroyedError extends ScanError {
 
 /**
  * Scanner bundle failed to inject or execute
+ * @deprecated Use EffectScannerInjectionError or ScannerInjectionFailed from effect-errors for Effect workflows
  */
 export class ScannerInjectionError extends ScanError {
     constructor(reason: string) {
@@ -83,6 +97,7 @@ export class ScannerInjectionError extends ScanError {
 
 /**
  * Scan exceeded maximum retry attempts
+ * @deprecated Use EffectMaxRetriesExceededError or MaxRetriesExceeded from effect-errors for Effect workflows
  */
 export class MaxRetriesExceededError extends ScanError {
     constructor(attempts: number, lastError?: Error) {
@@ -98,6 +113,7 @@ export class MaxRetriesExceededError extends ScanError {
 
 /**
  * Invalid configuration provided
+ * @deprecated Use EffectConfigurationError or InvalidConfiguration from effect-errors for Effect workflows
  */
 export class ConfigurationError extends ScanError {
     constructor(message: string, invalidField?: string) {
@@ -113,6 +129,7 @@ export class ConfigurationError extends ScanError {
 
 /**
  * Invalid URL provided
+ * @deprecated Use EffectInvalidUrlError or InvalidUrl from effect-errors for Effect workflows
  */
 export class InvalidUrlError extends ScanError {
     constructor(url: string, reason?: string) {
@@ -128,6 +145,7 @@ export class InvalidUrlError extends ScanError {
 
 /**
  * File system operation failed
+ * @deprecated Use EffectFileSystemError or FileSystemFailed from effect-errors for Effect workflows
  */
 export class FileSystemError extends ScanError {
     constructor(operation: string, path: string, reason?: string) {
@@ -143,6 +161,7 @@ export class FileSystemError extends ScanError {
 
 /**
  * Browser launch failed
+ * @deprecated Use EffectBrowserLaunchError or BrowserLaunchFailed from effect-errors for Effect workflows
  */
 export class BrowserLaunchError extends ScanError {
     constructor(browserType: string, reason?: string) {
@@ -158,6 +177,7 @@ export class BrowserLaunchError extends ScanError {
 
 /**
  * Service is in an invalid state for the requested operation
+ * @deprecated Use EffectServiceStateError or InvalidServiceState from effect-errors for Effect workflows
  */
 export class ServiceStateError extends ScanError {
     constructor(service: string, expectedState: string, actualState: string) {
@@ -173,6 +193,7 @@ export class ServiceStateError extends ScanError {
 
 /**
  * Scan data is invalid or missing
+ * @deprecated Use EffectScanDataError or InvalidScanData from effect-errors for Effect workflows
  */
 export class ScanDataError extends ScanError {
     constructor(reason: string) {

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { Effect, Exit } from 'effect';
 
 // Create mock instances that we can access in tests
 let mockScannerInstance: any;
@@ -55,57 +56,81 @@ describe('TestGenerationService', () => {
 
     describe('init', () => {
         it('should initialize the service', async () => {
-            await service.init();
-            expect(service.isInitialized()).toBe(true);
+            await Effect.runPromise(service.init());
+
+            const isInitialized = await Effect.runPromise(service.isInitialized());
+            expect(isInitialized).toBe(true);
         });
 
         it('should accept model configuration', async () => {
-            await service.init({ model: 'anthropic/claude-3' });
-            expect(service.isInitialized()).toBe(true);
+            await Effect.runPromise(service.init({ model: 'anthropic/claude-3' }));
+
+            const isInitialized = await Effect.runPromise(service.isInitialized());
+            expect(isInitialized).toBe(true);
         });
 
         it('should accept verbose configuration', async () => {
-            await service.init({ verbose: true });
-            expect(service.isInitialized()).toBe(true);
+            await Effect.runPromise(service.init({ verbose: true }));
+
+            const isInitialized = await Effect.runPromise(service.isInitialized());
+            expect(isInitialized).toBe(true);
         });
     });
 
     describe('isInitialized', () => {
-        it('should return false before init', () => {
-            expect(service.isInitialized()).toBe(false);
+        it('should return false before init', async () => {
+            const isInitialized = await Effect.runPromise(service.isInitialized());
+            expect(isInitialized).toBe(false);
         });
 
         it('should return true after init', async () => {
-            await service.init();
-            expect(service.isInitialized()).toBe(true);
+            await Effect.runPromise(service.init());
+
+            const isInitialized = await Effect.runPromise(service.isInitialized());
+            expect(isInitialized).toBe(true);
         });
     });
 
     describe('getPage', () => {
-        it('should return null before init', () => {
-            expect(service.getPage()).toBeNull();
+        it('should fail with TestGenNotInitializedError before init', async () => {
+            const exit = await Effect.runPromiseExit(service.getPage());
+
+            expect(Exit.isFailure(exit)).toBe(true);
+            if (Exit.isFailure(exit) && exit.cause._tag === 'Fail') {
+                expect(exit.cause.error._tag).toBe('TestGenNotInitializedError');
+            }
         });
 
         it('should return page from scanner after init', async () => {
             const mockPage = { goto: vi.fn() };
             mockScannerInstance.page = mockPage;
 
-            await service.init();
-            expect(service.getPage()).toBe(mockPage);
+            await Effect.runPromise(service.init());
+
+            const page = await Effect.runPromise(service.getPage());
+            expect(page).toBe(mockPage);
         });
     });
 
     describe('navigateTo', () => {
-        it('should throw if not initialized', async () => {
-            await expect(service.navigateTo('http://example.com')).rejects.toThrow(
-                'not initialized'
-            );
+        it('should fail with TestGenNotInitializedError if not initialized', async () => {
+            const exit = await Effect.runPromiseExit(service.navigateTo('http://example.com'));
+
+            expect(Exit.isFailure(exit)).toBe(true);
+            if (Exit.isFailure(exit) && exit.cause._tag === 'Fail') {
+                expect(exit.cause.error._tag).toBe('TestGenNotInitializedError');
+            }
         });
     });
 
     describe('discoverElements', () => {
-        it('should throw if not initialized', async () => {
-            await expect(service.discoverElements()).rejects.toThrow('not initialized');
+        it('should fail with TestGenNotInitializedError if not initialized', async () => {
+            const exit = await Effect.runPromiseExit(service.discoverElements());
+
+            expect(Exit.isFailure(exit)).toBe(true);
+            if (Exit.isFailure(exit) && exit.cause._tag === 'Fail') {
+                expect(exit.cause.error._tag).toBe('TestGenNotInitializedError');
+            }
         });
 
         it('should return elements from scanner', async () => {
@@ -114,15 +139,15 @@ describe('TestGenerationService', () => {
             ];
             mockScannerInstance.discoverElements.mockResolvedValue(mockElements);
 
-            await service.init();
-            const elements = await service.discoverElements();
+            await Effect.runPromise(service.init());
+            const elements = await Effect.runPromise(service.discoverElements());
 
             expect(elements).toEqual(mockElements);
         });
     });
 
     describe('generateTest', () => {
-        it('should generate test content', () => {
+        it('should generate test content', async () => {
             const elements = [
                 {
                     selector: 'button',
@@ -131,7 +156,7 @@ describe('TestGenerationService', () => {
                 },
             ];
 
-            const result = service.generateTest('http://example.com', elements);
+            const result = await Effect.runPromise(service.generateTest('http://example.com', elements));
 
             expect(result).toBe('test file content');
             expect(mockGeneratorInstance.generateTest).toHaveBeenCalledWith(
@@ -144,16 +169,20 @@ describe('TestGenerationService', () => {
     describe('close', () => {
         it('should handle close when not initialized', async () => {
             // Should not throw
-            await service.close();
-            expect(service.isInitialized()).toBe(false);
+            await Effect.runPromise(service.close());
+
+            const isInitialized = await Effect.runPromise(service.isInitialized());
+            expect(isInitialized).toBe(false);
         });
 
         it('should close scanner after init', async () => {
-            await service.init();
-            await service.close();
+            await Effect.runPromise(service.init());
+            await Effect.runPromise(service.close());
 
             expect(mockScannerInstance.close).toHaveBeenCalled();
-            expect(service.isInitialized()).toBe(false);
+
+            const isInitialized = await Effect.runPromise(service.isInitialized());
+            expect(isInitialized).toBe(false);
         });
     });
 

@@ -1,6 +1,7 @@
 /**
  * Results Processor Service Types
  */
+import type { Effect } from 'effect';
 import type { BrowserScanData, ScanResults, AttributedViolation } from '../../types.js';
 
 export interface ScanMetadata {
@@ -22,13 +23,45 @@ export interface CIResult {
     message: string;
 }
 
+export interface MCPFormatOptions {
+    includeTree?: boolean;
+}
+
+/**
+ * Effect-first Results Processor Service interface
+ *
+ * All methods return Effects for composability with the Effect ecosystem.
+ * Since all operations are pure/synchronous, errors are never expected.
+ */
 export interface IResultsProcessorService {
+    /**
+     * Process raw scan data into structured results
+     */
+    process(data: BrowserScanData, metadata: ScanMetadata): Effect.Effect<ScanResults>;
+
+    /**
+     * Format results as JSON string
+     */
+    formatAsJSON(results: ScanResults, pretty?: boolean): Effect.Effect<string>;
+
+    /**
+     * Format results for MCP output
+     */
+    formatForMCP(results: ScanResults, options?: MCPFormatOptions): Effect.Effect<MCPToolContent[]>;
+
+    /**
+     * Format results for CI mode with threshold checking
+     */
+    formatForCI(results: ScanResults, threshold: number): Effect.Effect<CIResult>;
+}
+
+/**
+ * @deprecated Use IResultsProcessorService instead
+ * Legacy interface for backward compatibility
+ */
+export interface IResultsProcessorServiceLegacy {
     process(data: BrowserScanData, metadata: ScanMetadata): ScanResults;
     formatAsJSON(results: ScanResults, pretty?: boolean): string;
     formatForMCP(results: ScanResults, options?: MCPFormatOptions): MCPToolContent[];
     formatForCI(results: ScanResults, threshold: number): CIResult;
-}
-
-export interface MCPFormatOptions {
-    includeTree?: boolean;
 }

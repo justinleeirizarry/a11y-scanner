@@ -4,7 +4,7 @@
  * This module provides Effect-based scan workflows with proper error typing
  * and automatic resource management.
  */
-import { Effect, pipe } from 'effect';
+import { Effect, pipe, type Layer } from 'effect';
 import { mkdir, writeFile } from 'fs/promises';
 import { dirname } from 'path';
 import type { ScanResults } from '../../types.js';
@@ -158,10 +158,22 @@ export const performScan = (
     });
 
 /**
- * Perform scan with automatic cleanup
+ * Perform scan with explicit cleanup
  *
  * This wraps performScan with Effect.ensuring to guarantee
  * browser cleanup even if the scan fails.
+ *
+ * NOTE: Use this with `AppLayerManual` (non-scoped browser layer).
+ * If using `AppLayer` (scoped), prefer `performScan` with `Effect.scoped`
+ * to avoid double cleanup.
+ *
+ * @example
+ * ```ts
+ * const result = yield* pipe(
+ *   performScanWithCleanup(options),
+ *   Effect.provide(AppLayerManual)
+ * );
+ * ```
  */
 export const performScanWithCleanup = (
     options: EffectScanOptions
@@ -244,6 +256,9 @@ const writeResultsToFile = (
  * This is a convenience function for code that can't use Effect directly.
  * It provides a backwards-compatible Promise-based API.
  *
+ * Uses `performScan` with `Effect.scoped` to properly handle scoped layers
+ * like `AppLayer`. The browser is automatically cleaned up when the scope ends.
+ *
  * @example
  * ```ts
  * const result = await runScanAsPromise({
@@ -255,8 +270,12 @@ const writeResultsToFile = (
  */
 export const runScanAsPromise = (
     options: EffectScanOptions,
-    layer: import('effect').Layer.Layer<BrowserService | ScannerService | ResultsProcessorService, never, never>
+    layer: Layer.Layer<BrowserService | ScannerService | ResultsProcessorService, never, never>
 ): Promise<EffectScanResult> =>
     Effect.runPromise(
-        pipe(performScanWithCleanup(options), Effect.provide(layer))
+        pipe(
+            performScan(options),
+            Effect.provide(layer),
+            Effect.scoped
+        )
     );

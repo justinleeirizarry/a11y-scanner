@@ -3,6 +3,7 @@
  *
  * Extracts scanner bundle injection and scan execution from launcher.ts
  */
+import { Effect } from 'effect';
 import type { Page } from 'playwright';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -10,7 +11,8 @@ import type { BrowserScanData } from '../../types.js';
 import { getConfig } from '../../config/index.js';
 import { logger } from '../../utils/logger.js';
 import { withRetry } from '../../utils/retry.js';
-import { BrowserLaunchError, ScanDataError } from '../../errors/index.js';
+import { ScanDataError } from '../../errors/index.js';
+import { EffectScannerInjectionError, EffectScanDataError } from '../../errors/effect-errors.js';
 import type { ScanExecutionOptions, IScannerService } from './types.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -23,6 +25,8 @@ const __dirname = dirname(__filename);
  * - Scanner bundle injection
  * - Scan execution with retry logic
  * - Navigation blocking during scan
+ *
+ * All methods return Effects for composability with the Effect ecosystem.
  */
 export class ScannerService implements IScannerService {
     private bundlePath: string;
@@ -35,53 +39,97 @@ export class ScannerService implements IScannerService {
     /**
      * Check if the scanner bundle is already injected in the page
      */
-    async isBundleInjected(page: Page): Promise<boolean> {
-        return await page.evaluate(() => {
-            return typeof window.ReactA11yScanner !== 'undefined';
-        });
+    isBundleInjected(page: Page): Effect.Effect<boolean> {
+        return Effect.promise(() =>
+            page.evaluate(() => {
+                return typeof window.ReactA11yScanner !== 'undefined';
+            })
+        );
     }
 
     /**
      * Inject the scanner bundle into the page
      */
-    async injectBundle(page: Page): Promise<void> {
-        // Check if already injected
-        const alreadyInjected = await this.isBundleInjected(page);
-        if (alreadyInjected) {
-            logger.debug('Scanner bundle already injected, skipping');
-            return;
-        }
+    injectBundle(page: Page): Effect.Effect<void, EffectScannerInjectionError> {
+        return Effect.gen(this, function* () {
+            // Check if already injected
+            const alreadyInjected = yield* this.isBundleInjected(page);
+            if (alreadyInjected) {
+                logger.debug('Scanner bundle already injected, skipping');
+                return;
+            }
 
-        try {
-            await page.addScriptTag({ path: this.bundlePath });
+            // Try to inject the bundle
+            yield* Effect.tryPromise({
+                try: () => page.addScriptTag({ path: this.bundlePath }),
+                catch: (error) => {
+                    const errorMsg = error instanceof Error ? error.message : String(error);
+                    return new EffectScannerInjectionError({
+                        reason: `Failed to inject scanner bundle: ${errorMsg}. The dist/scanner-bundle.js file may be missing or corrupted. Try running "npm run build" to regenerate it.`
+                    });
+                }
+            });
+
             logger.debug('Scanner bundle injected successfully');
-        } catch (error) {
-            const errorMsg = error instanceof Error ? error.message : String(error);
-            throw new BrowserLaunchError(
-                'scanner',
-                `Failed to inject scanner bundle: ${errorMsg}. The dist/scanner-bundle.js file may be missing or corrupted. Try running "npm run build" to regenerate it.`
-            );
-        }
 
-        // Verify injection was successful
-        const isInjected = await this.isBundleInjected(page);
-        if (!isInjected) {
-            throw new BrowserLaunchError(
-                'scanner',
-                'Scanner bundle failed to load in page context. This may indicate a JavaScript error in the page. Try running with --headless=false to debug.'
-            );
-        }
+            // Verify injection was successful
+            const isInjected = yield* this.isBundleInjected(page);
+            if (!isInjected) {
+                return yield* Effect.fail(new EffectScannerInjectionError({
+                    reason: 'Scanner bundle failed to load in page context. This may indicate a JavaScript error in the page. Try running with --headless=false to debug.'
+                }));
+            }
+        });
     }
 
     /**
      * Run the scan on the page with retry logic
      */
-    async scan(page: Page, options?: ScanExecutionOptions): Promise<BrowserScanData> {
+    scan(page: Page, options?: ScanExecutionOptions): Effect.Effect<BrowserScanData, EffectScannerInjectionError | EffectScanDataError> {
+        return Effect.gen(this, function* () {
+            return yield* this._scanInternal(page, options);
+        });
+    }
+
+    /**
+     * Internal scan implementation
+     */
+    private _scanInternal(page: Page, options?: ScanExecutionOptions): Effect.Effect<BrowserScanData, EffectScannerInjectionError | EffectScanDataError> {
+        return Effect.gen(this, function* () {
+            // Ensure bundle is injected
+            yield* this.injectBundle(page);
+
+            // Run the scanner with retry logic
+            const rawData = yield* this._executeScan(page, options);
+
+            return rawData;
+        });
+    }
+
+    /**
+     * Execute the scan with retry logic
+     */
+    private _executeScan(page: Page, options?: ScanExecutionOptions): Effect.Effect<BrowserScanData, EffectScanDataError> {
+        return Effect.tryPromise({
+            try: () => this._executeScanAsync(page, options),
+            catch: (error) => {
+                if (error instanceof ScanDataError) {
+                    return new EffectScanDataError({ reason: error.message });
+                }
+                return new EffectScanDataError({
+                    reason: error instanceof Error ? error.message : String(error)
+                });
+            }
+        });
+    }
+
+    /**
+     * Internal async scan execution (for retry wrapper)
+     * Note: Bundle injection is already handled in _scanInternal before this is called
+     */
+    private async _executeScanAsync(page: Page, options?: ScanExecutionOptions): Promise<BrowserScanData> {
         const config = getConfig();
         const { tags, includeKeyboardTests } = options ?? {};
-
-        // Ensure bundle is injected
-        await this.injectBundle(page);
 
         // Run the scanner with retry logic for heavy sites
         const rawData = await withRetry(

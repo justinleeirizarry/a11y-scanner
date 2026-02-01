@@ -1,10 +1,16 @@
 #!/usr/bin/env node
 import { configDotenv } from 'dotenv';
-// Use configDotenv with quiet mode to suppress dotenv v17+ promotional messages
-configDotenv({ quiet: true });
+import { existsSync } from 'fs';
+import { resolve } from 'path';
+
+// Load .env from current directory or monorepo root (for pnpm workspace)
+const envPaths = ['.env', '../../.env'].map(p => resolve(process.cwd(), p));
+const envPath = envPaths.find(p => existsSync(p));
+configDotenv({ path: envPath, quiet: true });
 import React from 'react';
 import { render } from 'ink';
 import meow from 'meow';
+import { Effect } from 'effect';
 import App from './App.js';
 import type { BrowserType } from '@react-a11y-scanner/core';
 import {
@@ -234,10 +240,10 @@ if (!isTTY) {
                 // Test generation mode
                 const testGenService = createTestGenerationService();
                 try {
-                    await testGenService.init({ model: cli.flags.stagehandModel, verbose: cli.flags.stagehandVerbose });
-                    await testGenService.navigateTo(url);
-                    const elements = await testGenService.discoverElements();
-                    const testContent = testGenService.generateTest(url, elements);
+                    await Effect.runPromise(testGenService.init({ model: cli.flags.stagehandModel, verbose: cli.flags.stagehandVerbose }));
+                    await Effect.runPromise(testGenService.navigateTo(url));
+                    const elements = await Effect.runPromise(testGenService.discoverElements());
+                    const testContent = await Effect.runPromise(testGenService.generateTest(url, elements));
 
                     // Write test file
                     const fs = await import('fs/promises');
@@ -274,7 +280,7 @@ if (!isTTY) {
                     console.log(JSON.stringify(testResults, null, 2));
                     setExitCode(EXIT_CODES.RUNTIME_ERROR);
                 } finally {
-                    await testGenService.close();
+                    await Effect.runPromise(testGenService.close());
                 }
             } else {
                 // Accessibility scan mode using Effect-based orchestration
