@@ -1,24 +1,35 @@
 /**
  * Orchestration Service Types
  */
-import type { ScanResults, TestGenerationResults } from '../../types.js';
-import type { BrowserType } from '../browser/types.js';
+import type { ScanResults, TestGenerationResults, BrowserType } from '../../types.js';
 
 // Re-export for backwards compatibility
 export type { BrowserType };
 
-export interface ScanOperationOptions {
+/**
+ * Base options for scan operations (shared by Promise and Effect versions)
+ */
+export interface BaseScanOptions {
     url: string;
     browser: BrowserType;
     headless: boolean;
     tags?: string[];
     includeKeyboardTests?: boolean;
     outputFile?: string;
-    generateAIPrompt?: boolean;
     ciMode?: boolean;
     ciThreshold?: number;
 }
 
+/**
+ * Extended options for Promise-based orchestration
+ */
+export interface ScanOperationOptions extends BaseScanOptions {
+    generateAIPrompt?: boolean;
+}
+
+/**
+ * Result of a scan operation (shared by Promise and Effect versions)
+ */
 export interface ScanOperationResult {
     results: ScanResults;
     ciPassed?: boolean;

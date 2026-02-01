@@ -1,9 +1,40 @@
+// ============================================================================
+// Shared Type Definitions
+// ============================================================================
+
+/**
+ * Impact level for accessibility violations (4-level scale from axe-core)
+ */
+export type ImpactLevel = 'critical' | 'serious' | 'moderate' | 'minor';
+
+/**
+ * Impact level that may be null (for non-violation results)
+ */
+export type ImpactLevelOrNull = ImpactLevel | null;
+
+/**
+ * Severity level for keyboard accessibility issues (3-level scale)
+ */
+export type SeverityLevel = 'critical' | 'serious' | 'moderate';
+
+/**
+ * WCAG conformance level
+ */
+export type WcagLevel = 'A' | 'AA' | 'AAA';
+
+/**
+ * Browser types supported by Playwright
+ */
+export type BrowserType = 'chromium' | 'firefox' | 'webkit';
+
+// ============================================================================
 // Axe-core types
+// ============================================================================
 
 // Check result from axe-core (detailed test information)
 export interface AxeCheckResult {
     id: string;
-    impact: 'critical' | 'serious' | 'moderate' | 'minor' | null;
+    impact: ImpactLevelOrNull;
     message: string;
     data?: any;
     relatedNodes?: Array<{
@@ -17,7 +48,7 @@ export interface AxeNodeResult {
     html: string;
     target: string[];
     failureSummary?: string;
-    impact?: 'critical' | 'serious' | 'moderate' | 'minor' | null;
+    impact?: ImpactLevelOrNull;
     any?: AxeCheckResult[];  // Checks where any one passing would pass the node
     all?: AxeCheckResult[];  // Checks that must all pass
     none?: AxeCheckResult[]; // Checks that must all fail (none should pass)
@@ -26,7 +57,7 @@ export interface AxeNodeResult {
 // Base axe result structure (used for violations, passes, incomplete)
 export interface AxeResult {
     id: string;
-    impact: 'critical' | 'serious' | 'moderate' | 'minor' | null;
+    impact: ImpactLevelOrNull;
     description: string;
     help: string;
     helpUrl: string;
@@ -36,7 +67,7 @@ export interface AxeResult {
 
 // Alias for backwards compatibility
 export interface AxeViolation extends AxeResult {
-    impact: 'critical' | 'serious' | 'moderate' | 'minor'; // Violations always have impact
+    impact: ImpactLevel; // Violations always have impact
 }
 
 // Component information from Bippy
@@ -55,7 +86,7 @@ export interface FixSuggestion {
     summary: string;
     details: string;
     wcagCriteria?: string; // e.g., "1.4.3 Contrast (Minimum)"
-    wcagLevel?: 'A' | 'AA' | 'AAA';
+    wcagLevel?: WcagLevel;
     userImpact?: string; // Description of who is affected and how
     priority?: 'critical' | 'high' | 'medium' | 'low';
 }
@@ -70,7 +101,7 @@ export interface RelatedNode {
 // Check detail for attributed violations
 export interface AttributedCheck {
     id: string;
-    impact: 'critical' | 'serious' | 'moderate' | 'minor' | null;
+    impact: ImpactLevelOrNull;
     message: string;
     relatedNodes?: RelatedNode[];
 }
@@ -78,7 +109,7 @@ export interface AttributedCheck {
 // Violation attributed to a component
 export interface AttributedViolation {
     id: string;
-    impact: 'critical' | 'serious' | 'moderate' | 'minor';
+    impact: ImpactLevel;
     description: string;
     help: string;
     helpUrl: string;
@@ -107,7 +138,7 @@ export interface AttributedViolation {
 // Pass result attributed to components (rules that passed)
 export interface AttributedPass {
     id: string;
-    impact: 'critical' | 'serious' | 'moderate' | 'minor' | null;
+    impact: ImpactLevelOrNull;
     description: string;
     help: string;
     helpUrl: string;
@@ -123,7 +154,7 @@ export interface AttributedPass {
 // Incomplete result (needs manual review)
 export interface AttributedIncomplete {
     id: string;
-    impact: 'critical' | 'serious' | 'moderate' | 'minor' | null;
+    impact: ImpactLevelOrNull;
     description: string;
     help: string;
     helpUrl: string;
@@ -155,7 +186,7 @@ export interface KeyboardTestResults {
             type: 'tab-trap' | 'illogical-order' | 'tabindex-antipattern' | 'hidden-focusable';
             element: string;
             details: string;
-            severity: 'critical' | 'serious' | 'moderate';
+            severity: SeverityLevel;
         }>;
         visualOrderMismatches: Array<{
             domIndex: number;
@@ -168,7 +199,7 @@ export interface KeyboardTestResults {
             element: string;
             issue: 'missing' | 'low-contrast' | 'too-small' | 'not-visible';
             details: string;
-            severity: 'critical' | 'serious' | 'moderate';
+            severity: SeverityLevel;
         }>;
         skipLinksWorking: boolean;
         skipLinkDetails: string;
@@ -297,7 +328,7 @@ export interface ScanResults {
 // Browser scan options
 export interface ScanOptions {
     url: string;
-    browser: 'chromium' | 'firefox' | 'webkit';
+    browser: BrowserType;
     headless: boolean;
     tags?: string[];
     includeKeyboardTests?: boolean; // Enable keyboard navigation testing
@@ -371,11 +402,11 @@ export interface WCAG22Results {
 export interface WCAG22ViolationSummary {
     id: string;
     criterion: string;
-    level: 'A' | 'AA' | 'AAA';
+    level: WcagLevel;
     element: string;
     selector: string;
     html: string;
-    impact: 'critical' | 'serious' | 'moderate' | 'minor';
+    impact: ImpactLevel;
     description: string;
     details: Record<string, any>;
 }

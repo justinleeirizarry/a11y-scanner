@@ -7,12 +7,12 @@ import TestGenerator from './components/TestGenerator.js';
 import TestGenerationResults from './components/TestGenerationResults.js';
 import { createOrchestrationService } from '../services/index.js';
 import { EXIT_CODES, setExitCode } from '../utils/exit-codes.js';
-import type { ScanResults, TestGenerationResults as TestGenResults } from '../types.js';
+import type { ScanResults, TestGenerationResults as TestGenResults, BrowserType } from '../types.js';
 
 interface AppProps {
     mode: 'scan' | 'generate-test';
     url: string;
-    browser: 'chromium' | 'firefox' | 'webkit';
+    browser: BrowserType;
     output?: string;
     ci: boolean;
     threshold: number;

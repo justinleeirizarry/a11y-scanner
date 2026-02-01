@@ -4,6 +4,7 @@
 export { OrchestrationService, createOrchestrationService } from './OrchestrationService.js';
 export type {
     BrowserType,
+    BaseScanOptions,
     ScanOperationOptions,
     ScanOperationResult,
     TestGenOperationOptions,

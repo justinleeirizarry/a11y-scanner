@@ -11,7 +11,7 @@ import { getConfig } from '../../config/index.js';
 import { logger } from '../../utils/logger.js';
 import { withRetry } from '../../utils/retry.js';
 import { BrowserLaunchError, ScanDataError } from '../../errors/index.js';
-import type { ScanOptions, IScannerService } from './types.js';
+import type { ScanExecutionOptions, IScannerService } from './types.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -76,7 +76,7 @@ export class ScannerService implements IScannerService {
     /**
      * Run the scan on the page with retry logic
      */
-    async scan(page: Page, options?: ScanOptions): Promise<BrowserScanData> {
+    async scan(page: Page, options?: ScanExecutionOptions): Promise<BrowserScanData> {
         const config = getConfig();
         const { tags, includeKeyboardTests } = options ?? {};
 

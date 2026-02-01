@@ -6,6 +6,7 @@ import React from 'react';
 import { render } from 'ink';
 import meow from 'meow';
 import App from './cli/App.js';
+import type { BrowserType } from './types.js';
 import { validateUrl, validateTags, validateThreshold, validateBrowser } from './utils/validation.js';
 import { createOrchestrationService } from './services/index.js';
 import { EXIT_CODES, setExitCode, exitWithCode } from './utils/exit-codes.js';
@@ -234,7 +235,7 @@ if (!isTTY) {
                 // Accessibility scan mode
                 const { results, ciPassed } = await orchestration.performScan({
                     url,
-                    browser: cli.flags.browser as 'chromium' | 'firefox' | 'webkit',
+                    browser: cli.flags.browser as BrowserType,
                     headless: cli.flags.headless,
                     tags: cli.flags.tags ? cli.flags.tags.split(',') : undefined,
                     includeKeyboardTests: cli.flags.keyboardNav,
@@ -318,7 +319,7 @@ if (!isTTY) {
         <App
             mode={isTestGenerationMode ? 'generate-test' : 'scan'}
             url={url}
-            browser={cli.flags.browser as 'chromium' | 'firefox' | 'webkit'}
+            browser={cli.flags.browser as BrowserType}
             output={cli.flags.output}
             ci={cli.flags.ci}
             threshold={cli.flags.threshold}

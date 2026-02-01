@@ -4,15 +4,10 @@
  * Note: Code examples removed - axe-core's helpUrl links to comprehensive docs.
  * Future enhancement: generate site-specific examples from actual scanned elements.
  */
+import type { FixSuggestion } from '../../types.js';
 
-export interface FixSuggestion {
-    summary: string;
-    details: string;
-    wcagCriteria?: string;
-    wcagLevel?: 'A' | 'AA' | 'AAA';
-    userImpact?: string;
-    priority?: 'critical' | 'high' | 'medium' | 'low';
-}
+// Re-export for convenience
+export type { FixSuggestion };
 
 const FIX_SUGGESTIONS: Record<string, FixSuggestion> = {
     'landmark-one-main': {

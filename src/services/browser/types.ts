@@ -2,8 +2,10 @@
  * Browser Service Types
  */
 import type { Page, Browser } from 'playwright';
+import type { BrowserType } from '../../types.js';
 
-export type BrowserType = 'chromium' | 'firefox' | 'webkit';
+// Re-export for convenience
+export type { BrowserType };
 
 export interface BrowserServiceConfig {
     browserType: BrowserType;

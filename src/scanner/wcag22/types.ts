@@ -1,6 +1,7 @@
 /**
  * WCAG 2.2 Check Types
  */
+import type { ImpactLevel, WcagLevel } from '../../types.js';
 
 export type WCAG22ViolationId =
     | 'target-size'
@@ -19,11 +20,11 @@ export type WCAG22ExceptionType =
 export interface WCAG22Violation {
     id: WCAG22ViolationId;
     criterion: string;
-    level: 'A' | 'AA' | 'AAA';
+    level: WcagLevel;
     element: string;
     selector: string;
     html: string;
-    impact: 'critical' | 'serious' | 'moderate' | 'minor';
+    impact: ImpactLevel;
     description: string;
     details: Record<string, any>;
     exception?: WCAG22ExceptionType;

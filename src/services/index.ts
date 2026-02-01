@@ -19,7 +19,7 @@ export {
 export {
     ScannerService,
     createScannerService,
-    type ScanOptions,
+    type ScanExecutionOptions,
     type IScannerService,
 } from './scanner/index.js';
 
@@ -46,6 +46,7 @@ export {
 export {
     OrchestrationService,
     createOrchestrationService,
+    type BaseScanOptions,
     type ScanOperationOptions,
     type ScanOperationResult,
     type TestGenOperationOptions,

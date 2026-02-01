@@ -11,7 +11,7 @@ import type {
     ScanResults,
 } from '../../types.js';
 import type { BrowserServiceConfig, StabilityCheckResult, NavigateOptions } from '../browser/types.js';
-import type { ScanOptions } from '../scanner/types.js';
+import type { ScanExecutionOptions } from '../scanner/types.js';
 import type { ScanMetadata, MCPToolContent, MCPFormatOptions, CIResult } from '../processor/types.js';
 import {
     EffectBrowserLaunchError,
@@ -114,7 +114,7 @@ export interface EffectScannerService {
      */
     readonly scan: (
         page: Page,
-        options?: ScanOptions
+        options?: ScanExecutionOptions
     ) => Effect.Effect<BrowserScanData, EffectScannerInjectionError | EffectScanDataError>;
 }
 

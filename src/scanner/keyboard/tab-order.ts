@@ -1,12 +1,13 @@
 /**
  * Tab order validation - tests keyboard navigation flow
  */
+import type { SeverityLevel } from '../../types.js';
 
 export interface TabOrderViolation {
     type: 'tab-trap' | 'illogical-order' | 'tabindex-antipattern' | 'hidden-focusable';
     element: string;
     details: string;
-    severity: 'critical' | 'serious' | 'moderate';
+    severity: SeverityLevel;
 }
 
 export interface FocusableElement {

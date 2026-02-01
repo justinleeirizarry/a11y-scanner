@@ -1,12 +1,13 @@
 /**
  * Focus management testing - validates focus indicators, skip links, and focus restoration
  */
+import type { SeverityLevel } from '../../types.js';
 
 export interface FocusIndicatorIssue {
     element: string;
     issue: 'missing' | 'low-contrast' | 'too-small' | 'not-visible';
     details: string;
-    severity: 'critical' | 'serious' | 'moderate';
+    severity: SeverityLevel;
 }
 
 export interface FocusRestorationTest {

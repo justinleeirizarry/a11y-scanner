@@ -8,7 +8,7 @@ import { Effect, pipe } from 'effect';
 import { mkdir, writeFile } from 'fs/promises';
 import { dirname } from 'path';
 import type { ScanResults } from '../../types.js';
-import type { BrowserType } from '../browser/types.js';
+import type { BaseScanOptions, ScanOperationResult } from '../orchestration/types.js';
 import { logger } from '../../utils/logger.js';
 import {
     BrowserService,
@@ -29,27 +29,16 @@ import { getConfig } from '../../config/index.js';
 // ============================================================================
 
 /**
- * Options for the scan operation
+ * Options for the Effect-based scan operation
+ * Uses the shared BaseScanOptions
  */
-export interface EffectScanOptions {
-    url: string;
-    browser: BrowserType;
-    headless: boolean;
-    tags?: string[];
-    includeKeyboardTests?: boolean;
-    outputFile?: string;
-    ciMode?: boolean;
-    ciThreshold?: number;
-}
+export type EffectScanOptions = BaseScanOptions;
 
 /**
- * Result of the scan operation
+ * Result of the Effect-based scan operation
+ * Uses the shared ScanOperationResult
  */
-export interface EffectScanResult {
-    results: ScanResults;
-    ciPassed?: boolean;
-    outputFile?: string;
-}
+export type EffectScanResult = ScanOperationResult;
 
 /**
  * Union of all errors that can occur during the scan workflow
