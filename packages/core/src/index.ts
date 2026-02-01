@@ -39,6 +39,17 @@ export {
     type TestGenerationConfig,
     type ITestGenerationService,
 
+    // Stagehand Services (Keyboard, Tree, WCAG Audit)
+    KeyboardTestService,
+    createKeyboardTestService,
+    TreeAnalysisService,
+    createTreeAnalysisService,
+    WcagAuditService,
+    createWcagAuditService,
+    type IKeyboardTestService,
+    type ITreeAnalysisService,
+    type IWcagAuditService,
+
     // Orchestration Types (service migrated to Effect-based implementation)
     type BaseScanOptions,
     type ScanOperationResult,
@@ -118,6 +129,26 @@ export type {
     TestGenerationOptions,
     TestGenerationResults,
 
+    // Stagehand keyboard testing types
+    StagehandKeyboardConfig,
+    StagehandKeyboardIssue,
+    StagehandKeyboardIssueType,
+    StagehandKeyboardResults,
+    TabOrderEntry,
+
+    // Stagehand tree analysis types
+    TreeAnalysisConfig,
+    TreeAnalysisResult,
+    TreeIssue,
+    TreeIssueType,
+    A11yTreeNode,
+
+    // Stagehand WCAG audit types
+    WcagAuditOptions,
+    WcagAuditResult,
+    AuditFinding,
+    AuditStatus,
+
     // Scan types
     ScanResults,
     ScanOptions,
@@ -165,11 +196,30 @@ export {
     EffectTestGenNavigationError,
     EffectTestGenDiscoveryError,
 
+    // Keyboard test errors
+    EffectKeyboardTestInitError,
+    EffectKeyboardTestError,
+    EffectKeyboardTestNotInitializedError,
+
+    // Tree analysis errors
+    EffectTreeAnalysisInitError,
+    EffectTreeAnalysisError,
+    EffectTreeAnalysisNotInitializedError,
+
+    // WCAG audit errors
+    EffectWcagAuditInitError,
+    EffectWcagAuditError,
+    EffectWcagAuditNotInitializedError,
+
     // Error type unions
     type BrowserErrors,
     type ScanErrors,
     type ValidationErrors,
     type TestGenErrors,
+    type KeyboardTestErrors,
+    type TreeAnalysisErrors,
+    type WcagAuditErrors,
+    type StagehandErrors,
     type ScanWorkflowErrors,
 } from './errors/effect-errors.js';
 

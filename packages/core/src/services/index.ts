@@ -42,6 +42,19 @@ export {
     type ITestGenerationService,
 } from './testgen/index.js';
 
+// Stagehand Services (Keyboard, Tree, WCAG Audit)
+export {
+    KeyboardTestService,
+    createKeyboardTestService,
+    TreeAnalysisService,
+    createTreeAnalysisService,
+    WcagAuditService,
+    createWcagAuditService,
+    type IKeyboardTestService,
+    type ITreeAnalysisService,
+    type IWcagAuditService,
+} from './stagehand/index.js';
+
 // Orchestration Types (service migrated to Effect-based implementation)
 export type {
     BaseScanOptions,

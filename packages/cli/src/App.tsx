@@ -6,18 +6,33 @@ import Scanner from './components/Scanner.js';
 import Results from './components/Results.js';
 import TestGenerator from './components/TestGenerator.js';
 import TestGenerationResults from './components/TestGenerationResults.js';
+import StagehandProgress from './components/StagehandProgress.js';
+import StagehandResults from './components/StagehandResults.js';
 import {
     runScanAsPromise,
     AppLayer,
     createTestGenerationService,
+    createKeyboardTestService,
+    createTreeAnalysisService,
+    createWcagAuditService,
     EXIT_CODES,
     setExitCode,
     generateAndExport,
 } from '@react-a11y-scanner/core';
-import type { ScanResults, TestGenerationResults as TestGenResults, BrowserType } from '@react-a11y-scanner/core';
+import type {
+    ScanResults,
+    TestGenerationResults as TestGenResults,
+    BrowserType,
+    StagehandKeyboardResults,
+    TreeAnalysisResult,
+    WcagAuditResult,
+    WcagLevel,
+} from '@react-a11y-scanner/core';
+
+type AppMode = 'scan' | 'generate-test' | 'stagehand-keyboard' | 'stagehand-tree' | 'wcag-audit';
 
 interface AppProps {
-    mode: 'scan' | 'generate-test';
+    mode: AppMode;
     url: string;
     browser: BrowserType;
     output?: string;
@@ -33,24 +48,153 @@ interface AppProps {
     testFile?: string;
     stagehandModel?: string;
     stagehandVerbose?: boolean;
+    // New Stagehand props
+    maxTabPresses?: number;
+    includeFullTree?: boolean;
+    auditLevel?: WcagLevel;
+    maxSteps?: number;
 }
 
 type ScanState = 'idle' | 'scanning' | 'complete' | 'error';
 type TestGenState = 'idle' | 'initializing' | 'navigating' | 'discovering' | 'generating' | 'complete' | 'error';
+type StagehandState = 'idle' | 'initializing' | 'running' | 'complete' | 'error';
 
-const App: React.FC<AppProps> = ({ mode, url, browser, output, ci, threshold, headless, ai, tags, keyboardNav, tree, quiet, generateTest, testFile, stagehandModel, stagehandVerbose }) => {
+// Type for Stagehand results
+type StagehandResultType = StagehandKeyboardResults | TreeAnalysisResult | WcagAuditResult;
+
+const App: React.FC<AppProps> = ({
+    mode,
+    url,
+    browser,
+    output,
+    ci,
+    threshold,
+    headless,
+    ai,
+    tags,
+    keyboardNav,
+    tree,
+    quiet,
+    generateTest,
+    testFile,
+    stagehandModel,
+    stagehandVerbose,
+    maxTabPresses,
+    includeFullTree,
+    auditLevel,
+    maxSteps,
+}) => {
     const { exit } = useApp();
     const [scanState, setScanState] = useState<ScanState>('idle');
     const [testGenState, setTestGenState] = useState<TestGenState>('idle');
+    const [stagehandState, setStagehandState] = useState<StagehandState>('idle');
     const [scanResults, setScanResults] = useState<ScanResults | null>(null);
     const [testGenResults, setTestGenResults] = useState<TestGenResults | null>(null);
+    const [stagehandResults, setStagehandResults] = useState<StagehandResultType | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [aiPromptFilePath, setAiPromptFilePath] = useState<string | null>(null);
 
     useEffect(() => {
         let cancelled = false;
 
-        if (mode === 'generate-test') {
+        if (mode === 'stagehand-keyboard') {
+            // Stagehand keyboard navigation testing
+            const performKeyboardTest = async () => {
+                setStagehandState('initializing');
+
+                try {
+                    const keyboardService = createKeyboardTestService();
+                    await Effect.runPromise(keyboardService.init({
+                        maxTabPresses,
+                        verbose: stagehandVerbose,
+                        model: stagehandModel,
+                    }));
+
+                    setStagehandState('running');
+                    const results = await Effect.runPromise(keyboardService.test(url));
+                    await Effect.runPromise(keyboardService.close());
+
+                    if (cancelled) return;
+
+                    setStagehandResults(results);
+                    setStagehandState('complete');
+                    exit();
+                } catch (err) {
+                    if (cancelled) return;
+                    setStagehandState('error');
+                    setError(err instanceof Error ? err.message : String(err));
+                    setExitCode(EXIT_CODES.RUNTIME_ERROR);
+                    exit();
+                }
+            };
+
+            performKeyboardTest();
+        } else if (mode === 'stagehand-tree') {
+            // Stagehand tree analysis
+            const performTreeAnalysis = async () => {
+                setStagehandState('initializing');
+
+                try {
+                    const treeService = createTreeAnalysisService();
+                    await Effect.runPromise(treeService.init({
+                        verbose: stagehandVerbose,
+                        model: stagehandModel,
+                        includeFullTree,
+                    }));
+
+                    setStagehandState('running');
+                    const results = await Effect.runPromise(treeService.analyze(url));
+                    await Effect.runPromise(treeService.close());
+
+                    if (cancelled) return;
+
+                    setStagehandResults(results);
+                    setStagehandState('complete');
+                    exit();
+                } catch (err) {
+                    if (cancelled) return;
+                    setStagehandState('error');
+                    setError(err instanceof Error ? err.message : String(err));
+                    setExitCode(EXIT_CODES.RUNTIME_ERROR);
+                    exit();
+                }
+            };
+
+            performTreeAnalysis();
+        } else if (mode === 'wcag-audit') {
+            // WCAG audit
+            const performWcagAudit = async () => {
+                setStagehandState('initializing');
+
+                try {
+                    const auditService = createWcagAuditService();
+                    await Effect.runPromise(auditService.init({
+                        targetLevel: auditLevel || 'AA',
+                        maxSteps,
+                        verbose: stagehandVerbose,
+                        model: stagehandModel,
+                    }));
+
+                    setStagehandState('running');
+                    const results = await Effect.runPromise(auditService.audit(url));
+                    await Effect.runPromise(auditService.close());
+
+                    if (cancelled) return;
+
+                    setStagehandResults(results);
+                    setStagehandState('complete');
+                    exit();
+                } catch (err) {
+                    if (cancelled) return;
+                    setStagehandState('error');
+                    setError(err instanceof Error ? err.message : String(err));
+                    setExitCode(EXIT_CODES.RUNTIME_ERROR);
+                    exit();
+                }
+            };
+
+            performWcagAudit();
+        } else if (mode === 'generate-test') {
             // Test generation mode
             const performTestGeneration = async () => {
                 setTestGenState('initializing');
@@ -180,20 +324,28 @@ const App: React.FC<AppProps> = ({ mode, url, browser, output, ci, threshold, he
         return () => {
             cancelled = true;
         };
-    }, [mode, url, browser, headless, ci, threshold, output, ai, tags, keyboardNav, tree, generateTest, stagehandModel, stagehandVerbose]);
+    }, [mode, url, browser, headless, ci, threshold, output, ai, tags, keyboardNav, tree, generateTest, stagehandModel, stagehandVerbose, maxTabPresses, includeFullTree, auditLevel, maxSteps, testFile, exit]);
 
     // Error state
-    if (scanState === 'error' || testGenState === 'error') {
+    if (scanState === 'error' || testGenState === 'error' || stagehandState === 'error') {
         return (
             <Box flexDirection="column" padding={1}>
                 <Box>
-                    <Text color="red" bold>Scan Error</Text>
+                    <Text color="red" bold>Error</Text>
                 </Box>
                 <Box marginTop={1}>
                     <Text>{error}</Text>
                 </Box>
             </Box>
         );
+    }
+
+    // Stagehand modes
+    if (mode === 'stagehand-keyboard' || mode === 'stagehand-tree' || mode === 'wcag-audit') {
+        if (stagehandState === 'complete' && stagehandResults) {
+            return <StagehandResults mode={mode} results={stagehandResults} />;
+        }
+        return <StagehandProgress mode={mode} state={stagehandState} url={url} auditLevel={auditLevel} />;
     }
 
     // Test generation mode

@@ -21,6 +21,9 @@ import {
     runScanAsPromise,
     AppLayer,
     createTestGenerationService,
+    createKeyboardTestService,
+    createTreeAnalysisService,
+    createWcagAuditService,
     EXIT_CODES,
     setExitCode,
     exitWithCode,
@@ -31,6 +34,7 @@ import {
     LogLevel,
     generateAndExport,
 } from '@react-a11y-scanner/core';
+import type { WcagLevel } from '@react-a11y-scanner/core';
 
 // Load configuration from environment variables (REACT_A11Y_*)
 if (hasEnvConfig()) {
@@ -60,6 +64,15 @@ const cli = meow(
     --stagehand-model <model> AI model for test generation [default: openai/gpt-4o-mini]
     --stagehand-verbose       Enable verbose Stagehand logging
 
+  Stagehand Advanced Testing (mutually exclusive with scan/test-gen)
+    --stagehand-keyboard      Test keyboard navigation using AI
+    --max-tab-presses         Max Tab presses for keyboard test [default: 100]
+    --stagehand-tree          Analyze accessibility tree using AI
+    --include-full-tree       Include full tree structure in output
+    --wcag-audit              Run AI-powered WCAG compliance audit
+    --audit-level             Target WCAG level (A, AA, AAA) [default: AA]
+    --max-steps               Max agent steps for audit [default: 30]
+
   Examples
     # Accessibility Scanning
     $ react-a11y-scanner https://example.com
@@ -71,6 +84,11 @@ const cli = meow(
     $ react-a11y-scanner https://example.com --generate-test
     $ react-a11y-scanner https://example.com --generate-test --test-file tests/a11y.spec.ts
     $ react-a11y-scanner https://example.com --generate-test --stagehand-model openai/gpt-4o
+
+    # Stagehand Advanced Testing
+    $ react-a11y-scanner https://example.com --stagehand-keyboard
+    $ react-a11y-scanner https://example.com --stagehand-tree
+    $ react-a11y-scanner https://example.com --wcag-audit --audit-level AA
 `,
     {
         importMeta: import.meta,
@@ -131,6 +149,35 @@ const cli = meow(
             testFile: {
                 type: 'string',
             },
+            // Stagehand Advanced Testing flags
+            stagehandKeyboard: {
+                type: 'boolean',
+                default: false,
+            },
+            maxTabPresses: {
+                type: 'number',
+                default: 100,
+            },
+            stagehandTree: {
+                type: 'boolean',
+                default: false,
+            },
+            includeFullTree: {
+                type: 'boolean',
+                default: false,
+            },
+            wcagAudit: {
+                type: 'boolean',
+                default: false,
+            },
+            auditLevel: {
+                type: 'string',
+                default: 'AA',
+            },
+            maxSteps: {
+                type: 'number',
+                default: 30,
+            },
         },
     }
 );
@@ -174,8 +221,20 @@ if (!thresholdValidation.valid) {
     exitWithCode(EXIT_CODES.VALIDATION_ERROR);
 }
 
-// Determine mode: test generation or accessibility scan
+// Determine mode: test generation, stagehand tests, or accessibility scan
 const isTestGenerationMode = cli.flags.generateTest;
+const isStagehandKeyboardMode = cli.flags.stagehandKeyboard;
+const isStagehandTreeMode = cli.flags.stagehandTree;
+const isWcagAuditMode = cli.flags.wcagAudit;
+const isStagehandMode = isStagehandKeyboardMode || isStagehandTreeMode || isWcagAuditMode;
+
+// Validate WCAG level
+const validLevels = ['A', 'AA', 'AAA'];
+if (!validLevels.includes(cli.flags.auditLevel.toUpperCase())) {
+    console.error(`Error: Invalid audit level "${cli.flags.auditLevel}". Must be A, AA, or AAA.\n`);
+    exitWithCode(EXIT_CODES.VALIDATION_ERROR);
+}
+const auditLevel = cli.flags.auditLevel.toUpperCase() as WcagLevel;
 
 // Helper to generate filename from URL with timestamp in generated-tests directory
 const getFilenameFromUrl = (urlStr: string): string => {
@@ -202,8 +261,22 @@ const getFilenameFromUrl = (urlStr: string): string => {
 // Determine output file for test generation
 const testOutputFile = cli.flags.testFile || getFilenameFromUrl(url);
 
-// Validate mutually exclusive flags
-if (isTestGenerationMode) {
+// Validate mutually exclusive modes
+const modeCount = [
+    isTestGenerationMode,
+    isStagehandKeyboardMode,
+    isStagehandTreeMode,
+    isWcagAuditMode
+].filter(Boolean).length;
+
+if (modeCount > 1) {
+    console.error('Error: Only one mode can be active at a time.\n');
+    console.error('Modes: --generate-test, --stagehand-keyboard, --stagehand-tree, --wcag-audit\n');
+    exitWithCode(EXIT_CODES.VALIDATION_ERROR);
+}
+
+// Validate mutually exclusive flags for test generation
+if (isTestGenerationMode || isStagehandMode) {
     const scanOnlyFlags = [
         { flag: 'ai', name: '--ai' },
         { flag: 'tree', name: '--tree' },
@@ -218,8 +291,11 @@ if (isTestGenerationMode) {
     });
 
     if (conflictingFlags.length > 0) {
-        console.error(`Error: Cannot use ${conflictingFlags.map(f => f.name).join(', ')} with --generate-test\n`);
-        console.error('Test generation mode is mutually exclusive with accessibility scan options.\n');
+        const modeName = isTestGenerationMode ? '--generate-test' :
+            isStagehandKeyboardMode ? '--stagehand-keyboard' :
+            isStagehandTreeMode ? '--stagehand-tree' : '--wcag-audit';
+        console.error(`Error: Cannot use ${conflictingFlags.map(f => f.name).join(', ')} with ${modeName}\n`);
+        console.error('These modes are mutually exclusive with accessibility scan options.\n');
         exitWithCode(EXIT_CODES.VALIDATION_ERROR);
     }
 }
@@ -236,7 +312,78 @@ if (cli.flags.quiet) {
 if (!isTTY) {
     (async () => {
         try {
-            if (isTestGenerationMode) {
+            if (isStagehandKeyboardMode) {
+                // Stagehand keyboard navigation testing mode
+                const keyboardService = createKeyboardTestService();
+                try {
+                    await Effect.runPromise(keyboardService.init({
+                        maxTabPresses: cli.flags.maxTabPresses,
+                        verbose: cli.flags.stagehandVerbose,
+                        model: cli.flags.stagehandModel,
+                    }));
+                    const results = await Effect.runPromise(keyboardService.test(url));
+                    console.log(JSON.stringify(results, null, 2));
+                    setExitCode(EXIT_CODES.SUCCESS);
+                } catch (error) {
+                    console.log(JSON.stringify({
+                        url,
+                        timestamp: new Date().toISOString(),
+                        error: error instanceof Error ? error.message : String(error),
+                        success: false,
+                    }, null, 2));
+                    setExitCode(EXIT_CODES.RUNTIME_ERROR);
+                } finally {
+                    await Effect.runPromise(keyboardService.close());
+                }
+            } else if (isStagehandTreeMode) {
+                // Stagehand tree analysis mode
+                const treeService = createTreeAnalysisService();
+                try {
+                    await Effect.runPromise(treeService.init({
+                        verbose: cli.flags.stagehandVerbose,
+                        model: cli.flags.stagehandModel,
+                        includeFullTree: cli.flags.includeFullTree,
+                    }));
+                    const results = await Effect.runPromise(treeService.analyze(url));
+                    console.log(JSON.stringify(results, null, 2));
+                    setExitCode(EXIT_CODES.SUCCESS);
+                } catch (error) {
+                    console.log(JSON.stringify({
+                        url,
+                        timestamp: new Date().toISOString(),
+                        error: error instanceof Error ? error.message : String(error),
+                        success: false,
+                    }, null, 2));
+                    setExitCode(EXIT_CODES.RUNTIME_ERROR);
+                } finally {
+                    await Effect.runPromise(treeService.close());
+                }
+            } else if (isWcagAuditMode) {
+                // WCAG audit mode
+                const auditService = createWcagAuditService();
+                try {
+                    await Effect.runPromise(auditService.init({
+                        targetLevel: auditLevel,
+                        maxSteps: cli.flags.maxSteps,
+                        verbose: cli.flags.stagehandVerbose,
+                        model: cli.flags.stagehandModel,
+                    }));
+                    const results = await Effect.runPromise(auditService.audit(url));
+                    console.log(JSON.stringify(results, null, 2));
+                    setExitCode(EXIT_CODES.SUCCESS);
+                } catch (error) {
+                    console.log(JSON.stringify({
+                        url,
+                        timestamp: new Date().toISOString(),
+                        targetLevel: auditLevel,
+                        error: error instanceof Error ? error.message : String(error),
+                        success: false,
+                    }, null, 2));
+                    setExitCode(EXIT_CODES.RUNTIME_ERROR);
+                } finally {
+                    await Effect.runPromise(auditService.close());
+                }
+            } else if (isTestGenerationMode) {
                 // Test generation mode
                 const testGenService = createTestGenerationService();
                 try {
@@ -365,9 +512,15 @@ if (!isTTY) {
     })();
 } else {
     // TTY mode: render the Ink UI
+    // Determine mode for App component
+    const appMode = isTestGenerationMode ? 'generate-test' :
+        isStagehandKeyboardMode ? 'stagehand-keyboard' :
+        isStagehandTreeMode ? 'stagehand-tree' :
+        isWcagAuditMode ? 'wcag-audit' : 'scan';
+
     const { waitUntilExit } = render(
         <App
-            mode={isTestGenerationMode ? 'generate-test' : 'scan'}
+            mode={appMode}
             url={url}
             browser={cli.flags.browser as BrowserType}
             output={cli.flags.output}
@@ -383,6 +536,10 @@ if (!isTTY) {
             testFile={testOutputFile}
             stagehandModel={cli.flags.stagehandModel}
             stagehandVerbose={cli.flags.stagehandVerbose}
+            maxTabPresses={cli.flags.maxTabPresses}
+            includeFullTree={cli.flags.includeFullTree}
+            auditLevel={auditLevel}
+            maxSteps={cli.flags.maxSteps}
         />
     );
 
