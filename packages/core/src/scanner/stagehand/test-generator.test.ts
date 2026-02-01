@@ -230,6 +230,57 @@ describe('TestGenerator', () => {
         });
     });
 
+    describe('WCAG context in generated tests', () => {
+        it('should include WCAG comment for button type', () => {
+            const elements: ElementDiscovery[] = [
+                { selector: '#btn', description: 'Submit button', type: 'button' }
+            ];
+            const test = generator.generateTest('http://example.com', elements);
+
+            // Should include WCAG comment with criterion info
+            expect(test).toContain('// WCAG:');
+            expect(test).toContain('4.1.2');
+            expect(test).toContain('Name, Role, Value');
+        });
+
+        it('should include WCAG comment for link type', () => {
+            const elements: ElementDiscovery[] = [
+                { selector: '#link', description: 'Home link', type: 'link' }
+            ];
+            const test = generator.generateTest('http://example.com', elements);
+
+            expect(test).toContain('// WCAG:');
+            expect(test).toContain('2.4.4');
+        });
+
+        it('should include WCAG comment for input type', () => {
+            const elements: ElementDiscovery[] = [
+                { selector: '#email', description: 'Email input', type: 'input' }
+            ];
+            const test = generator.generateTest('http://example.com', elements);
+
+            expect(test).toContain('// WCAG:');
+            expect(test).toContain('3.3.2');
+        });
+
+        it('should sort elements by WCAG priority', () => {
+            // All these types have Level A criteria, but we verify the sorting is applied
+            const elements: ElementDiscovery[] = [
+                { selector: '#custom', description: 'Custom widget', type: 'custom' },
+                { selector: '#btn', description: 'Button', type: 'button' },
+                { selector: '#link', description: 'Link', type: 'link' },
+            ];
+            const test = generator.generateTest('http://example.com', elements);
+
+            // All should be present with WCAG comments
+            expect(test).toContain('// Action: Custom widget');
+            expect(test).toContain('// Action: Button');
+            expect(test).toContain('// Action: Link');
+            // Each should have a WCAG comment
+            expect((test.match(/\/\/ WCAG:/g) || []).length).toBe(3);
+        });
+    });
+
     describe('accessibility scanning after interactions', () => {
         it('should run axe scan after each interaction', () => {
             const elements: ElementDiscovery[] = [

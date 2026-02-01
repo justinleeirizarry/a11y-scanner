@@ -1,8 +1,11 @@
 import type { ElementDiscovery } from "../../types.js";
+import { getRelatedCriteria, sortByWcagPriority, formatCriteriaComment } from './wcag-element-map.js';
 
 export class TestGenerator {
     generateTest(url: string, elements: ElementDiscovery[]): string {
-        const interactions = elements.map((el, index) => this.generateInteraction(el, index)).join('\n\n    ');
+        // Sort elements by WCAG priority (Level A first, then AA, then AAA)
+        const sortedElements = sortByWcagPriority(elements);
+        const interactions = sortedElements.map((el, index) => this.generateInteraction(el, index)).join('\n\n    ');
 
         return `import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
@@ -90,7 +93,14 @@ test('Accessibility Interaction Test', async ({ page }) => {
 
     private generateInteraction(element: ElementDiscovery, index: number): string {
         // Generate actual executable interactions wrapped in try-catch
+        // Include WCAG context for the element type
+        const criteria = getRelatedCriteria(element.type);
+        const wcagComment = formatCriteriaComment(criteria);
+
         let action = `// Action: ${element.description}`;
+        if (wcagComment) {
+            action += `\n    // ${wcagComment}`;
+        }
         const { locator, isAriaLabel } = this.generateLocator(element);
 
         action += `\n    try {`;
