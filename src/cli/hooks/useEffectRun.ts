@@ -5,7 +5,7 @@
  * handling fiber interruption on component unmount.
  */
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Effect, Exit, Fiber, Runtime, Layer, Scope } from 'effect';
+import { Effect, Exit, Fiber, Layer } from 'effect';
 
 /**
  * State returned by useEffectRun

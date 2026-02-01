@@ -40,9 +40,95 @@ import { BrowserLaunchError, ServiceStateError, ScanDataError } from '../../erro
 // ============================================================================
 
 /**
- * Creates an Effect-wrapped BrowserService
+ * Creates an Effect-wrapped browser service from an instance
+ *
+ * This helper extracts the common logic for wrapping BrowserService methods.
+ */
+const createEffectBrowserService = (instance: BrowserServiceClass): EffectBrowserService => ({
+    launch: (config) =>
+        Effect.tryPromise({
+            try: () => instance.launch(config),
+            catch: (error): EffectBrowserLaunchError | EffectBrowserAlreadyLaunchedError => {
+                if (error instanceof ServiceStateError) {
+                    return new EffectBrowserAlreadyLaunchedError({});
+                }
+                if (error instanceof BrowserLaunchError) {
+                    return new EffectBrowserLaunchError({
+                        browserType: config.browserType,
+                        reason: error.message,
+                    });
+                }
+                return new EffectBrowserLaunchError({
+                    browserType: config.browserType,
+                    reason: error instanceof Error ? error.message : String(error),
+                });
+            },
+        }),
+
+    getPage: () =>
+        Effect.sync(() => instance.getPage()).pipe(
+            Effect.flatMap((page) =>
+                page
+                    ? Effect.succeed(page)
+                    : Effect.fail(new EffectBrowserNotLaunchedError({ operation: 'getPage' }))
+            )
+        ),
+
+    getBrowser: () =>
+        Effect.sync(() => instance.getBrowser()).pipe(
+            Effect.flatMap((browser) =>
+                browser
+                    ? Effect.succeed(browser)
+                    : Effect.fail(new EffectBrowserNotLaunchedError({ operation: 'getBrowser' }))
+            )
+        ),
+
+    isLaunched: () => Effect.sync(() => instance.isLaunched()),
+
+    navigate: (url, options) =>
+        Effect.tryPromise({
+            try: () => instance.navigate(url, options),
+            catch: (error) => {
+                if (error instanceof ServiceStateError) {
+                    return new EffectBrowserNotLaunchedError({ operation: 'navigate' });
+                }
+                return new EffectNavigationError({
+                    url,
+                    reason: error instanceof Error ? error.message : String(error),
+                });
+            },
+        }),
+
+    waitForStability: () =>
+        Effect.tryPromise({
+            try: () => instance.waitForStability(),
+            catch: (error) => {
+                if (error instanceof ServiceStateError) {
+                    return new EffectBrowserNotLaunchedError({ operation: 'waitForStability' });
+                }
+                return new EffectBrowserNotLaunchedError({ operation: 'waitForStability' });
+            },
+        }),
+
+    detectReact: () =>
+        Effect.tryPromise({
+            try: () => instance.detectReact(),
+            catch: (error) => {
+                if (error instanceof ServiceStateError) {
+                    return new EffectBrowserNotLaunchedError({ operation: 'detectReact' });
+                }
+                return new EffectBrowserNotLaunchedError({ operation: 'detectReact' });
+            },
+        }),
+
+    close: () => Effect.promise(() => instance.close()),
+});
+
+/**
+ * Creates an Effect-wrapped BrowserService with scoped lifecycle
  *
  * This layer wraps the existing BrowserService class with Effect error handling.
+ * The browser is automatically closed when the scope ends.
  */
 export const BrowserServiceLive = Layer.scoped(
     BrowserService,
@@ -56,88 +142,7 @@ export const BrowserServiceLive = Layer.scoped(
             })
         );
 
-        const service: EffectBrowserService = {
-            launch: (config) =>
-                Effect.tryPromise({
-                    try: () => instance.launch(config),
-                    catch: (error): EffectBrowserLaunchError | EffectBrowserAlreadyLaunchedError => {
-                        if (error instanceof ServiceStateError) {
-                            return new EffectBrowserAlreadyLaunchedError({});
-                        }
-                        if (error instanceof BrowserLaunchError) {
-                            return new EffectBrowserLaunchError({
-                                browserType: config.browserType,
-                                reason: error.message,
-                            });
-                        }
-                        return new EffectBrowserLaunchError({
-                            browserType: config.browserType,
-                            reason: error instanceof Error ? error.message : String(error),
-                        });
-                    },
-                }),
-
-            getPage: () =>
-                Effect.sync(() => instance.getPage()).pipe(
-                    Effect.flatMap((page) =>
-                        page
-                            ? Effect.succeed(page)
-                            : Effect.fail(new EffectBrowserNotLaunchedError({ operation: 'getPage' }))
-                    )
-                ),
-
-            getBrowser: () =>
-                Effect.sync(() => instance.getBrowser()).pipe(
-                    Effect.flatMap((browser) =>
-                        browser
-                            ? Effect.succeed(browser)
-                            : Effect.fail(new EffectBrowserNotLaunchedError({ operation: 'getBrowser' }))
-                    )
-                ),
-
-            isLaunched: () => Effect.sync(() => instance.isLaunched()),
-
-            navigate: (url, options) =>
-                Effect.tryPromise({
-                    try: () => instance.navigate(url, options),
-                    catch: (error) => {
-                        if (error instanceof ServiceStateError) {
-                            return new EffectBrowserNotLaunchedError({ operation: 'navigate' });
-                        }
-                        return new EffectNavigationError({
-                            url,
-                            reason: error instanceof Error ? error.message : String(error),
-                        });
-                    },
-                }),
-
-            waitForStability: () =>
-                Effect.tryPromise({
-                    try: () => instance.waitForStability(),
-                    catch: (error) => {
-                        if (error instanceof ServiceStateError) {
-                            return new EffectBrowserNotLaunchedError({ operation: 'waitForStability' });
-                        }
-                        // This shouldn't fail normally, but handle it
-                        return new EffectBrowserNotLaunchedError({ operation: 'waitForStability' });
-                    },
-                }),
-
-            detectReact: () =>
-                Effect.tryPromise({
-                    try: () => instance.detectReact(),
-                    catch: (error) => {
-                        if (error instanceof ServiceStateError) {
-                            return new EffectBrowserNotLaunchedError({ operation: 'detectReact' });
-                        }
-                        return new EffectBrowserNotLaunchedError({ operation: 'detectReact' });
-                    },
-                }),
-
-            close: () => Effect.promise(() => instance.close()),
-        };
-
-        return service;
+        return createEffectBrowserService(instance);
     })
 );
 
@@ -226,89 +231,5 @@ export const ResultsProcessorServiceLive = Layer.succeed(
  */
 export const BrowserServiceManual = Layer.succeed(
     BrowserService,
-    (() => {
-        const instance = createBrowserService() as BrowserServiceClass;
-
-        const service: EffectBrowserService = {
-            launch: (config) =>
-                Effect.tryPromise({
-                    try: () => instance.launch(config),
-                    catch: (error): EffectBrowserLaunchError | EffectBrowserAlreadyLaunchedError => {
-                        if (error instanceof ServiceStateError) {
-                            return new EffectBrowserAlreadyLaunchedError({});
-                        }
-                        if (error instanceof BrowserLaunchError) {
-                            return new EffectBrowserLaunchError({
-                                browserType: config.browserType,
-                                reason: error.message,
-                            });
-                        }
-                        return new EffectBrowserLaunchError({
-                            browserType: config.browserType,
-                            reason: error instanceof Error ? error.message : String(error),
-                        });
-                    },
-                }),
-
-            getPage: () =>
-                Effect.sync(() => instance.getPage()).pipe(
-                    Effect.flatMap((page) =>
-                        page
-                            ? Effect.succeed(page)
-                            : Effect.fail(new EffectBrowserNotLaunchedError({ operation: 'getPage' }))
-                    )
-                ),
-
-            getBrowser: () =>
-                Effect.sync(() => instance.getBrowser()).pipe(
-                    Effect.flatMap((browser) =>
-                        browser
-                            ? Effect.succeed(browser)
-                            : Effect.fail(new EffectBrowserNotLaunchedError({ operation: 'getBrowser' }))
-                    )
-                ),
-
-            isLaunched: () => Effect.sync(() => instance.isLaunched()),
-
-            navigate: (url, options) =>
-                Effect.tryPromise({
-                    try: () => instance.navigate(url, options),
-                    catch: (error) => {
-                        if (error instanceof ServiceStateError) {
-                            return new EffectBrowserNotLaunchedError({ operation: 'navigate' });
-                        }
-                        return new EffectNavigationError({
-                            url,
-                            reason: error instanceof Error ? error.message : String(error),
-                        });
-                    },
-                }),
-
-            waitForStability: () =>
-                Effect.tryPromise({
-                    try: () => instance.waitForStability(),
-                    catch: (error) => {
-                        if (error instanceof ServiceStateError) {
-                            return new EffectBrowserNotLaunchedError({ operation: 'waitForStability' });
-                        }
-                        return new EffectBrowserNotLaunchedError({ operation: 'waitForStability' });
-                    },
-                }),
-
-            detectReact: () =>
-                Effect.tryPromise({
-                    try: () => instance.detectReact(),
-                    catch: (error) => {
-                        if (error instanceof ServiceStateError) {
-                            return new EffectBrowserNotLaunchedError({ operation: 'detectReact' });
-                        }
-                        return new EffectBrowserNotLaunchedError({ operation: 'detectReact' });
-                    },
-                }),
-
-            close: () => Effect.promise(() => instance.close()),
-        };
-
-        return service;
-    })()
+    createEffectBrowserService(createBrowserService() as BrowserServiceClass)
 );

@@ -80,37 +80,39 @@ export const withEffectRetry = <A, E, R>(
 };
 
 /**
- * Execute an Effect with retry logic and callback on each retry
+ * Execute an Effect with retry logic and logging on each retry
+ *
+ * Uses Effect.retryOrElse to access the error on each retry attempt.
  *
  * @example
  * ```ts
- * const result = yield* withEffectRetryAndCallback(
+ * const result = yield* withEffectRetryAndLog(
  *   myEffect,
  *   { maxRetries: 3, delayMs: 1000, backoff: 'exponential' },
- *   (attempt, error) => console.log(`Retry ${attempt} after error: ${error}`)
+ *   (error, attempt) => console.log(`Retry ${attempt} after error: ${error}`)
  * );
  * ```
  */
-export const withEffectRetryAndCallback = <A, E, R>(
+export const withEffectRetryAndLog = <A, E, R>(
     effect: Effect.Effect<A, E, R>,
     config: EffectRetryConfig,
-    onRetry: (attempt: number, error: E) => void
+    onRetry: (error: E, attempt: number) => void
 ): Effect.Effect<A, E, R> => {
+    const { maxRetries } = config;
+    let attempt = 0;
+
     const schedule = createRetrySchedule(config);
 
-    return pipe(
+    return Effect.retryOrElse(
         effect,
-        Effect.retry(
-            pipe(
-                schedule,
-                Schedule.tapOutput(([, attempt]) =>
-                    Effect.sync(() => {
-                        // Note: We don't have access to the error in Schedule.tapOutput
-                        // For full error tracking, use Effect.retryOrElse instead
-                    })
-                )
-            )
-        )
+        schedule,
+        (error, _) => {
+            attempt++;
+            if (attempt <= maxRetries) {
+                onRetry(error, attempt);
+            }
+            return Effect.fail(error);
+        }
     );
 };
 
