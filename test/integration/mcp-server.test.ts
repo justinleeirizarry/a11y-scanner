@@ -4,28 +4,20 @@
  * Tests the MCP server tool invocation flow.
  * Verifies the scan_url tool works correctly through the MCP protocol.
  */
-import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { createOrchestrationService, createResultsProcessorService } from '../../src/services/index.js';
-import type { ScanResults } from '../../src/types.js';
+import {
+    createOrchestrationService,
+    createResultsProcessorService,
+    type ScanResults,
+} from '@react-a11y-scanner/core';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Test fixture path
 const TEST_APP_FIXTURE = `file://${join(__dirname, '../fixtures/test-app.html')}`;
-
-// Mock the logger to avoid stderr pollution during tests
-vi.mock('../../src/utils/logger.js', () => ({
-    logger: {
-        info: vi.fn(),
-        warn: vi.fn(),
-        error: vi.fn(),
-        debug: vi.fn(),
-        setUseStderr: vi.fn(),
-    },
-}));
 
 describe('MCP Server Integration', () => {
     /**

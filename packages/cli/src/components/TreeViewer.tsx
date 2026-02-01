@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Box, Text } from 'ink';
-import type { AttributedViolation } from '../../types.js';
+import type { AttributedViolation } from '@react-a11y-scanner/core';
 
 interface TreeViewerProps {
     violations: AttributedViolation[];

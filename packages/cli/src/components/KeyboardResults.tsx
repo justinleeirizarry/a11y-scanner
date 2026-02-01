@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Text } from 'ink';
-import type { KeyboardTestResults } from '../../types.js';
+import type { KeyboardTestResults } from '@react-a11y-scanner/core';
 import { truncateSelector } from '../utils/formatters.js';
 
 interface KeyboardResultsProps {

@@ -2,18 +2,15 @@ import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render } from 'ink-testing-library';
 import { ViolationCard } from './ViolationCard.js';
-import type { AttributedViolation } from '../../types.js';
+import type { AttributedViolation } from '@react-a11y-scanner/core';
 
-// Mock the suggestions module
-vi.mock('../../scanner/suggestions/index.js', () => ({
-    generateContextualFix: vi.fn(() => ({
-        current: '<button>Click</button>',
-        issue: 'Missing accessible name',
-        fixed: '<button aria-label="Submit form">Click</button>',
-        reactSuggestion: '<Button aria-label="Submit form">Click</Button>',
-    })),
-    hasContextualSupport: vi.fn(() => true),
-}));
+// Mock the core package suggestions module
+vi.mock('@react-a11y-scanner/core', async () => {
+    const actual = await vi.importActual('@react-a11y-scanner/core');
+    return {
+        ...actual,
+    };
+});
 
 describe('ViolationCard Component', () => {
     const createMockViolation = (overrides?: Partial<AttributedViolation>): AttributedViolation => ({

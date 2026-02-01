@@ -5,9 +5,13 @@ import Scanner from './components/Scanner.js';
 import Results from './components/Results.js';
 import TestGenerator from './components/TestGenerator.js';
 import TestGenerationResults from './components/TestGenerationResults.js';
-import { createOrchestrationService } from '../services/index.js';
-import { EXIT_CODES, setExitCode } from '../utils/exit-codes.js';
-import type { ScanResults, TestGenerationResults as TestGenResults, BrowserType } from '../types.js';
+import {
+    createOrchestrationService,
+    EXIT_CODES,
+    setExitCode,
+    generateAndExport,
+} from '@react-a11y-scanner/core';
+import type { ScanResults, TestGenerationResults as TestGenResults, BrowserType } from '@react-a11y-scanner/core';
 
 interface AppProps {
     mode: 'scan' | 'generate-test';
@@ -106,7 +110,6 @@ const App: React.FC<AppProps> = ({ mode, url, browser, output, ci, threshold, he
                     // Handle AI prompts (must happen before exit)
                     if (ai) {
                         try {
-                            const { generateAndExport } = await import('../prompts/prompt-generator.js');
                             const promptPath = generateAndExport(
                                 results,
                                 {
@@ -161,7 +164,7 @@ const App: React.FC<AppProps> = ({ mode, url, browser, output, ci, threshold, he
         return (
             <Box flexDirection="column" padding={1}>
                 <Box>
-                    <Text color="red" bold>❌ Scan Error</Text>
+                    <Text color="red" bold>Scan Error</Text>
                 </Box>
                 <Box marginTop={1}>
                     <Text>{error}</Text>

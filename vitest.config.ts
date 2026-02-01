@@ -7,14 +7,22 @@ export default defineConfig({
         coverage: {
             provider: 'v8',
             reporter: ['text', 'json', 'html'],
-            include: ['src/**/*.ts', 'src/**/*.tsx'],
+            include: ['packages/*/src/**/*.ts', 'packages/*/src/**/*.tsx'],
             exclude: [
-                'src/**/*.test.ts',
-                'src/**/*.test.tsx',
-                'src/types.ts',
-                'src/scanner/browser-bundle.ts', // Browser context, tested separately
+                'packages/*/src/**/*.test.ts',
+                'packages/*/src/**/*.test.tsx',
+                'packages/core/src/types.ts',
+                'packages/core/src/scanner/browser-bundle.ts',
             ],
         },
-        include: ['src/**/*.test.ts', 'src/**/*.test.tsx', 'test/**/*.test.ts'],
+        include: [
+            'packages/*/src/**/*.test.ts',
+            'packages/*/src/**/*.test.tsx',
+            'test/**/*.test.ts',
+        ],
+        exclude: [
+            '**/node_modules/**',
+            '**/dist/**',
+        ],
     },
 });

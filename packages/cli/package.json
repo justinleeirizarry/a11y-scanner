@@ -1,0 +1,48 @@
+{
+    "name": "@react-a11y-scanner/cli",
+    "version": "0.1.0",
+    "description": "CLI tool for React accessibility scanning",
+    "main": "dist/index.js",
+    "type": "module",
+    "exports": {
+        ".": "./dist/index.js",
+        "./dist/index.js": "./dist/index.js"
+    },
+    "bin": {
+        "react-a11y-scanner": "./bin/cli.js"
+    },
+    "files": [
+        "dist",
+        "bin"
+    ],
+    "scripts": {
+        "build": "tsc",
+        "dev": "tsc --watch",
+        "start": "node ./bin/cli.js",
+        "test": "vitest run",
+        "test:watch": "vitest"
+    },
+    "keywords": [
+        "react",
+        "accessibility",
+        "a11y",
+        "cli"
+    ],
+    "license": "MIT",
+    "dependencies": {
+        "@react-a11y-scanner/core": "workspace:*",
+        "chalk": "^5.3.0",
+        "dotenv": "^17.2.3",
+        "ink": "^4.4.1",
+        "ink-spinner": "^5.0.0",
+        "meow": "^13.1.0",
+        "react": "^18.3.1"
+    },
+    "devDependencies": {
+        "@types/node": "^20.10.0",
+        "@types/react": "^18.3.1",
+        "ink-testing-library": "^4.0.0",
+        "typescript": "^5.3.0",
+        "vitest": "^4.0.13"
+    }
+}

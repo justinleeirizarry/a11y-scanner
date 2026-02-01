@@ -1,0 +1,35 @@
+{
+    "name": "@react-a11y-scanner/mcp",
+    "version": "0.1.0",
+    "description": "MCP server for React A11y Scanner",
+    "main": "dist/server.js",
+    "type": "module",
+    "bin": {
+        "mcp-server": "./bin/mcp-server.js"
+    },
+    "files": [
+        "dist",
+        "bin"
+    ],
+    "scripts": {
+        "build": "tsc",
+        "dev": "tsc --watch",
+        "start": "node ./dist/server.js"
+    },
+    "keywords": [
+        "mcp",
+        "accessibility",
+        "a11y",
+        "react"
+    ],
+    "license": "MIT",
+    "dependencies": {
+        "@react-a11y-scanner/core": "workspace:*",
+        "@modelcontextprotocol/sdk": "^1.22.0",
+        "zod": "^3.25.76"
+    },
+    "devDependencies": {
+        "@types/node": "^20.10.0",
+        "typescript": "^5.3.0"
+    }
+}

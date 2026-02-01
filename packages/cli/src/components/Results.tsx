@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Text } from 'ink';
-import type { ScanResults } from '../../types.js';
+import type { ScanResults } from '@react-a11y-scanner/core';
 import { TreeViewer } from './TreeViewer.js';
 import { Dashboard } from './Dashboard.js';
 import { ViolationCard } from './ViolationCard.js';

@@ -7,9 +7,11 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { createOrchestrationService } from '../../src/services/index.js';
-import type { IOrchestrationService } from '../../src/services/orchestration/types.js';
-import type { ScanResults } from '../../src/types.js';
+import {
+    createOrchestrationService,
+    type IOrchestrationService,
+    type ScanResults,
+} from '@react-a11y-scanner/core';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

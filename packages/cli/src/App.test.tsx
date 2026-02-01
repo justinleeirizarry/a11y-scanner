@@ -7,24 +7,24 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render } from 'ink-testing-library';
 import App from './App.js';
 
-// Mock the OrchestrationService
+// Mock the core package
 const mockPerformScan = vi.fn();
 const mockPerformTestGeneration = vi.fn();
+const mockGenerateAndExport = vi.fn();
 
-vi.mock('../services/index.js', () => ({
-    createOrchestrationService: vi.fn(() => ({
-        performScan: mockPerformScan,
-        performTestGeneration: mockPerformTestGeneration,
-    }))
-}));
+vi.mock('@react-a11y-scanner/core', async () => {
+    const actual = await vi.importActual('@react-a11y-scanner/core');
+    return {
+        ...actual,
+        createOrchestrationService: vi.fn(() => ({
+            performScan: mockPerformScan,
+            performTestGeneration: mockPerformTestGeneration,
+        })),
+        generateAndExport: mockGenerateAndExport,
+    };
+});
 
-vi.mock('../prompts/prompt-generator.js', () => ({
-    generateAndExport: vi.fn()
-}));
-
-import { createOrchestrationService } from '../services/index.js';
-import { generateAndExport } from '../prompts/prompt-generator.js';
-import type { ScanResults, TestGenerationResults } from '../types.js';
+import type { ScanResults, TestGenerationResults } from '@react-a11y-scanner/core';
 
 describe('App Component', () => {
     // Store original process.exitCode
@@ -306,7 +306,7 @@ describe('App Component', () => {
         it('should generate AI prompt when --ai flag is set', async () => {
             const mockResults = createMockScanResults(3);
             mockPerformScan.mockResolvedValue(createMockScanResponse(mockResults));
-            (generateAndExport as any).mockReturnValue('a11y-prompt.md');
+            mockGenerateAndExport.mockReturnValue('a11y-prompt.md');
 
             const { unmount } = render(
                 <App
@@ -321,7 +321,7 @@ describe('App Component', () => {
             );
 
             await vi.waitFor(() => {
-                expect(generateAndExport).toHaveBeenCalledWith(
+                expect(mockGenerateAndExport).toHaveBeenCalledWith(
                     expect.objectContaining({
                         violations: expect.any(Array),
                         summary: expect.any(Object)

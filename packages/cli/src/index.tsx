@@ -5,13 +5,24 @@ configDotenv({ quiet: true });
 import React from 'react';
 import { render } from 'ink';
 import meow from 'meow';
-import App from './cli/App.js';
-import type { BrowserType } from './types.js';
-import { validateUrl, validateTags, validateThreshold, validateBrowser } from './utils/validation.js';
-import { createOrchestrationService } from './services/index.js';
-import { EXIT_CODES, setExitCode, exitWithCode } from './utils/exit-codes.js';
-import { updateConfig, loadEnvConfig, hasEnvConfig } from './config/index.js';
-import { logger, LogLevel } from './utils/logger.js';
+import App from './App.js';
+import type { BrowserType } from '@react-a11y-scanner/core';
+import {
+    validateUrl,
+    validateTags,
+    validateThreshold,
+    validateBrowser,
+    createOrchestrationService,
+    EXIT_CODES,
+    setExitCode,
+    exitWithCode,
+    updateConfig,
+    loadEnvConfig,
+    hasEnvConfig,
+    logger,
+    LogLevel,
+    generateAndExport,
+} from '@react-a11y-scanner/core';
 
 // Load configuration from environment variables (REACT_A11Y_*)
 if (hasEnvConfig()) {
@@ -118,7 +129,7 @@ const cli = meow(
 
 // Validate URL argument
 if (cli.input.length === 0) {
-    console.error('❌ Error: URL is required\n');
+    console.error('Error: URL is required\n');
     cli.showHelp();
     exitWithCode(EXIT_CODES.VALIDATION_ERROR);
 }
@@ -128,14 +139,14 @@ const url = cli.input[0];
 // Validate URL format and protocol
 const urlValidation = validateUrl(url);
 if (!urlValidation.valid) {
-    console.error(`❌ Error: ${urlValidation.error}\n`);
+    console.error(`Error: ${urlValidation.error}\n`);
     exitWithCode(EXIT_CODES.VALIDATION_ERROR);
 }
 
 // Validate browser type
 const browserValidation = validateBrowser(cli.flags.browser);
 if (!browserValidation.valid) {
-    console.error(`❌ Error: ${browserValidation.error}\n`);
+    console.error(`Error: ${browserValidation.error}\n`);
     exitWithCode(EXIT_CODES.VALIDATION_ERROR);
 }
 
@@ -143,7 +154,7 @@ if (!browserValidation.valid) {
 if (cli.flags.tags) {
     const tagsValidation = validateTags(cli.flags.tags);
     if (!tagsValidation.valid) {
-        console.error(`❌ Error: ${tagsValidation.error}\n`);
+        console.error(`Error: ${tagsValidation.error}\n`);
         exitWithCode(EXIT_CODES.VALIDATION_ERROR);
     }
 }
@@ -151,7 +162,7 @@ if (cli.flags.tags) {
 // Validate threshold
 const thresholdValidation = validateThreshold(cli.flags.threshold);
 if (!thresholdValidation.valid) {
-    console.error(`❌ Error: ${thresholdValidation.error}\n`);
+    console.error(`Error: ${thresholdValidation.error}\n`);
     exitWithCode(EXIT_CODES.VALIDATION_ERROR);
 }
 
@@ -199,7 +210,7 @@ if (isTestGenerationMode) {
     });
 
     if (conflictingFlags.length > 0) {
-        console.error(`❌ Error: Cannot use ${conflictingFlags.map(f => f.name).join(', ')} with --generate-test\n`);
+        console.error(`Error: Cannot use ${conflictingFlags.map(f => f.name).join(', ')} with --generate-test\n`);
         console.error('Test generation mode is mutually exclusive with accessibility scan options.\n');
         exitWithCode(EXIT_CODES.VALIDATION_ERROR);
     }
@@ -246,7 +257,7 @@ if (!isTTY) {
                 // In quiet mode, output plain text; otherwise full JSON
                 if (cli.flags.quiet) {
                     const { summary, violations } = results;
-                    const statusIcon = summary.totalViolations > 0 ? '✗' : '✓';
+                    const statusIcon = summary.totalViolations > 0 ? 'x' : 'v';
                     console.log(`${statusIcon} ${url} - ${summary.totalViolations} violations, ${summary.totalPasses} passes`);
 
                     if (summary.totalViolations > 0) {
@@ -286,7 +297,6 @@ if (!isTTY) {
 
                 // Handle AI prompt generation
                 if (cli.flags.ai) {
-                    const { generateAndExport } = await import('./prompts/prompt-generator.js');
                     const promptPath = generateAndExport(
                         results,
                         {
@@ -343,7 +353,7 @@ if (!isTTY) {
             // Exit code will be set by the App component
             exitWithCode((process.exitCode ?? EXIT_CODES.SUCCESS) as 0 | 1 | 2);
         } catch (error) {
-            console.error('❌ Fatal error:', error instanceof Error ? error.message : String(error));
+            console.error('Fatal error:', error instanceof Error ? error.message : String(error));
             if (error instanceof Error && error.stack) {
                 console.error('\nStack trace:', error.stack);
             }

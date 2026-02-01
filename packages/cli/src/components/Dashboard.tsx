@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Text } from 'ink';
-import { ScanResults } from '../../types.js';
+import type { ScanResults } from '@react-a11y-scanner/core';
 import { colors } from '../colors.js';
 
 interface DashboardProps {

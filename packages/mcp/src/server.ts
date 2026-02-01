@@ -2,10 +2,16 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { createOrchestrationService, createResultsProcessorService } from "./services/index.js";
-import { logger } from "./utils/logger.js";
-import { EXIT_CODES, exitWithCode } from "./utils/exit-codes.js";
-import { updateConfig, loadEnvConfig, hasEnvConfig } from "./config/index.js";
+import {
+    createOrchestrationService,
+    createResultsProcessorService,
+    logger,
+    EXIT_CODES,
+    exitWithCode,
+    updateConfig,
+    loadEnvConfig,
+    hasEnvConfig,
+} from "@react-a11y-scanner/core";
 
 // Configure logger to use stderr to avoid corrupting JSON-RPC on stdout
 logger.setUseStderr(true);
