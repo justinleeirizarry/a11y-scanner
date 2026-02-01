@@ -201,28 +201,16 @@ export const performScanWithCleanup = (
 const writeResultsToFile = (
     results: ScanResults,
     filePath: string,
-    processor: ResultsProcessorService extends { Type: infer T } ? T : never
+    processor: { formatAsJSON: (results: ScanResults) => Effect.Effect<string> }
 ): Effect.Effect<void, EffectFileSystemError> =>
     Effect.gen(function* () {
         const jsonContent = yield* processor.formatAsJSON(results);
 
-        // Create directory if needed
+        // Create directory if needed (mkdir with recursive:true is idempotent)
         const dir = dirname(filePath);
         if (dir !== '.') {
             yield* Effect.tryPromise({
-                try: async () => {
-                    try {
-                        await mkdir(dir, { recursive: true });
-                    } catch (err) {
-                        // Only ignore EEXIST error
-                        if (err instanceof Error) {
-                            const nodeError = err as NodeJS.ErrnoException;
-                            if (nodeError.code !== 'EEXIST') {
-                                throw err;
-                            }
-                        }
-                    }
-                },
+                try: () => mkdir(dir, { recursive: true }),
                 catch: (error) =>
                     new EffectFileSystemError({
                         operation: 'mkdir',

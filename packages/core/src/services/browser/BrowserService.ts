@@ -14,6 +14,7 @@ import {
     EffectBrowserAlreadyLaunchedError,
     EffectNavigationError,
 } from '../../errors/effect-errors.js';
+import { detectReact as detectReactOnPage } from '../effect/browser-resource.js';
 import type {
     BrowserServiceConfig,
     NavigateOptions,
@@ -247,51 +248,7 @@ export class BrowserService implements IBrowserService {
     detectReact(): Effect.Effect<boolean, EffectBrowserNotLaunchedError> {
         return Effect.gen(this, function* () {
             const page = yield* this.getPage();
-
-            return yield* Effect.promise(() =>
-                page.evaluate(() => {
-                    // Helper function to check if element has React fiber
-                    function hasReactFiber(element: Element): boolean {
-                        const keys = Object.keys(element);
-                        return keys.some(
-                            (key) =>
-                                key.startsWith('__reactFiber') ||
-                                key.startsWith('__reactProps') ||
-                                key.startsWith('__reactInternalInstance')
-                        );
-                    }
-
-                    // 1. Fast path: Check DevTools hook first (most reliable)
-                    if (typeof window !== 'undefined' && (window as any).__REACT_DEVTOOLS_GLOBAL_HOOK__) {
-                        const hook = (window as any).__REACT_DEVTOOLS_GLOBAL_HOOK__;
-                        if (hook.getFiberRoots && hook.getFiberRoots(1)?.size > 0) {
-                            return true;
-                        }
-                    }
-
-                    // 2. Check common React root containers (most likely locations)
-                    const rootSelectors = ['#root', '#app', '#__next', '[data-reactroot]', '[data-reactid]'];
-                    for (const selector of rootSelectors) {
-                        const element = document.querySelector(selector);
-                        if (element && hasReactFiber(element)) {
-                            return true;
-                        }
-                    }
-
-                    // 3. Sample random elements instead of checking all (performance optimization)
-                    const allElements = document.querySelectorAll('*');
-                    const sampleSize = Math.min(100, allElements.length);
-                    const step = Math.max(1, Math.floor(allElements.length / sampleSize));
-
-                    for (let i = 0; i < allElements.length; i += step) {
-                        if (hasReactFiber(allElements[i])) {
-                            return true;
-                        }
-                    }
-
-                    return false;
-                })
-            );
+            return yield* detectReactOnPage(page);
         });
     }
 

@@ -29,105 +29,98 @@ import type {
 export class ResultsProcessorService implements IResultsProcessorService {
     /**
      * Process raw scan data into structured results
-     * (Extracted from results-parser.ts)
      */
     process(data: BrowserScanData, metadata: ScanMetadata): Effect.Effect<ScanResults> {
-        return Effect.sync(() => this._processSync(data, metadata));
-    }
+        return Effect.sync(() => {
+            const {
+                components,
+                violations: attributedViolations,
+                passes,
+                incomplete,
+                inapplicable,
+                keyboardTests,
+                wcag22,
+                accessibilityTree
+            } = data;
+            const { url, browser, timestamp } = metadata;
 
-    /**
-     * Internal synchronous implementation
-     */
-    private _processSync(data: BrowserScanData, metadata: ScanMetadata): ScanResults {
-        const {
-            components,
-            violations: attributedViolations,
-            passes,
-            incomplete,
-            inapplicable,
-            keyboardTests,
-            wcag22,
-            accessibilityTree
-        } = data;
-        const { url, browser, timestamp } = metadata;
-
-        // Count unique components with violations
-        const componentsWithViolationsSet = new Set<string>();
-
-        for (const violation of attributedViolations) {
-            for (const node of violation.nodes) {
-                if (node.component) {
-                    componentsWithViolationsSet.add(node.component);
+            // Count unique components with violations
+            const componentsWithViolationsSet = new Set<string>();
+            for (const violation of attributedViolations) {
+                for (const node of violation.nodes) {
+                    if (node.component) {
+                        componentsWithViolationsSet.add(node.component);
+                    }
                 }
             }
-        }
 
-        // Calculate total violations (sum of all instances)
-        const totalViolations = attributedViolations.reduce((acc, v) => acc + v.nodes.length, 0);
+            // Calculate total violations (sum of all instances)
+            const totalViolations = attributedViolations.reduce((acc, v) => acc + v.nodes.length, 0);
 
-        // Calculate totals for passes, incomplete, inapplicable
-        const totalPasses = passes?.length || 0;
-        const totalIncomplete = incomplete?.length || 0;
-        const totalInapplicable = inapplicable?.length || 0;
+            // Calculate totals for passes, incomplete, inapplicable
+            const totalPasses = passes?.length || 0;
+            const totalIncomplete = incomplete?.length || 0;
+            const totalInapplicable = inapplicable?.length || 0;
 
-        // Calculate keyboard issues if keyboard tests were run
-        const keyboardIssues = keyboardTests?.summary.totalIssues;
+            // Calculate keyboard issues if keyboard tests were run
+            const keyboardIssues = keyboardTests?.summary.totalIssues;
 
-        // Calculate severity breakdown by instances
-        const violationsBySeverity = {
-            critical: attributedViolations
-                .filter((v) => v.impact === 'critical')
-                .reduce((acc, v) => acc + v.nodes.length, 0),
-            serious: attributedViolations
-                .filter((v) => v.impact === 'serious')
-                .reduce((acc, v) => acc + v.nodes.length, 0),
-            moderate: attributedViolations
-                .filter((v) => v.impact === 'moderate')
-                .reduce((acc, v) => acc + v.nodes.length, 0),
-            minor: attributedViolations
-                .filter((v) => v.impact === 'minor')
-                .reduce((acc, v) => acc + v.nodes.length, 0),
-        };
+            // Calculate severity breakdown by instances
+            const violationsBySeverity = {
+                critical: attributedViolations
+                    .filter((v) => v.impact === 'critical')
+                    .reduce((acc, v) => acc + v.nodes.length, 0),
+                serious: attributedViolations
+                    .filter((v) => v.impact === 'serious')
+                    .reduce((acc, v) => acc + v.nodes.length, 0),
+                moderate: attributedViolations
+                    .filter((v) => v.impact === 'moderate')
+                    .reduce((acc, v) => acc + v.nodes.length, 0),
+                minor: attributedViolations
+                    .filter((v) => v.impact === 'minor')
+                    .reduce((acc, v) => acc + v.nodes.length, 0),
+            };
 
-        // Calculate WCAG level breakdown
-        const violationsByWcagLevel = countViolationsByWcagLevel(attributedViolations);
+            // Calculate WCAG level breakdown
+            const violationsByWcagLevel = countViolationsByWcagLevel(attributedViolations);
 
-        // Add WCAG 2.2 violations to the level counts
-        if (wcag22) {
-            addWcag22ToLevelCounts(violationsByWcagLevel, wcag22);
-        }
+            // Add WCAG 2.2 violations to the level counts
+            if (wcag22) {
+                addWcag22ToLevelCounts(violationsByWcagLevel, wcag22);
+            }
 
-        // Calculate WCAG 2.2 issues if checks were run
-        const wcag22Issues = wcag22?.summary.totalViolations;
+            // Calculate WCAG 2.2 issues if checks were run
+            const wcag22Issues = wcag22?.summary.totalViolations;
 
-        // Calculate summary statistics
-        const summary = {
-            totalComponents: components.length,
-            totalViolations,
-            totalPasses,
-            totalIncomplete,
-            totalInapplicable,
-            violationsBySeverity,
-            violationsByWcagLevel,
-            componentsWithViolations: componentsWithViolationsSet.size,
-            keyboardIssues,
-            wcag22Issues,
-        };
+            // Calculate summary statistics
+            const summary = {
+                totalComponents: components.length,
+                totalViolations,
+                totalPasses,
+                totalIncomplete,
+                totalInapplicable,
+                violationsBySeverity,
+                violationsByWcagLevel,
+                componentsWithViolations: componentsWithViolationsSet.size,
+                keyboardIssues,
+                wcag22Issues,
+            };
 
-        return {
-            url,
-            timestamp: timestamp ?? new Date().toISOString(),
-            browser,
-            components,
-            violations: attributedViolations,
-            passes,
-            incomplete,
-            inapplicable,
-            accessibilityTree,
-            keyboardTests,
-            wcag22,
-            summary,
-        };
+            return {
+                url,
+                timestamp: timestamp ?? new Date().toISOString(),
+                browser,
+                components,
+                violations: attributedViolations,
+                passes,
+                incomplete,
+                inapplicable,
+                accessibilityTree,
+                keyboardTests,
+                wcag22,
+                summary,
+            };
+        });
     }
 
     /**
@@ -135,103 +128,78 @@ export class ResultsProcessorService implements IResultsProcessorService {
      * Handles circular references that can occur with Fiber data
      */
     formatAsJSON(results: ScanResults, pretty = true): Effect.Effect<string> {
-        return Effect.sync(() => this._formatAsJSONSync(results, pretty));
-    }
-
-    /**
-     * Internal synchronous implementation
-     */
-    private _formatAsJSONSync(results: ScanResults, pretty = true): string {
-        const seen = new WeakSet();
-        const replacer = (_key: string, value: any) => {
-            if (typeof value === 'object' && value !== null) {
-                if (seen.has(value)) {
-                    return '[Circular Reference]';
+        return Effect.sync(() => {
+            const seen = new WeakSet();
+            const replacer = (_key: string, value: any) => {
+                if (typeof value === 'object' && value !== null) {
+                    if (seen.has(value)) {
+                        return '[Circular Reference]';
+                    }
+                    seen.add(value);
                 }
-                seen.add(value);
-            }
-            return value;
-        };
+                return value;
+            };
 
-        return pretty ? JSON.stringify(results, replacer, 2) : JSON.stringify(results, replacer);
+            return pretty ? JSON.stringify(results, replacer, 2) : JSON.stringify(results, replacer);
+        });
     }
 
     /**
      * Format results for MCP (Model Context Protocol) output
-     * (Extracted from mcp-server.ts)
      */
     formatForMCP(results: ScanResults, options?: MCPFormatOptions): Effect.Effect<MCPToolContent[]> {
-        return Effect.sync(() => this._formatForMCPSync(results, options));
-    }
+        return Effect.sync(() => {
+            const violationCount = results.violations.length;
+            const criticalCount = results.summary.violationsBySeverity.critical;
 
-    /**
-     * Internal synchronous implementation
-     */
-    private _formatForMCPSync(results: ScanResults, options?: MCPFormatOptions): MCPToolContent[] {
-        const violationCount = results.violations.length;
-        const criticalCount = results.summary.violationsBySeverity.critical;
+            let summary = `## Scan Complete for ${results.url}\n\n`;
+            summary += `Found **${violationCount}** violations (**${criticalCount}** critical).\n\n`;
 
-        let summary = `## Scan Complete for ${results.url}\n\n`;
-        summary += `Found **${violationCount}** violations (**${criticalCount}** critical).\n\n`;
+            if (violationCount > 0) {
+                summary += '### Violations Summary\n';
+                summary += formatViolations(results.violations);
+            } else {
+                summary += 'No accessibility violations found!';
+            }
 
-        if (violationCount > 0) {
-            summary += '### Violations Summary\n';
-            summary += formatViolations(results.violations);
-        } else {
-            summary += 'No accessibility violations found!';
-        }
+            const content: MCPToolContent[] = [{ type: 'text', text: summary }];
 
-        const content: MCPToolContent[] = [
-            {
-                type: 'text',
-                text: summary,
-            },
-        ];
+            // Optionally include accessibility tree
+            if (options?.includeTree && results.accessibilityTree) {
+                content.push({
+                    type: 'text',
+                    text:
+                        '\n\n### Accessibility Tree\n```json\n' +
+                        JSON.stringify(results.accessibilityTree, null, 2) +
+                        '\n```',
+                });
+            }
 
-        // Optionally include accessibility tree
-        if (options?.includeTree && results.accessibilityTree) {
-            content.push({
-                type: 'text',
-                text:
-                    '\n\n### Accessibility Tree\n```json\n' +
-                    JSON.stringify(results.accessibilityTree, null, 2) +
-                    '\n```',
-            });
-        }
-
-        return content;
+            return content;
+        });
     }
 
     /**
      * Format results for CI mode with threshold checking
-     * (Extracted from App.tsx)
      */
     formatForCI(results: ScanResults, threshold: number): Effect.Effect<CIResult> {
-        return Effect.sync(() => this._formatForCISync(results, threshold));
-    }
+        return Effect.sync(() => {
+            const totalViolations = results.summary.totalViolations;
+            const criticalViolations = results.summary.violationsBySeverity.critical;
+            const passed = totalViolations <= threshold;
 
-    /**
-     * Internal synchronous implementation
-     */
-    private _formatForCISync(results: ScanResults, threshold: number): CIResult {
-        const totalViolations = results.summary.totalViolations;
-        const criticalViolations = results.summary.violationsBySeverity.critical;
-        const passed = totalViolations <= threshold;
+            const message = passed
+                ? `CI Check Passed: ${totalViolations} violation(s) found (threshold: ${threshold})`
+                : `CI Check Failed: ${totalViolations} violation(s) found (threshold: ${threshold})`;
 
-        let message: string;
-        if (passed) {
-            message = `CI Check Passed: ${totalViolations} violation(s) found (threshold: ${threshold})`;
-        } else {
-            message = `CI Check Failed: ${totalViolations} violation(s) found (threshold: ${threshold})`;
-        }
-
-        return {
-            passed,
-            totalViolations,
-            criticalViolations,
-            threshold,
-            message,
-        };
+            return {
+                passed,
+                totalViolations,
+                criticalViolations,
+                threshold,
+                message,
+            };
+        });
     }
 }
 

@@ -165,26 +165,6 @@ export {
     EffectTestGenNavigationError,
     EffectTestGenDiscoveryError,
 
-    // Effect error aliases (cleaner names)
-    ReactNotDetected,
-    BrowserLaunchFailed,
-    BrowserNotLaunched,
-    BrowserAlreadyLaunched,
-    NavigationTimeout,
-    NavigationFailed,
-    ContextDestroyed,
-    ScannerInjectionFailed,
-    MaxRetriesExceeded,
-    InvalidConfiguration,
-    InvalidUrl,
-    FileSystemFailed,
-    InvalidServiceState,
-    InvalidScanData,
-    TestGenNotInitialized,
-    TestGenInitFailed,
-    TestGenNavigationFailed,
-    TestGenDiscoveryFailed,
-
     // Error type unions
     type BrowserErrors,
     type ScanErrors,
