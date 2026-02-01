@@ -55,13 +55,3 @@ export interface IResultsProcessorService {
     formatForCI(results: ScanResults, threshold: number): Effect.Effect<CIResult>;
 }
 
-/**
- * @deprecated Use IResultsProcessorService instead
- * Legacy interface for backward compatibility
- */
-export interface IResultsProcessorServiceLegacy {
-    process(data: BrowserScanData, metadata: ScanMetadata): ScanResults;
-    formatAsJSON(results: ScanResults, pretty?: boolean): string;
-    formatForMCP(results: ScanResults, options?: MCPFormatOptions): MCPToolContent[];
-    formatForCI(results: ScanResults, threshold: number): CIResult;
-}

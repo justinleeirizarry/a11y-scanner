@@ -36,12 +36,3 @@ export interface IScannerService {
     scan(page: Page, options?: ScanExecutionOptions): Effect.Effect<BrowserScanData, EffectScannerInjectionError | EffectScanDataError>;
 }
 
-/**
- * @deprecated Use IScannerService instead
- * Legacy interface for backward compatibility
- */
-export interface IScannerServiceLegacy {
-    injectBundle(page: Page): Promise<void>;
-    scan(page: Page, options?: ScanExecutionOptions): Promise<BrowserScanData>;
-    isBundleInjected(page: Page): Promise<boolean>;
-}

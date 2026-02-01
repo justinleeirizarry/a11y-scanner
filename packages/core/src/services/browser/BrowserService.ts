@@ -8,7 +8,6 @@ import { Effect } from 'effect';
 import { chromium, firefox, webkit, type Browser, type Page } from 'playwright';
 import { getConfig } from '../../config/index.js';
 import { logger } from '../../utils/logger.js';
-import { BrowserLaunchError, ServiceStateError } from '../../errors/index.js';
 import {
     EffectBrowserLaunchError,
     EffectBrowserNotLaunchedError,
@@ -81,20 +80,13 @@ export class BrowserService implements IBrowserService {
                             this.browser = await webkit.launch(launchOptions);
                             break;
                         default:
-                            throw new BrowserLaunchError(config.browserType, 'Unsupported browser type');
+                            throw new Error(`Unsupported browser type: ${config.browserType}`);
                     }
 
                     this.page = await this.browser.newPage();
                     logger.debug(`Browser ${config.browserType} launched successfully`);
                 },
                 catch: (error) => {
-                    if (error instanceof BrowserLaunchError) {
-                        return new EffectBrowserLaunchError({
-                            browserType: config.browserType,
-                            reason: error.message,
-                        });
-                    }
-
                     const errorMessage = error instanceof Error ? error.message : String(error);
 
                     // Detect Playwright browser not installed error

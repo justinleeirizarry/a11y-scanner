@@ -58,16 +58,3 @@ export interface ITestGenerationService {
     isInitialized(): Effect.Effect<boolean>;
 }
 
-/**
- * @deprecated Use ITestGenerationService instead
- * Legacy interface for backward compatibility
- */
-export interface ITestGenerationServiceLegacy {
-    init(config?: TestGenerationConfig): Promise<void>;
-    getPage(): Page | null;
-    navigateTo(url: string): Promise<void>;
-    discoverElements(): Promise<ElementDiscovery[]>;
-    generateTest(url: string, elements: ElementDiscovery[]): string;
-    close(): Promise<void>;
-    isInitialized(): boolean;
-}

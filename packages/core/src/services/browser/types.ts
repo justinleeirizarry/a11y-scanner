@@ -83,17 +83,3 @@ export interface IBrowserService {
     isLaunched(): Effect.Effect<boolean>;
 }
 
-/**
- * @deprecated Use IBrowserService instead
- * Legacy interface for backward compatibility
- */
-export interface IBrowserServiceLegacy {
-    launch(config: BrowserServiceConfig): Promise<void>;
-    getPage(): Page | null;
-    getBrowser(): Browser | null;
-    navigate(url: string, options?: NavigateOptions): Promise<void>;
-    waitForStability(): Promise<StabilityCheckResult>;
-    detectReact(): Promise<boolean>;
-    close(): Promise<void>;
-    isLaunched(): boolean;
-}

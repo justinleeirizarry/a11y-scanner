@@ -142,21 +142,6 @@ export type {
 // Errors
 // =============================================================================
 
-// Legacy class-based errors (for Promise-based code)
-export {
-    ScanError,
-    ReactNotDetectedError,
-    NavigationTimeoutError,
-    ContextDestroyedError,
-    ScannerInjectionError,
-    MaxRetriesExceededError,
-    ConfigurationError,
-    InvalidUrlError,
-    FileSystemError,
-    BrowserLaunchError,
-    ServiceStateError,
-    ScanDataError,
-} from './errors/index.js';
 
 // Effect-compatible errors (Data.TaggedError) - preferred for Effect workflows
 export {

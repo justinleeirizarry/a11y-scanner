@@ -8,10 +8,7 @@ import type { Page } from 'playwright';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import type { BrowserScanData } from '../../types.js';
-import { getConfig } from '../../config/index.js';
 import { logger } from '../../utils/logger.js';
-import { withRetry } from '../../utils/retry.js';
-import { ScanDataError } from '../../errors/index.js';
 import { EffectScannerInjectionError, EffectScanDataError } from '../../errors/effect-errors.js';
 import type { ScanExecutionOptions, IScannerService } from './types.js';
 
@@ -107,97 +104,75 @@ export class ScannerService implements IScannerService {
     }
 
     /**
-     * Execute the scan with retry logic
+     * Execute the scan
+     * Note: Retry logic is handled at the orchestration layer using Effect.retry()
      */
     private _executeScan(page: Page, options?: ScanExecutionOptions): Effect.Effect<BrowserScanData, EffectScanDataError> {
-        return Effect.tryPromise({
-            try: () => this._executeScanAsync(page, options),
-            catch: (error) => {
-                if (error instanceof ScanDataError) {
-                    return new EffectScanDataError({ reason: error.message });
-                }
-                return new EffectScanDataError({
-                    reason: error instanceof Error ? error.message : String(error)
-                });
-            }
-        });
-    }
-
-    /**
-     * Internal async scan execution (for retry wrapper)
-     * Note: Bundle injection is already handled in _scanInternal before this is called
-     */
-    private async _executeScanAsync(page: Page, options?: ScanExecutionOptions): Promise<BrowserScanData> {
-        const config = getConfig();
         const { tags, includeKeyboardTests } = options ?? {};
 
-        // Run the scanner with retry logic for heavy sites
-        const rawData = await withRetry(
-            async () => {
-                // Block navigation during scan to prevent context destruction
-                return await page.evaluate(
-                    ({ scanTags, runKeyboardTests }) => {
-                        // Save original navigation methods
-                        const originalPushState = history.pushState;
-                        const originalReplaceState = history.replaceState;
+        return Effect.gen(this, function* () {
+            // Execute the scan in the browser context
+            const rawData = yield* Effect.tryPromise({
+                try: async () => {
+                    // Block navigation during scan to prevent context destruction
+                    return await page.evaluate(
+                        ({ scanTags, runKeyboardTests }) => {
+                            // Save original navigation methods
+                            const originalPushState = history.pushState;
+                            const originalReplaceState = history.replaceState;
 
-                        try {
-                            // Temporarily block navigation
-                            history.pushState = () => {};
-                            history.replaceState = () => {};
+                            try {
+                                // Temporarily block navigation
+                                history.pushState = () => {};
+                                history.replaceState = () => {};
 
-                            const result = window.ReactA11yScanner!.scan({
-                                tags: scanTags,
-                                includeKeyboardTests: runKeyboardTests,
-                            });
+                                const result = window.ReactA11yScanner!.scan({
+                                    tags: scanTags,
+                                    includeKeyboardTests: runKeyboardTests,
+                                });
 
-                            return result;
-                        } finally {
-                            // Always restore navigation
-                            history.pushState = originalPushState;
-                            history.replaceState = originalReplaceState;
-                        }
-                    },
-                    { scanTags: tags, runKeyboardTests: includeKeyboardTests }
-                ) as BrowserScanData;
-            },
-            {
-                maxRetries: config.scan.maxRetries,
-                delayMs: config.scan.retryDelayBase,
-                backoff: 'linear',
-                onRetry: (attempt, error) => {
-                    logger.warn(`Scan attempt ${attempt} failed, retrying...`);
-                    logger.debug(`Error: ${error.message}`);
+                                return result;
+                            } finally {
+                                // Always restore navigation
+                                history.pushState = originalPushState;
+                                history.replaceState = originalReplaceState;
+                            }
+                        },
+                        { scanTags: tags, runKeyboardTests: includeKeyboardTests }
+                    ) as BrowserScanData;
                 },
+                catch: (error) => new EffectScanDataError({
+                    reason: error instanceof Error ? error.message : String(error)
+                })
+            });
+
+            // Validate that we got results
+            if (!rawData) {
+                return yield* Effect.fail(new EffectScanDataError({ reason: 'No scan data returned from browser' }));
             }
-        );
 
-        // Validate that we got results
-        if (!rawData) {
-            throw new ScanDataError('No scan data returned from browser');
-        }
+            // Validate results have expected structure
+            if (!Array.isArray(rawData.components)) {
+                logger.warn('Scan returned invalid component data');
+                rawData.components = [];
+            }
 
-        // Validate results have expected structure
-        if (!Array.isArray(rawData.components)) {
-            logger.warn('Scan returned invalid component data');
-            rawData.components = [];
-        }
+            if (!Array.isArray(rawData.violations)) {
+                logger.warn('Scan returned invalid violations data');
+                rawData.violations = [];
+            }
 
-        if (!Array.isArray(rawData.violations)) {
-            logger.warn('Scan returned invalid violations data');
-            rawData.violations = [];
-        }
+            // Warn if accessibility tree is empty (page may have no accessible content)
+            if (!rawData.accessibilityTree) {
+                logger.debug('No accessibility tree generated - page may have no accessible content');
+            }
 
-        // Warn if accessibility tree is empty (page may have no accessible content)
-        if (!rawData.accessibilityTree) {
-            logger.debug('No accessibility tree generated - page may have no accessible content');
-        }
+            logger.info(
+                `Scan complete: Found ${rawData.components.length} components and ${rawData.violations.length} violations`
+            );
 
-        logger.info(
-            `Scan complete: Found ${rawData.components.length} components and ${rawData.violations.length} violations`
-        );
-
-        return rawData;
+            return rawData;
+        });
     }
 }
 
