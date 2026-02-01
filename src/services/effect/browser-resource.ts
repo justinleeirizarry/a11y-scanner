@@ -4,7 +4,7 @@
  * This module provides automatic browser lifecycle management using Effect's
  * acquireRelease pattern. The browser is automatically closed when the scope ends.
  */
-import { Effect, Scope, pipe } from 'effect';
+import { Effect, Scope } from 'effect';
 import { chromium, firefox, webkit, type Browser, type Page } from 'playwright';
 import type { BrowserServiceConfig } from '../browser/types.js';
 import {
@@ -311,4 +311,4 @@ export const withBrowser = <A, E, R>(
     config: BrowserServiceConfig,
     use: (resource: BrowserResource) => Effect.Effect<A, E, R>
 ): Effect.Effect<A, E | EffectBrowserLaunchError, R> =>
-    Effect.scoped(pipe(makeBrowserResource(config), Effect.flatMap(use)));
+    Effect.scoped(makeBrowserResource(config).pipe(Effect.flatMap(use)));

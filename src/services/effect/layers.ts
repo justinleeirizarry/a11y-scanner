@@ -4,7 +4,7 @@
  * These layers provide the actual implementations of the service interfaces.
  * They can be composed together to create the full application layer.
  */
-import { Effect, Layer, pipe } from 'effect';
+import { Effect, Layer } from 'effect';
 import {
     BrowserService as BrowserServiceClass,
     createBrowserService,
@@ -102,23 +102,13 @@ const createEffectBrowserService = (instance: BrowserServiceClass): EffectBrowse
     waitForStability: () =>
         Effect.tryPromise({
             try: () => instance.waitForStability(),
-            catch: (error) => {
-                if (error instanceof ServiceStateError) {
-                    return new EffectBrowserNotLaunchedError({ operation: 'waitForStability' });
-                }
-                return new EffectBrowserNotLaunchedError({ operation: 'waitForStability' });
-            },
+            catch: () => new EffectBrowserNotLaunchedError({ operation: 'waitForStability' }),
         }),
 
     detectReact: () =>
         Effect.tryPromise({
             try: () => instance.detectReact(),
-            catch: (error) => {
-                if (error instanceof ServiceStateError) {
-                    return new EffectBrowserNotLaunchedError({ operation: 'detectReact' });
-                }
-                return new EffectBrowserNotLaunchedError({ operation: 'detectReact' });
-            },
+            catch: () => new EffectBrowserNotLaunchedError({ operation: 'detectReact' }),
         }),
 
     close: () => Effect.promise(() => instance.close()),

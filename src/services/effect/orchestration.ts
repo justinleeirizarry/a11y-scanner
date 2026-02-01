@@ -4,7 +4,7 @@
  * This module provides Effect-based scan workflows with proper error typing
  * and automatic resource management.
  */
-import { Effect, pipe, Schedule } from 'effect';
+import { Effect, pipe } from 'effect';
 import { mkdir, writeFile } from 'fs/promises';
 import { dirname } from 'path';
 import type { ScanResults } from '../../types.js';
