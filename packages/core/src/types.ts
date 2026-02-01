@@ -23,6 +23,27 @@ export type SeverityLevel = 'critical' | 'serious' | 'moderate';
 export type WcagLevel = 'A' | 'AA' | 'AAA';
 
 /**
+ * WCAG principle categories
+ */
+export type WcagPrinciple = 'Perceivable' | 'Operable' | 'Understandable' | 'Robust';
+
+/**
+ * WCAG criterion information for enriched violation reports
+ */
+export interface WcagCriterionInfo {
+    /** Criterion ID (e.g., "1.4.3") */
+    id: string;
+    /** Criterion title (e.g., "Contrast (Minimum)") */
+    title: string;
+    /** Conformance level */
+    level: WcagLevel;
+    /** WCAG principle */
+    principle: WcagPrinciple;
+    /** W3C Understanding document URL */
+    w3cUrl: string;
+}
+
+/**
  * Browser types supported by Playwright
  */
 export type BrowserType = 'chromium' | 'firefox' | 'webkit';
@@ -114,6 +135,7 @@ export interface AttributedViolation {
     help: string;
     helpUrl: string;
     tags: string[];  // WCAG criteria (wcag2a, wcag2aa, wcag21aa, best-practice, etc.)
+    wcagCriteria?: WcagCriterionInfo[];  // Full WCAG criterion details for this violation
     nodes: Array<{
         component: string | null;
         componentPath: string[];

@@ -84,7 +84,19 @@ describe('ResultsProcessorService', () => {
             expect(result.browser).toBe('chromium');
             expect(result.timestamp).toBeDefined();
             expect(result.components).toEqual(mockScanData.components);
-            expect(result.violations).toEqual(mockScanData.violations);
+
+            // Violations are enriched with WCAG criteria, so check structure instead of exact equality
+            expect(result.violations).toHaveLength(1);
+            expect(result.violations[0].id).toBe('color-contrast');
+            expect(result.violations[0].impact).toBe('serious');
+            expect(result.violations[0].nodes).toEqual(mockViolation.nodes);
+
+            // Verify WCAG criteria enrichment
+            expect(result.violations[0].wcagCriteria).toBeDefined();
+            expect(result.violations[0].wcagCriteria).toHaveLength(1);
+            expect(result.violations[0].wcagCriteria![0].id).toBe('1.4.3');
+            expect(result.violations[0].wcagCriteria![0].title).toBe('Contrast (Minimum)');
+            expect(result.violations[0].wcagCriteria![0].level).toBe('AA');
         });
 
         it('should calculate summary correctly', () => {

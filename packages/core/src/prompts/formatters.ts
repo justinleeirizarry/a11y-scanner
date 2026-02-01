@@ -104,8 +104,20 @@ export function formatViolations(violations: AttributedViolation[]): string {
         output += `**Description:** ${escapeHtmlTags(violation.description)}\n`;
         output += `**Help:** [${escapeHtmlTags(violation.help)}](${violation.helpUrl})\n`;
 
-        // Add WCAG tags
-        if (violation.tags && violation.tags.length > 0) {
+        // Add WCAG criteria (prefer enriched data, fallback to tags)
+        if (violation.wcagCriteria && violation.wcagCriteria.length > 0) {
+            const criteriaFormatted = violation.wcagCriteria
+                .map(c => `${c.id} ${c.title} (${c.level})`)
+                .join(', ');
+            output += `**WCAG Criteria:** ${criteriaFormatted}\n`;
+
+            // Show principle for context
+            const principles = [...new Set(violation.wcagCriteria.map(c => c.principle))];
+            if (principles.length === 1) {
+                output += `**Principle:** ${principles[0]}\n`;
+            }
+        } else if (violation.tags && violation.tags.length > 0) {
+            // Fallback to tag-based formatting
             const wcagFormatted = formatWcagTags(violation.tags);
             if (wcagFormatted) {
                 output += `**WCAG:** ${wcagFormatted}\n`;

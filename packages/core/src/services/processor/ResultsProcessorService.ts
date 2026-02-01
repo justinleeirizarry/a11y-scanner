@@ -4,9 +4,10 @@
  * Combines logic from results-parser.ts, mcp-server.ts, and App.tsx
  */
 import { Effect } from 'effect';
-import type { BrowserScanData, ScanResults } from '../../types.js';
+import type { BrowserScanData, ScanResults, AttributedViolation, WcagCriterionInfo } from '../../types.js';
 import { formatViolations } from '../../prompts/formatters.js';
 import { countViolationsByWcagLevel, addWcag22ToLevelCounts } from '../../utils/wcag-utils.js';
+import { getWcagCriteriaForViolation } from '../../data/index.js';
 import type {
     ScanMetadata,
     MCPToolContent,
@@ -28,13 +29,39 @@ import type {
  */
 export class ResultsProcessorService implements IResultsProcessorService {
     /**
+     * Enrich violations with full WCAG criterion information
+     */
+    private enrichViolationsWithWcagCriteria(violations: AttributedViolation[]): AttributedViolation[] {
+        return violations.map(violation => {
+            const criteria = getWcagCriteriaForViolation(violation.id);
+            if (criteria.length === 0) {
+                return violation;
+            }
+
+            // Convert WcagCriterion to WcagCriterionInfo (subset for serialization)
+            const wcagCriteria: WcagCriterionInfo[] = criteria.map(c => ({
+                id: c.id,
+                title: c.title,
+                level: c.level,
+                principle: c.principle,
+                w3cUrl: c.w3cUrl
+            }));
+
+            return {
+                ...violation,
+                wcagCriteria
+            };
+        });
+    }
+
+    /**
      * Process raw scan data into structured results
      */
     process(data: BrowserScanData, metadata: ScanMetadata): Effect.Effect<ScanResults> {
         return Effect.sync(() => {
             const {
                 components,
-                violations: attributedViolations,
+                violations: rawViolations,
                 passes,
                 incomplete,
                 inapplicable,
@@ -43,6 +70,9 @@ export class ResultsProcessorService implements IResultsProcessorService {
                 accessibilityTree
             } = data;
             const { url, browser, timestamp } = metadata;
+
+            // Enrich violations with WCAG criterion information
+            const attributedViolations = this.enrichViolationsWithWcagCriteria(rawViolations);
 
             // Count unique components with violations
             const componentsWithViolationsSet = new Set<string>();

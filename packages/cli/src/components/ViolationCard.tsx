@@ -50,30 +50,54 @@ export const ViolationCard: React.FC<ViolationCardProps> = ({
         </Box>
       </Box>
 
-      {/* WCAG Tags */}
-      {violation.tags && violation.tags.length > 0 && (
-        <Box marginTop={1} flexDirection="row" gap={1}>
-          {violation.tags
-            .filter((tag) => tag.startsWith("wcag") || tag === "best-practice")
-            .slice(0, 4) // Limit to 4 tags for display
-            .map((tag, i) => {
-              const isWcagA = tag === "wcag2a" || tag === "wcag21a";
-              const isWcagAA = tag.includes("aa") && !tag.includes("aaa");
-              const isWcagAAA = tag.includes("aaa");
-              const color = isWcagAAA
+      {/* WCAG Criteria - Show enriched data if available, fallback to tags */}
+      {violation.wcagCriteria && violation.wcagCriteria.length > 0 ? (
+        <Box marginTop={1} flexDirection="row" gap={1} flexWrap="wrap">
+          {violation.wcagCriteria.slice(0, 3).map((criterion, i) => {
+            const levelColor =
+              criterion.level === "AAA"
                 ? colors.moderate
-                : isWcagAA
+                : criterion.level === "AA"
                 ? colors.serious
-                : isWcagA
-                ? colors.critical
-                : colors.muted;
-              return (
-                <Text key={i} color={color} dimColor>
-                  [{tag}]
-                </Text>
-              );
-            })}
+                : colors.critical;
+            return (
+              <Text key={i} color={levelColor}>
+                [{criterion.id} {criterion.title}] [{criterion.level}]
+              </Text>
+            );
+          })}
+          {violation.wcagCriteria.length > 0 && (
+            <Text color={colors.muted} dimColor>
+              [{violation.wcagCriteria[0].principle}]
+            </Text>
+          )}
         </Box>
+      ) : (
+        violation.tags &&
+        violation.tags.length > 0 && (
+          <Box marginTop={1} flexDirection="row" gap={1}>
+            {violation.tags
+              .filter((tag) => tag.startsWith("wcag") || tag === "best-practice")
+              .slice(0, 4)
+              .map((tag, i) => {
+                const isWcagA = tag === "wcag2a" || tag === "wcag21a";
+                const isWcagAA = tag.includes("aa") && !tag.includes("aaa");
+                const isWcagAAA = tag.includes("aaa");
+                const color = isWcagAAA
+                  ? colors.moderate
+                  : isWcagAA
+                  ? colors.serious
+                  : isWcagA
+                  ? colors.critical
+                  : colors.muted;
+                return (
+                  <Text key={i} color={color} dimColor>
+                    [{tag}]
+                  </Text>
+                );
+              })}
+          </Box>
+        )
       )}
 
       {/* Description */}
