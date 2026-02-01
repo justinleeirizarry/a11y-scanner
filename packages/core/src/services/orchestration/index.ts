@@ -1,12 +1,11 @@
 /**
- * Orchestration Service - Public API
+ * Orchestration Service - Types
+ *
+ * The orchestration service has been migrated to Effect-based implementation.
+ * Use runScanAsPromise from services/effect for scan operations.
  */
-export { OrchestrationService, createOrchestrationService } from './OrchestrationService.js';
 export type {
     BrowserType,
     BaseScanOptions,
-    ScanOperationOptions,
     ScanOperationResult,
-    TestGenOperationOptions,
-    IOrchestrationService,
 } from './types.js';

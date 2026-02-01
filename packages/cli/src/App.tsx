@@ -6,7 +6,9 @@ import Results from './components/Results.js';
 import TestGenerator from './components/TestGenerator.js';
 import TestGenerationResults from './components/TestGenerationResults.js';
 import {
-    createOrchestrationService,
+    runScanAsPromise,
+    AppLayer,
+    createTestGenerationService,
     EXIT_CODES,
     setExitCode,
     generateAndExport,
@@ -46,7 +48,6 @@ const App: React.FC<AppProps> = ({ mode, url, browser, output, ci, threshold, he
 
     useEffect(() => {
         let cancelled = false;
-        const orchestration = createOrchestrationService();
 
         if (mode === 'generate-test') {
             // Test generation mode
@@ -60,16 +61,37 @@ const App: React.FC<AppProps> = ({ mode, url, browser, output, ci, threshold, he
 
                     setTestGenState('navigating');
 
-                    const results = await orchestration.performTestGeneration({
-                        url,
-                        outputFile: testFile,
-                        model: stagehandModel,
-                        verbose: stagehandVerbose,
-                    });
+                    const testGenService = createTestGenerationService();
+                    await testGenService.init({ model: stagehandModel, verbose: stagehandVerbose });
+                    await testGenService.navigateTo(url);
+
+                    setTestGenState('discovering');
+                    const elements = await testGenService.discoverElements();
+
+                    setTestGenState('generating');
+                    const testContent = testGenService.generateTest(url, elements);
+
+                    // Write test file
+                    const fs = await import('fs/promises');
+                    const path = await import('path');
+                    const dir = path.dirname(testFile);
+                    if (dir !== '.') {
+                        await fs.mkdir(dir, { recursive: true }).catch(() => {});
+                    }
+                    await fs.writeFile(testFile, testContent);
+
+                    await testGenService.close();
 
                     if (cancelled) return;
 
-                    setTestGenResults(results);
+                    setTestGenResults({
+                        url,
+                        timestamp: new Date().toISOString(),
+                        outputFile: testFile,
+                        elementsDiscovered: elements.length,
+                        elements,
+                        success: true,
+                    });
                     setTestGenState('complete');
 
                     // Exit after completion
@@ -86,12 +108,12 @@ const App: React.FC<AppProps> = ({ mode, url, browser, output, ci, threshold, he
 
             performTestGeneration();
         } else {
-            // Accessibility scan mode
+            // Accessibility scan mode using Effect-based orchestration
             const performScan = async () => {
                 setScanState('scanning');
 
                 try {
-                    const { results, ciPassed } = await orchestration.performScan({
+                    const { results, ciPassed } = await runScanAsPromise({
                         url,
                         browser,
                         headless,
@@ -100,7 +122,7 @@ const App: React.FC<AppProps> = ({ mode, url, browser, output, ci, threshold, he
                         outputFile: output,
                         ciMode: ci,
                         ciThreshold: threshold,
-                    });
+                    }, AppLayer);
 
                     if (cancelled) return;
 

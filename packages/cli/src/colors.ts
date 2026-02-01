@@ -46,11 +46,3 @@ export const impactColors: Record<string, string> = {
     moderate: colors.moderate,
     minor: colors.minor,
 };
-
-// WCAG level to color mapping
-export const wcagColors: Record<string, string> = {
-    a: colors.critical,     // Level A - most critical (red)
-    aa: colors.serious,     // Level AA (yellow)
-    aaa: colors.moderate,   // Level AAA (blue)
-    'best-practice': colors.muted,
-};

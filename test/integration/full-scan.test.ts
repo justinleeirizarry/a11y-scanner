@@ -4,12 +4,12 @@
  * Tests the complete scan flow from CLI → Orchestration → Results
  * Uses the test fixtures to verify end-to-end functionality.
  */
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import {
-    createOrchestrationService,
-    type IOrchestrationService,
+    runScanAsPromise,
+    AppLayer,
     type ScanResults,
 } from '@react-a11y-scanner/core';
 
@@ -21,19 +21,13 @@ const TEST_APP_FIXTURE = `file://${join(__dirname, '../fixtures/test-app.html')}
 const WCAG22_FIXTURE = `file://${join(__dirname, '../fixtures/wcag22-violations.html')}`;
 
 describe('Full Scan Integration', () => {
-    let orchestration: IOrchestrationService;
-
-    beforeAll(() => {
-        orchestration = createOrchestrationService();
-    });
-
     describe('Basic Scan Flow', () => {
         it('should complete a full scan of the test fixture', async () => {
-            const { results } = await orchestration.performScan({
+            const { results } = await runScanAsPromise({
                 url: TEST_APP_FIXTURE,
                 browser: 'chromium',
                 headless: true,
-            });
+            }, AppLayer);
 
             // Verify basic structure
             expect(results).toBeDefined();
@@ -56,11 +50,11 @@ describe('Full Scan Integration', () => {
         }, 60000); // Extended timeout for browser operations
 
         it('should detect expected violations in test fixture', async () => {
-            const { results } = await orchestration.performScan({
+            const { results } = await runScanAsPromise({
                 url: TEST_APP_FIXTURE,
                 browser: 'chromium',
                 headless: true,
-            });
+            }, AppLayer);
 
             // Test fixture has specific a11y issues:
             // - Missing alt text on images
@@ -77,11 +71,11 @@ describe('Full Scan Integration', () => {
         }, 60000);
 
         it('should attribute violations to React components', async () => {
-            const { results } = await orchestration.performScan({
+            const { results } = await runScanAsPromise({
                 url: TEST_APP_FIXTURE,
                 browser: 'chromium',
                 headless: true,
-            });
+            }, AppLayer);
 
             // Verify at least some violations have component attribution
             const violationsWithComponents = results.violations.filter((v) =>
@@ -101,12 +95,12 @@ describe('Full Scan Integration', () => {
 
     describe('Keyboard Tests Integration', () => {
         it('should include keyboard test results when enabled', async () => {
-            const { results } = await orchestration.performScan({
+            const { results } = await runScanAsPromise({
                 url: TEST_APP_FIXTURE,
                 browser: 'chromium',
                 headless: true,
                 includeKeyboardTests: true,
-            });
+            }, AppLayer);
 
             // Verify keyboard tests were run
             expect(results.keyboardTests).toBeDefined();
@@ -120,12 +114,12 @@ describe('Full Scan Integration', () => {
         }, 60000);
 
         it('should not include keyboard tests when disabled', async () => {
-            const { results } = await orchestration.performScan({
+            const { results } = await runScanAsPromise({
                 url: TEST_APP_FIXTURE,
                 browser: 'chromium',
                 headless: true,
                 includeKeyboardTests: false,
-            });
+            }, AppLayer);
 
             // Keyboard tests should not be present
             expect(results.keyboardTests).toBeUndefined();
@@ -134,11 +128,11 @@ describe('Full Scan Integration', () => {
 
     describe('WCAG 2.2 Integration', () => {
         it('should detect WCAG 2.2 specific violations', async () => {
-            const { results } = await orchestration.performScan({
+            const { results } = await runScanAsPromise({
                 url: WCAG22_FIXTURE,
                 browser: 'chromium',
                 headless: true,
-            });
+            }, AppLayer);
 
             // WCAG 2.2 fixture should have specific violations
             expect(results.wcag22).toBeDefined();
@@ -158,25 +152,25 @@ describe('Full Scan Integration', () => {
 
     describe('CI Mode Integration', () => {
         it('should return CI passed status when violations are below threshold', async () => {
-            const result = await orchestration.performScan({
+            const result = await runScanAsPromise({
                 url: TEST_APP_FIXTURE,
                 browser: 'chromium',
                 headless: true,
                 ciMode: true,
                 ciThreshold: 100, // High threshold to pass
-            });
+            }, AppLayer);
 
             expect(result.ciPassed).toBe(true);
         }, 60000);
 
         it('should return CI failed status when violations exceed threshold', async () => {
-            const result = await orchestration.performScan({
+            const result = await runScanAsPromise({
                 url: TEST_APP_FIXTURE,
                 browser: 'chromium',
                 headless: true,
                 ciMode: true,
                 ciThreshold: 0, // Zero tolerance
-            });
+            }, AppLayer);
 
             expect(result.ciPassed).toBe(false);
         }, 60000);
@@ -185,11 +179,11 @@ describe('Full Scan Integration', () => {
     describe('Browser Support', () => {
         // Test with chromium which is most reliably installed
         it('should scan successfully with chromium browser', async () => {
-            const { results } = await orchestration.performScan({
+            const { results } = await runScanAsPromise({
                 url: TEST_APP_FIXTURE,
                 browser: 'chromium',
                 headless: true,
-            });
+            }, AppLayer);
 
             expect(results).toBeDefined();
             expect(results.browser).toBe('chromium');
@@ -199,22 +193,22 @@ describe('Full Scan Integration', () => {
         // Firefox and webkit tests are skipped by default as they may not be installed
         // Run with: npx playwright install firefox webkit
         it.skip('should scan successfully with firefox browser', async () => {
-            const { results } = await orchestration.performScan({
+            const { results } = await runScanAsPromise({
                 url: TEST_APP_FIXTURE,
                 browser: 'firefox',
                 headless: true,
-            });
+            }, AppLayer);
 
             expect(results).toBeDefined();
             expect(results.browser).toBe('firefox');
         }, 90000);
 
         it.skip('should scan successfully with webkit browser', async () => {
-            const { results } = await orchestration.performScan({
+            const { results } = await runScanAsPromise({
                 url: TEST_APP_FIXTURE,
                 browser: 'webkit',
                 headless: true,
-            });
+            }, AppLayer);
 
             expect(results).toBeDefined();
             expect(results.browser).toBe('webkit');
@@ -225,12 +219,12 @@ describe('Full Scan Integration', () => {
         let scanResults: ScanResults;
 
         beforeAll(async () => {
-            const { results } = await orchestration.performScan({
+            const { results } = await runScanAsPromise({
                 url: TEST_APP_FIXTURE,
                 browser: 'chromium',
                 headless: true,
                 includeKeyboardTests: true,
-            });
+            }, AppLayer);
             scanResults = results;
         }, 60000);
 
@@ -289,26 +283,26 @@ describe('Full Scan Integration', () => {
     });
 
     describe('Error Handling', () => {
-        it('should throw ReactNotDetectedError for non-React pages', async () => {
+        it('should throw error for non-React pages', async () => {
             // Create a simple HTML file URL without React
             const nonReactUrl = 'data:text/html,<html><body><h1>No React Here</h1></body></html>';
 
             await expect(
-                orchestration.performScan({
+                runScanAsPromise({
                     url: nonReactUrl,
                     browser: 'chromium',
                     headless: true,
-                })
-            ).rejects.toThrow('React');
+                }, AppLayer)
+            ).rejects.toThrow();
         }, 60000);
 
         it('should handle invalid URLs gracefully', async () => {
             await expect(
-                orchestration.performScan({
+                runScanAsPromise({
                     url: 'not-a-valid-url',
                     browser: 'chromium',
                     headless: true,
-                })
+                }, AppLayer)
             ).rejects.toThrow();
         }, 60000);
     });

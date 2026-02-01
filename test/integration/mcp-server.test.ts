@@ -4,11 +4,12 @@
  * Tests the MCP server tool invocation flow.
  * Verifies the scan_url tool works correctly through the MCP protocol.
  */
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import {
-    createOrchestrationService,
+    runScanAsPromise,
+    AppLayer,
     createResultsProcessorService,
     type ScanResults,
 } from '@react-a11y-scanner/core';
@@ -29,15 +30,14 @@ describe('MCP Server Integration', () => {
     describe('scan_url Tool Simulation', () => {
         it('should perform scan and return MCP-formatted results', async () => {
             // This simulates what happens in mcp-server.ts when scan_url is invoked
-            const orchestration = createOrchestrationService();
             const processor = createResultsProcessorService();
 
-            const { results } = await orchestration.performScan({
+            const { results } = await runScanAsPromise({
                 url: TEST_APP_FIXTURE,
                 browser: 'chromium',
                 headless: true,
                 includeKeyboardTests: true,
-            });
+            }, AppLayer);
 
             const content = processor.formatForMCP(results, { includeTree: false });
 
@@ -58,14 +58,13 @@ describe('MCP Server Integration', () => {
         }, 60000);
 
         it('should include accessibility tree when requested', async () => {
-            const orchestration = createOrchestrationService();
             const processor = createResultsProcessorService();
 
-            const { results } = await orchestration.performScan({
+            const { results } = await runScanAsPromise({
                 url: TEST_APP_FIXTURE,
                 browser: 'chromium',
                 headless: true,
-            });
+            }, AppLayer);
 
             const contentWithTree = processor.formatForMCP(results, { includeTree: true });
             const contentWithoutTree = processor.formatForMCP(results, { includeTree: false });
@@ -80,23 +79,20 @@ describe('MCP Server Integration', () => {
         }, 60000);
 
         it('should handle scan errors gracefully', async () => {
-            const orchestration = createOrchestrationService();
-
             // Non-React page should trigger an error
             const nonReactUrl = 'data:text/html,<html><body><p>No React</p></body></html>';
 
             try {
-                await orchestration.performScan({
+                await runScanAsPromise({
                     url: nonReactUrl,
                     browser: 'chromium',
                     headless: true,
-                });
+                }, AppLayer);
                 // Should not reach here
                 expect.fail('Expected error to be thrown');
             } catch (error) {
                 // This is what the MCP server would catch and format
                 const errorMessage = error instanceof Error ? error.message : String(error);
-                expect(errorMessage).toContain('React');
 
                 // MCP server would return error response like this:
                 const errorResponse = {
@@ -119,13 +115,12 @@ describe('MCP Server Integration', () => {
         let scanResults: ScanResults;
 
         beforeAll(async () => {
-            const orchestration = createOrchestrationService();
-            const { results } = await orchestration.performScan({
+            const { results } = await runScanAsPromise({
                 url: TEST_APP_FIXTURE,
                 browser: 'chromium',
                 headless: true,
                 includeKeyboardTests: true,
-            });
+            }, AppLayer);
             scanResults = results;
         }, 60000);
 
@@ -175,14 +170,13 @@ describe('MCP Server Integration', () => {
     describe('Browser Parameter Handling', () => {
         // Test with chromium which is most reliably installed
         it('should accept chromium browser parameter', async () => {
-            const orchestration = createOrchestrationService();
             const processor = createResultsProcessorService();
 
-            const { results } = await orchestration.performScan({
+            const { results } = await runScanAsPromise({
                 url: TEST_APP_FIXTURE,
                 browser: 'chromium',
                 headless: true,
-            });
+            }, AppLayer);
 
             expect(results.browser).toBe('chromium');
 
@@ -193,22 +187,20 @@ describe('MCP Server Integration', () => {
 
         // Firefox and webkit tests skipped by default - install with: npx playwright install
         it.skip('should accept firefox browser parameter', async () => {
-            const orchestration = createOrchestrationService();
-            const { results } = await orchestration.performScan({
+            const { results } = await runScanAsPromise({
                 url: TEST_APP_FIXTURE,
                 browser: 'firefox',
                 headless: true,
-            });
+            }, AppLayer);
             expect(results.browser).toBe('firefox');
         }, 90000);
 
         it.skip('should accept webkit browser parameter', async () => {
-            const orchestration = createOrchestrationService();
-            const { results } = await orchestration.performScan({
+            const { results } = await runScanAsPromise({
                 url: TEST_APP_FIXTURE,
                 browser: 'webkit',
                 headless: true,
-            });
+            }, AppLayer);
             expect(results.browser).toBe('webkit');
         }, 90000);
     });

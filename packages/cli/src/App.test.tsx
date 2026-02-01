@@ -7,20 +7,42 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render } from 'ink-testing-library';
 import App from './App.js';
 
-// Mock the core package
-const mockPerformScan = vi.fn();
-const mockPerformTestGeneration = vi.fn();
-const mockGenerateAndExport = vi.fn();
+// Mock functions - defined at module level for hoisting
+const mockRunScanAsPromise = vi.hoisted(() => vi.fn());
+const mockGenerateAndExport = vi.hoisted(() => vi.fn());
+const mockTestGenService = vi.hoisted(() => ({
+    init: vi.fn(),
+    navigateTo: vi.fn(),
+    discoverElements: vi.fn(),
+    generateTest: vi.fn(),
+    close: vi.fn(),
+}));
 
-vi.mock('@react-a11y-scanner/core', async () => {
-    const actual = await vi.importActual('@react-a11y-scanner/core');
+vi.mock('@react-a11y-scanner/core', async (importOriginal) => {
+    const actual = await importOriginal();
     return {
-        ...actual,
-        createOrchestrationService: vi.fn(() => ({
-            performScan: mockPerformScan,
-            performTestGeneration: mockPerformTestGeneration,
-        })),
+        ...actual as object,
+        runScanAsPromise: mockRunScanAsPromise,
+        AppLayer: {},
+        createTestGenerationService: vi.fn(() => mockTestGenService),
         generateAndExport: mockGenerateAndExport,
+    };
+});
+
+vi.mock('fs/promises', async (importOriginal) => {
+    const actual = await importOriginal();
+    return {
+        ...actual as object,
+        mkdir: vi.fn().mockResolvedValue(undefined),
+        writeFile: vi.fn().mockResolvedValue(undefined),
+    };
+});
+
+vi.mock('path', async (importOriginal) => {
+    const actual = await importOriginal();
+    return {
+        ...actual as object,
+        dirname: vi.fn().mockReturnValue('tests'),
     };
 });
 
@@ -34,6 +56,12 @@ describe('App Component', () => {
         vi.resetAllMocks();
         originalExitCode = process.exitCode;
         process.exitCode = undefined;
+        // Reset test generation service mocks
+        mockTestGenService.init.mockResolvedValue(undefined);
+        mockTestGenService.navigateTo.mockResolvedValue(undefined);
+        mockTestGenService.discoverElements.mockResolvedValue([]);
+        mockTestGenService.generateTest.mockReturnValue('// test content');
+        mockTestGenService.close.mockResolvedValue(undefined);
     });
 
     afterEach(() => {
@@ -100,9 +128,9 @@ describe('App Component', () => {
     });
 
     describe('Scan Mode', () => {
-        it('should call performScan with correct options', async () => {
+        it('should call runScanAsPromise with correct options', async () => {
             const mockResults = createMockScanResults(0);
-            mockPerformScan.mockResolvedValue(createMockScanResponse(mockResults));
+            mockRunScanAsPromise.mockResolvedValue(createMockScanResponse(mockResults));
 
             const { lastFrame, unmount } = render(
                 <App
@@ -119,10 +147,10 @@ describe('App Component', () => {
 
             // Wait for async scan to complete
             await vi.waitFor(() => {
-                expect(mockPerformScan).toHaveBeenCalled();
+                expect(mockRunScanAsPromise).toHaveBeenCalled();
             }, { timeout: 1000 });
 
-            expect(mockPerformScan).toHaveBeenCalledWith({
+            expect(mockRunScanAsPromise).toHaveBeenCalledWith({
                 url: 'http://localhost:3000',
                 browser: 'chromium',
                 headless: true,
@@ -131,14 +159,14 @@ describe('App Component', () => {
                 outputFile: undefined,
                 ciMode: false,
                 ciThreshold: 0,
-            });
+            }, expect.anything());
 
             unmount();
         });
 
         it('should display results after scan completes', async () => {
             const mockResults = createMockScanResults(2);
-            mockPerformScan.mockResolvedValue(createMockScanResponse(mockResults));
+            mockRunScanAsPromise.mockResolvedValue(createMockScanResponse(mockResults));
 
             const { lastFrame, unmount } = render(
                 <App
@@ -161,7 +189,7 @@ describe('App Component', () => {
         });
 
         it('should handle scan errors gracefully', async () => {
-            mockPerformScan.mockRejectedValue(new Error('Network error'));
+            mockRunScanAsPromise.mockRejectedValue(new Error('Network error'));
 
             const { lastFrame, unmount } = render(
                 <App
@@ -186,7 +214,7 @@ describe('App Component', () => {
     describe('CI Mode', () => {
         it('should set exit code 1 when violations exceed threshold', async () => {
             const mockResults = createMockScanResults(5);
-            mockPerformScan.mockResolvedValue(createMockScanResponse(mockResults, false));
+            mockRunScanAsPromise.mockResolvedValue(createMockScanResponse(mockResults, false));
 
             const { unmount } = render(
                 <App
@@ -208,7 +236,7 @@ describe('App Component', () => {
 
         it('should set exit code 0 when violations are within threshold', async () => {
             const mockResults = createMockScanResults(2);
-            mockPerformScan.mockResolvedValue(createMockScanResponse(mockResults, true));
+            mockRunScanAsPromise.mockResolvedValue(createMockScanResponse(mockResults, true));
 
             const { unmount } = render(
                 <App
@@ -229,7 +257,7 @@ describe('App Component', () => {
         });
 
         it('should set exit code 1 on scan error in CI mode', async () => {
-            mockPerformScan.mockRejectedValue(new Error('Scan failed'));
+            mockRunScanAsPromise.mockRejectedValue(new Error('Scan failed'));
 
             const { unmount } = render(
                 <App
@@ -253,7 +281,7 @@ describe('App Component', () => {
     describe('Output File', () => {
         it('should pass output file to performScan when specified', async () => {
             const mockResults = createMockScanResults(1);
-            mockPerformScan.mockResolvedValue({ results: mockResults, outputFile: 'report.json' });
+            mockRunScanAsPromise.mockResolvedValue({ results: mockResults, outputFile: 'report.json' });
 
             const { unmount } = render(
                 <App
@@ -268,8 +296,9 @@ describe('App Component', () => {
             );
 
             await vi.waitFor(() => {
-                expect(mockPerformScan).toHaveBeenCalledWith(
-                    expect.objectContaining({ outputFile: 'report.json' })
+                expect(mockRunScanAsPromise).toHaveBeenCalledWith(
+                    expect.objectContaining({ outputFile: 'report.json' }),
+                    expect.anything()
                 );
             }, { timeout: 2000 });
 
@@ -278,7 +307,7 @@ describe('App Component', () => {
 
         it('should pass nested output path to performScan', async () => {
             const mockResults = createMockScanResults(0);
-            mockPerformScan.mockResolvedValue({ results: mockResults, outputFile: 'reports/a11y/report.json' });
+            mockRunScanAsPromise.mockResolvedValue({ results: mockResults, outputFile: 'reports/a11y/report.json' });
 
             const { unmount } = render(
                 <App
@@ -293,8 +322,9 @@ describe('App Component', () => {
             );
 
             await vi.waitFor(() => {
-                expect(mockPerformScan).toHaveBeenCalledWith(
-                    expect.objectContaining({ outputFile: 'reports/a11y/report.json' })
+                expect(mockRunScanAsPromise).toHaveBeenCalledWith(
+                    expect.objectContaining({ outputFile: 'reports/a11y/report.json' }),
+                    expect.anything()
                 );
             }, { timeout: 2000 });
 
@@ -305,7 +335,7 @@ describe('App Component', () => {
     describe('AI Prompt Generation', () => {
         it('should generate AI prompt when --ai flag is set', async () => {
             const mockResults = createMockScanResults(3);
-            mockPerformScan.mockResolvedValue(createMockScanResponse(mockResults));
+            mockRunScanAsPromise.mockResolvedValue(createMockScanResponse(mockResults));
             mockGenerateAndExport.mockReturnValue('a11y-prompt.md');
 
             const { unmount } = render(
@@ -338,9 +368,10 @@ describe('App Component', () => {
     });
 
     describe('Test Generation Mode', () => {
-        it('should call performTestGeneration with correct options', async () => {
-            const mockResults = createMockTestGenResults(true);
-            mockPerformTestGeneration.mockResolvedValue(mockResults);
+        it('should call test generation service with correct options', async () => {
+            mockTestGenService.discoverElements.mockResolvedValue([
+                { selector: '#btn', description: 'Submit button', type: 'button' }
+            ]);
 
             const { unmount } = render(
                 <App
@@ -358,19 +389,23 @@ describe('App Component', () => {
             );
 
             await vi.waitFor(() => {
-                expect(mockPerformTestGeneration).toHaveBeenCalledWith({
-                    url: 'http://example.com',
-                    outputFile: 'tests/a11y.spec.ts',
+                expect(mockTestGenService.init).toHaveBeenCalledWith({
                     model: 'openai/gpt-4o',
                     verbose: true
                 });
+                expect(mockTestGenService.navigateTo).toHaveBeenCalledWith('http://example.com');
+                expect(mockTestGenService.discoverElements).toHaveBeenCalled();
+                expect(mockTestGenService.generateTest).toHaveBeenCalledWith(
+                    'http://example.com',
+                    expect.any(Array)
+                );
             }, { timeout: 2000 });
 
             unmount();
         });
 
         it('should handle test generation errors', async () => {
-            mockPerformTestGeneration.mockRejectedValue(new Error('Stagehand failed'));
+            mockTestGenService.discoverElements.mockRejectedValue(new Error('Stagehand failed'));
 
             const { lastFrame, unmount } = render(
                 <App
@@ -396,8 +431,9 @@ describe('App Component', () => {
         });
 
         it('should display test generation results on success', async () => {
-            const mockResults = createMockTestGenResults(true);
-            mockPerformTestGeneration.mockResolvedValue(mockResults);
+            mockTestGenService.discoverElements.mockResolvedValue([
+                { selector: '#btn', description: 'Submit button', type: 'button' }
+            ]);
 
             const { lastFrame, unmount } = render(
                 <App
@@ -425,7 +461,7 @@ describe('App Component', () => {
     describe('Browser Options', () => {
         it('should support firefox browser', async () => {
             const mockResults = createMockScanResults(0);
-            mockPerformScan.mockResolvedValue(createMockScanResponse(mockResults));
+            mockRunScanAsPromise.mockResolvedValue(createMockScanResponse(mockResults));
 
             const { unmount } = render(
                 <App
@@ -439,8 +475,9 @@ describe('App Component', () => {
             );
 
             await vi.waitFor(() => {
-                expect(mockPerformScan).toHaveBeenCalledWith(
-                    expect.objectContaining({ browser: 'firefox' })
+                expect(mockRunScanAsPromise).toHaveBeenCalledWith(
+                    expect.objectContaining({ browser: 'firefox' }),
+                    expect.anything()
                 );
             }, { timeout: 2000 });
 
@@ -449,7 +486,7 @@ describe('App Component', () => {
 
         it('should support webkit browser', async () => {
             const mockResults = createMockScanResults(0);
-            mockPerformScan.mockResolvedValue(createMockScanResponse(mockResults));
+            mockRunScanAsPromise.mockResolvedValue(createMockScanResponse(mockResults));
 
             const { unmount } = render(
                 <App
@@ -463,8 +500,9 @@ describe('App Component', () => {
             );
 
             await vi.waitFor(() => {
-                expect(mockPerformScan).toHaveBeenCalledWith(
-                    expect.objectContaining({ browser: 'webkit' })
+                expect(mockRunScanAsPromise).toHaveBeenCalledWith(
+                    expect.objectContaining({ browser: 'webkit' }),
+                    expect.anything()
                 );
             }, { timeout: 2000 });
 
@@ -473,7 +511,7 @@ describe('App Component', () => {
 
         it('should pass headless=false when specified', async () => {
             const mockResults = createMockScanResults(0);
-            mockPerformScan.mockResolvedValue(createMockScanResponse(mockResults));
+            mockRunScanAsPromise.mockResolvedValue(createMockScanResponse(mockResults));
 
             const { unmount } = render(
                 <App
@@ -487,8 +525,9 @@ describe('App Component', () => {
             );
 
             await vi.waitFor(() => {
-                expect(mockPerformScan).toHaveBeenCalledWith(
-                    expect.objectContaining({ headless: false })
+                expect(mockRunScanAsPromise).toHaveBeenCalledWith(
+                    expect.objectContaining({ headless: false }),
+                    expect.anything()
                 );
             }, { timeout: 2000 });
 

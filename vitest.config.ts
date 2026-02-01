@@ -1,6 +1,14 @@
 import { defineConfig } from 'vitest/config';
+import { resolve } from 'path';
 
 export default defineConfig({
+    resolve: {
+        alias: {
+            '@react-a11y-scanner/core': resolve(__dirname, 'packages/core/src/index.ts'),
+            '@react-a11y-scanner/cli': resolve(__dirname, 'packages/cli/src/index.tsx'),
+            '@react-a11y-scanner/mcp': resolve(__dirname, 'packages/mcp/src/server.ts'),
+        },
+    },
     test: {
         globals: true,
         environment: 'node',

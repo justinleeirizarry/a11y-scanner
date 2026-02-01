@@ -12,7 +12,9 @@ import {
     validateTags,
     validateThreshold,
     validateBrowser,
-    createOrchestrationService,
+    runScanAsPromise,
+    AppLayer,
+    createTestGenerationService,
     EXIT_CODES,
     setExitCode,
     exitWithCode,
@@ -228,23 +230,55 @@ if (cli.flags.quiet) {
 if (!isTTY) {
     (async () => {
         try {
-            const orchestration = createOrchestrationService();
-
             if (isTestGenerationMode) {
                 // Test generation mode
-                const testResults = await orchestration.performTestGeneration({
-                    url,
-                    outputFile: testOutputFile,
-                    model: cli.flags.stagehandModel,
-                    verbose: cli.flags.stagehandVerbose,
-                });
+                const testGenService = createTestGenerationService();
+                try {
+                    await testGenService.init({ model: cli.flags.stagehandModel, verbose: cli.flags.stagehandVerbose });
+                    await testGenService.navigateTo(url);
+                    const elements = await testGenService.discoverElements();
+                    const testContent = testGenService.generateTest(url, elements);
 
-                // Output JSON to stdout
-                console.log(JSON.stringify(testResults, null, 2));
-                setExitCode(testResults.success ? EXIT_CODES.SUCCESS : EXIT_CODES.RUNTIME_ERROR);
+                    // Write test file
+                    const fs = await import('fs/promises');
+                    const path = await import('path');
+                    const dir = path.dirname(testOutputFile);
+                    if (dir !== '.') {
+                        await fs.mkdir(dir, { recursive: true }).catch(() => {});
+                    }
+                    await fs.writeFile(testOutputFile, testContent);
+
+                    const testResults = {
+                        url,
+                        timestamp: new Date().toISOString(),
+                        outputFile: testOutputFile,
+                        elementsDiscovered: elements.length,
+                        elements,
+                        success: true,
+                    };
+
+                    // Output JSON to stdout
+                    console.log(JSON.stringify(testResults, null, 2));
+                    setExitCode(EXIT_CODES.SUCCESS);
+                } catch (error) {
+                    const errorMsg = error instanceof Error ? error.message : String(error);
+                    const testResults = {
+                        url,
+                        timestamp: new Date().toISOString(),
+                        outputFile: testOutputFile,
+                        elementsDiscovered: 0,
+                        elements: [],
+                        success: false,
+                        error: errorMsg,
+                    };
+                    console.log(JSON.stringify(testResults, null, 2));
+                    setExitCode(EXIT_CODES.RUNTIME_ERROR);
+                } finally {
+                    await testGenService.close();
+                }
             } else {
-                // Accessibility scan mode
-                const { results, ciPassed } = await orchestration.performScan({
+                // Accessibility scan mode using Effect-based orchestration
+                const { results, ciPassed } = await runScanAsPromise({
                     url,
                     browser: cli.flags.browser as BrowserType,
                     headless: cli.flags.headless,
@@ -252,7 +286,7 @@ if (!isTTY) {
                     includeKeyboardTests: cli.flags.keyboardNav,
                     ciMode: cli.flags.ci,
                     ciThreshold: cli.flags.threshold,
-                });
+                }, AppLayer);
 
                 // In quiet mode, output plain text; otherwise full JSON
                 if (cli.flags.quiet) {

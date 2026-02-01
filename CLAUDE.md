@@ -6,65 +6,77 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 # Build everything (TypeScript + browser bundle)
-npm run build
+pnpm build
 
 # Watch mode for development
-npm run dev              # TypeScript watch
-npm run dev:scanner      # Browser bundle watch (esbuild)
+pnpm dev              # TypeScript watch
+pnpm dev:scanner      # Browser bundle watch (esbuild)
 
 # Run the CLI
-npm start <url>          # e.g., npm start http://localhost:3000
+pnpm start <url>          # e.g., pnpm start http://localhost:3000
 
 # Run tests
-npm test                 # Run all tests once
-npm test src/path/to/file.test.ts  # Run single test file
-npm run test:watch       # Watch mode
-npm run test:ui          # Vitest UI
-npm run test:coverage    # With coverage
+pnpm test                 # Run all tests once
+pnpm test src/path/to/file.test.ts  # Run single test file
+pnpm test:watch       # Watch mode
+pnpm test:ui          # Vitest UI
+pnpm test:coverage    # With coverage
 
 # Test with fixture
-npm run test:fixture     # Scans test/fixtures/test-app.html
+pnpm test:fixture     # Scans test/fixtures/test-app.html
 ```
 
 ## Architecture Overview
 
-This is a CLI tool that scans React applications for accessibility violations by combining React Fiber inspection with axe-core testing.
+This is a monorepo CLI tool that scans React applications for accessibility violations by combining React Fiber inspection with axe-core testing.
+
+### Monorepo Structure
+
+- `packages/core` - Core scanning logic, services, and types
+- `packages/cli` - Ink-based terminal UI
+- `packages/mcp` - MCP server for Claude Desktop integration
 
 ### Two Build Outputs
 
-1. **Node CLI** (`dist/*.js`) - Main CLI application built with TypeScript
-2. **Browser Bundle** (`dist/scanner-bundle.js`) - Injected into pages via Playwright, built with esbuild as an IIFE
+1. **Node CLI** (`packages/cli/dist/*.js`) - Main CLI application built with TypeScript
+2. **Browser Bundle** (`packages/core/dist/scanner-bundle.js`) - Injected into pages via Playwright, built with esbuild as an IIFE
 
 ### Core Flow
 
 ```
-src/index.tsx (CLI entry with meow)
-    → src/cli/App.tsx (Ink React UI)
-    → src/browser/launcher.ts (Playwright browser control)
-        → Injects dist/scanner-bundle.js into page
-        → src/scanner/browser-bundle.ts executes in browser context
-            → fiber/traversal.ts (finds React Fiber root, traverses tree)
-            → axe/runner.ts (runs axe-core)
-            → axe/attribution.ts (maps violations to React components)
-            → keyboard/index.ts (keyboard navigation tests)
-    → src/processor/results-parser.ts (processes raw data into ScanResults)
+packages/cli/src/index.tsx (CLI entry with meow)
+    → packages/cli/src/App.tsx (Ink React UI)
+    → packages/core/src/services/effect/orchestration.ts (Effect-based scan orchestration)
+        → BrowserService (Playwright browser control)
+        → ScannerService (injects scanner-bundle.js)
+            → packages/core/src/scanner/browser-bundle.ts executes in browser context
+                → fiber/traversal.ts (finds React Fiber root, traverses tree)
+                → axe/runner.ts (runs axe-core)
+                → axe/attribution.ts (maps violations to React components)
+                → keyboard/index.ts (keyboard navigation tests)
+        → ResultsProcessorService (processes results, CI checks)
 ```
 
 ### Key Directories
 
-- `src/cli/` - Ink-based terminal UI components
-- `src/scanner/` - Browser-context code (bundled separately)
+- `packages/cli/src/` - Ink-based terminal UI components
+- `packages/core/src/scanner/` - Browser-context code (bundled separately)
   - `fiber/` - React Fiber tree traversal using Bippy
   - `axe/` - axe-core integration and violation attribution
   - `keyboard/` - Keyboard accessibility testing
   - `stagehand/` - Stagehand AI integration for test generation
-- `src/browser/` - Playwright browser launcher
-- `src/services/` - Service layer (BrowserService, ScannerService, ResultsProcessorService, TestGenerationService, OrchestrationService)
-- `src/prompts/` - AI prompt generation templates
+- `packages/core/src/services/` - Service layer
+  - `effect/` - Effect-based service implementations (primary)
+  - `browser/` - BrowserService (Playwright wrapper)
+  - `scanner/` - ScannerService (bundle injection)
+  - `processor/` - ResultsProcessorService
+  - `testgen/` - TestGenerationService
+- `packages/core/src/prompts/` - AI prompt generation templates
+- `packages/mcp/src/` - MCP server implementation
 
 ### MCP Server
 
-The tool includes an MCP server (`src/mcp-server.ts`) exposing the `scan_url` tool for use with Claude Desktop and other MCP clients.
+The tool includes an MCP server (`packages/mcp/src/server.ts`) exposing the `scan_url` tool for use with Claude Desktop and other MCP clients.
 
 ### Operating Modes
 
@@ -73,7 +85,7 @@ The tool includes an MCP server (`src/mcp-server.ts`) exposing the `scan_url` to
 
 ### Important Types
 
-All core types are in `src/types.ts`:
+All core types are in `packages/core/src/types.ts`:
 - `ScanResults` - Final output structure
 - `AttributedViolation` - Violation with React component attribution
 - `KeyboardTestResults` - Keyboard navigation test results

@@ -42,13 +42,8 @@ export {
     type ITestGenerationService,
 } from './testgen/index.js';
 
-// Orchestration Service
-export {
-    OrchestrationService,
-    createOrchestrationService,
-    type BaseScanOptions,
-    type ScanOperationOptions,
-    type ScanOperationResult,
-    type TestGenOperationOptions,
-    type IOrchestrationService,
+// Orchestration Types (service migrated to Effect-based implementation)
+export type {
+    BaseScanOptions,
+    ScanOperationResult,
 } from './orchestration/index.js';

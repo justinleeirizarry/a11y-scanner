@@ -3,7 +3,8 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import {
-    createOrchestrationService,
+    runScanAsPromise,
+    AppLayer,
     createResultsProcessorService,
     logger,
     EXIT_CODES,
@@ -43,13 +44,12 @@ server.registerTool(
         try {
             logger.info(`Starting scan for ${url} using ${browser}`);
 
-            const orchestration = createOrchestrationService();
-            const { results } = await orchestration.performScan({
+            const { results } = await runScanAsPromise({
                 url,
                 browser: browser as "chromium" | "firefox" | "webkit",
                 headless: true,
                 includeKeyboardTests: true,
-            });
+            }, AppLayer);
 
             const processor = createResultsProcessorService();
             const content = processor.formatForMCP(results, { includeTree: include_tree });

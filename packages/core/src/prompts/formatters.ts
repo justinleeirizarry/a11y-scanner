@@ -14,24 +14,6 @@ function escapeHtmlTags(text: string): string {
 }
 
 /**
- * Format violations summary for prompts
- */
-export function formatViolationSummary(violations: AttributedViolation[]): string {
-    const bySeverity = violations.reduce((acc, v) => {
-        acc[v.impact] = (acc[v.impact] || 0) + 1;
-        return acc;
-    }, {} as Record<string, number>);
-
-    const lines: string[] = [];
-    if (bySeverity.critical) lines.push(`- Critical: ${bySeverity.critical}`);
-    if (bySeverity.serious) lines.push(`- Serious: ${bySeverity.serious}`);
-    if (bySeverity.moderate) lines.push(`- Moderate: ${bySeverity.moderate}`);
-    if (bySeverity.minor) lines.push(`- Minor: ${bySeverity.minor}`);
-
-    return lines.join('\n');
-}
-
-/**
  * DOM element names to filter out from component paths
  */
 const DOM_ELEMENTS = new Set([
@@ -183,33 +165,6 @@ export function formatViolations(violations: AttributedViolation[]): string {
 
         return output;
     }).join('\n---\n\n');
-}
-
-/**
- * Format violations by component for prompts
- */
-export function formatViolationsByComponent(violations: AttributedViolation[]): string {
-    const byComponent = new Map<string, AttributedViolation[]>();
-
-    violations.forEach(violation => {
-        const firstNode = violation.nodes[0];
-        const component = firstNode?.component || 'Unknown';
-
-        if (!byComponent.has(component)) {
-            byComponent.set(component, []);
-        }
-        byComponent.get(component)!.push(violation);
-    });
-
-    const lines: string[] = [];
-    byComponent.forEach((violations, component) => {
-        lines.push(`\n### ${component} (${violations.length} violation(s))`);
-        violations.forEach(v => {
-            lines.push(`- ${v.help} (${v.impact})`);
-        });
-    });
-
-    return lines.join('\n');
 }
 
 /**

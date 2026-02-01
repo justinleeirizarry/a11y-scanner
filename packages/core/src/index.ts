@@ -39,15 +39,32 @@ export {
     type TestGenerationConfig,
     type ITestGenerationService,
 
-    // Orchestration Service
-    OrchestrationService,
-    createOrchestrationService,
+    // Orchestration Types (service migrated to Effect-based implementation)
     type BaseScanOptions,
-    type ScanOperationOptions,
     type ScanOperationResult,
-    type TestGenOperationOptions,
-    type IOrchestrationService,
 } from './services/index.js';
+
+// =============================================================================
+// Effect-based Services
+// =============================================================================
+
+export {
+    // Effect orchestration
+    runScanAsPromise,
+    performScan,
+    performScanWithCleanup,
+    type EffectScanOptions,
+    type EffectScanResult,
+    type PerformScanError,
+
+    // Effect layers
+    AppLayer,
+    AppLayerManual,
+    CoreServicesLayer,
+    BrowserServiceLive,
+    ScannerServiceLive,
+    ResultsProcessorServiceLive,
+} from './services/effect/index.js';
 
 // =============================================================================
 // Types
