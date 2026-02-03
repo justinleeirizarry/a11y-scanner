@@ -12,7 +12,7 @@ import { render } from 'ink';
 import meow from 'meow';
 import { Effect } from 'effect';
 import App from './App.js';
-import type { BrowserType } from '@react-a11y-scanner/core';
+import type { BrowserType, WcagLevel } from '@accessibility-toolkit/core';
 import {
     validateUrl,
     validateTags,
@@ -33,8 +33,7 @@ import {
     logger,
     LogLevel,
     generateAndExport,
-} from '@react-a11y-scanner/core';
-import type { WcagLevel } from '@react-a11y-scanner/core';
+} from '@accessibility-toolkit/core';
 
 // Load configuration from environment variables (REACT_A11Y_*)
 if (hasEnvConfig()) {
@@ -44,10 +43,11 @@ if (hasEnvConfig()) {
 const cli = meow(
     `
   Usage
-    $ react-a11y-scanner <url>
+    $ a11y-toolkit <url>
 
   Accessibility Scan Options
     --browser, -b      Browser to use (chromium, firefox, webkit) [default: chromium]
+    --react            Enable React component attribution (requires React app)
     --output, -o       Output file path (JSON format)
     --ci               CI mode - exit with code 1 if violations found
     --threshold        Maximum allowed violations in CI mode [default: 0]
@@ -74,21 +74,23 @@ const cli = meow(
     --max-steps               Max agent steps for audit [default: 30]
 
   Examples
-    # Accessibility Scanning
-    $ react-a11y-scanner https://example.com
-    $ react-a11y-scanner https://example.com --browser firefox
-    $ react-a11y-scanner https://example.com --output report.json --ci
-    $ react-a11y-scanner https://example.com --ai --tree
+    # Generic Accessibility Scanning (any website)
+    $ a11y-toolkit https://example.com
+    $ a11y-toolkit https://example.com --browser firefox
+    $ a11y-toolkit https://example.com --output report.json --ci
+
+    # React App with Component Attribution
+    $ a11y-toolkit https://my-react-app.com --react
+    $ a11y-toolkit https://my-react-app.com --react --ai --tree
 
     # Test Generation
-    $ react-a11y-scanner https://example.com --generate-test
-    $ react-a11y-scanner https://example.com --generate-test --test-file tests/a11y.spec.ts
-    $ react-a11y-scanner https://example.com --generate-test --stagehand-model openai/gpt-4o
+    $ a11y-toolkit https://example.com --generate-test
+    $ a11y-toolkit https://example.com --generate-test --test-file tests/a11y.spec.ts
 
-    # Stagehand Advanced Testing
-    $ react-a11y-scanner https://example.com --stagehand-keyboard
-    $ react-a11y-scanner https://example.com --stagehand-tree
-    $ react-a11y-scanner https://example.com --wcag-audit --audit-level AA
+    # AI-Powered WCAG Audit
+    $ a11y-toolkit https://example.com --wcag-audit --audit-level AA
+    $ a11y-toolkit https://example.com --stagehand-keyboard
+    $ a11y-toolkit https://example.com --stagehand-tree
 `,
     {
         importMeta: import.meta,
@@ -97,6 +99,10 @@ const cli = meow(
                 type: 'string',
                 shortFlag: 'b',
                 default: 'chromium',
+            },
+            react: {
+                type: 'boolean',
+                default: false,
             },
             output: {
                 type: 'string',

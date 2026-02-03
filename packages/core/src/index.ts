@@ -1,8 +1,11 @@
 /**
- * @react-a11y-scanner/core
+ * @accessibility-toolkit/core
  *
- * Core library for React accessibility scanning. Combines React Fiber
- * inspection with axe-core testing to provide component-specific violation reports.
+ * Core library for accessibility testing. Framework-agnostic accessibility
+ * scanning with axe-core, keyboard testing, and WCAG 2.2 checks.
+ *
+ * For React component attribution, use @accessibility-toolkit/react
+ * For AI-powered auditing, use @accessibility-toolkit/ai-auditor
  */
 
 // =============================================================================
@@ -99,6 +102,8 @@ export type {
     ImpactLevelOrNull,
     SeverityLevel,
     WcagLevel,
+    WcagPrinciple,
+    WcagCriterionInfo,
     BrowserType,
 
     // Axe-core types
@@ -291,3 +296,45 @@ export type {
     RenderedFix,
     SuggestionGenerator,
 } from './scanner/suggestions/index.js';
+
+// =============================================================================
+// Plugin System
+// =============================================================================
+
+export type {
+    FrameworkPlugin,
+    FrameworkScanData,
+    AttributedNode,
+    GenericScanResults,
+    GenericScanOptions,
+} from './plugin.js';
+
+export type {
+    AttributedViolation as PluginAttributedViolation,
+    AttributedPass as PluginAttributedPass,
+    AttributedIncomplete as PluginAttributedIncomplete,
+} from './plugin.js';
+
+// =============================================================================
+// WCAG Data
+// =============================================================================
+
+export {
+    WCAG_CRITERIA,
+    getAllCriteria,
+    getCriteriaCount,
+    AXE_WCAG_MAP,
+    getMappedRuleIds,
+    hasWcagMapping,
+    getAxeMapping,
+    getWcagCriteriaForViolation,
+    getCriterionById,
+    getAllCriteriaByLevel,
+    getPrimaryCriterion,
+    getHighestLevelForViolation,
+    formatCriterionDisplay,
+    extractCriteriaFromTags,
+    getUniquePrinciples,
+    type WcagCriterion,
+    type AxeWcagMapping,
+} from './data/index.js';

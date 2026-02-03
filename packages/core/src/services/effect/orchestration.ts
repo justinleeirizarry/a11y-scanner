@@ -109,10 +109,13 @@ export const performScan = (
         // Wait for page stability (important for SPAs)
         yield* browser.waitForStability();
 
-        // Check for React
+        // Check for React (only fail if explicitly required)
         const hasReact = yield* browser.detectReact();
-        if (!hasReact) {
+        if (options.requireReact && !hasReact) {
             return yield* Effect.fail(new EffectReactNotDetectedError({ url }));
+        }
+        if (!hasReact) {
+            logger.debug('React not detected on page - running generic accessibility scan');
         }
 
         // Get page for scanning

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Text } from 'ink';
-import type { TestGenerationResults as TestGenResults } from '@react-a11y-scanner/core';
+import type { TestGenerationResults as TestGenResults } from '@accessibility-toolkit/core';
 import { Banner } from './Banner.js';
 
 interface TestGenerationResultsProps {

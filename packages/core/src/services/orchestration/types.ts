@@ -18,6 +18,8 @@ export interface BaseScanOptions {
     outputFile?: string;
     ciMode?: boolean;
     ciThreshold?: number;
+    /** Require React to be detected on the page (default: false for generic scanning) */
+    requireReact?: boolean;
 }
 
 /**

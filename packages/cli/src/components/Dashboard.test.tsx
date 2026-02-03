@@ -2,7 +2,7 @@ import React from 'react';
 import { describe, it, expect } from 'vitest';
 import { render } from 'ink-testing-library';
 import { Dashboard } from './Dashboard.js';
-import type { ScanResults } from '@react-a11y-scanner/core';
+import type { ScanResults } from '@accessibility-toolkit/core';
 
 describe('Dashboard Component', () => {
     const createMockSummary = (overrides?: Partial<ScanResults['summary']>): ScanResults['summary'] => ({

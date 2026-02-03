@@ -1,0 +1,43 @@
+{
+    "name": "@accessibility-toolkit/ai-auditor",
+    "version": "0.1.0",
+    "description": "AI-powered accessibility auditing using Stagehand and Browserbase",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "type": "module",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js"
+        }
+    },
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "build": "tsc",
+        "dev": "tsc --watch",
+        "test": "vitest run",
+        "test:watch": "vitest"
+    },
+    "keywords": [
+        "accessibility",
+        "a11y",
+        "ai",
+        "stagehand",
+        "browserbase",
+        "wcag"
+    ],
+    "license": "MIT",
+    "dependencies": {
+        "@accessibility-toolkit/core": "workspace:*",
+        "@browserbasehq/stagehand": "^3.0.3",
+        "@browserbasehq/sdk": "^2.0.0",
+        "effect": "^3.19.15"
+    },
+    "devDependencies": {
+        "@types/node": "^20.10.0",
+        "typescript": "^5.3.0",
+        "vitest": "^4.0.13"
+    }
+}

@@ -2,11 +2,11 @@ import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render } from 'ink-testing-library';
 import { ViolationCard } from './ViolationCard.js';
-import type { AttributedViolation } from '@react-a11y-scanner/core';
+import type { AttributedViolation } from '@accessibility-toolkit/core';
 
 // Mock the core package suggestions module
-vi.mock('@react-a11y-scanner/core', async () => {
-    const actual = await vi.importActual('@react-a11y-scanner/core');
+vi.mock('@accessibility-toolkit/core', async () => {
+    const actual = await vi.importActual('@accessibility-toolkit/core');
     return {
         ...actual,
     };

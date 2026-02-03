@@ -1,78 +1,97 @@
 /**
- * This file gets bundled and injected into the browser page
- * It runs in the browser context and uses Bippy + axe-core
+ * Generic Browser Bundle - Framework-Agnostic Accessibility Scanner
+ *
+ * This file gets bundled and injected into the browser page.
+ * It runs in the browser context and uses only axe-core - no framework dependencies.
+ *
+ * For framework-specific features (React component attribution), use the
+ * framework plugin packages (e.g., @accessibility-toolkit/react).
  */
 
 // @ts-ignore - axe-core is bundled as IIFE by esbuild and TypeScript cannot resolve the runtime import
 import axe from 'axe-core';
-// @ts-ignore - Bippy is bundled as IIFE by esbuild and TypeScript cannot resolve the runtime import
-import { instrument } from 'bippy';
 
 // Import modular scanner components
-import { findReactRoot, traverseFiberTree, buildDomToComponentMap } from './fiber/traversal.js';
 import { runAxeFullScan } from './axe/runner.js';
-import {
-    attributeViolationsToComponents,
-    attributePassesToComponents,
-    attributeIncompleteToComponents
-} from './axe/attribution.js';
 import { runKeyboardTests } from './keyboard/index.js';
 import { buildAccessibilityTree } from './axe/tree-builder.js';
 import { runWCAG22Checks } from './wcag22/index.js';
-import type { BrowserScanData, BrowserScanOptions, ComponentInfo, ScanError } from '../types.js';
+import type {
+    AxeViolation,
+    AxeResult,
+    KeyboardTestResults,
+    WCAG22Results,
+    ScanError,
+} from '../types.js';
 
-// Initialize Bippy instrumentation immediately
-try {
-    instrument({
-        onCommitFiberRoot: () => { }, // We just need instrumentation active
-    });
-} catch (e) {
-    console.warn('Failed to initialize Bippy instrumentation:', e);
+// ============================================================================
+// Generic Scan Types (Browser Context)
+// ============================================================================
+
+/**
+ * Options for generic browser scan
+ */
+export interface GenericBrowserScanOptions {
+    /** axe-core rule tags to include */
+    tags?: string[];
+    /** Include keyboard navigation tests */
+    includeKeyboardTests?: boolean;
+    /** Include WCAG 2.2 custom checks */
+    includeWcag22Checks?: boolean;
 }
 
-// Note: Window.ReactA11yScanner type is declared globally in src/types.ts
+/**
+ * Generic scan data returned from browser context
+ */
+export interface GenericBrowserScanData {
+    /** Components array - empty for generic scan, populated by framework plugins */
+    components: Array<{ name: string; elementCount: number }>;
+    /** Raw axe violations (no component attribution) */
+    violations: AxeViolation[];
+    /** Rules that passed */
+    passes: AxeResult[];
+    /** Rules needing manual review */
+    incomplete: AxeResult[];
+    /** Rules that don't apply */
+    inapplicable: Array<{
+        id: string;
+        description: string;
+        help: string;
+        helpUrl: string;
+        tags: string[];
+    }>;
+    /** Keyboard test results (if requested) */
+    keyboardTests?: KeyboardTestResults;
+    /** WCAG 2.2 custom check results */
+    wcag22?: WCAG22Results;
+    /** Accessibility tree snapshot */
+    accessibilityTree?: unknown;
+    /** Non-fatal errors encountered during scan */
+    errors?: ScanError[];
+}
+
+/**
+ * API exposed on window.A11yScanner
+ */
+export interface A11yScannerAPI {
+    scan: (options?: GenericBrowserScanOptions) => Promise<GenericBrowserScanData>;
+}
+
+// ============================================================================
+// Main Scan Function
+// ============================================================================
 
 /**
  * Main scan function - called from Node context
+ *
+ * This performs a generic accessibility scan without any framework-specific
+ * component attribution. For React component attribution, use the React plugin.
  */
-export async function scan(options: BrowserScanOptions = {}): Promise<BrowserScanData> {
-    // Note: console.log is intentional here as this runs in browser context
-    // and needs to be visible in browser console for debugging
-
+export async function scan(options: GenericBrowserScanOptions = {}): Promise<GenericBrowserScanData> {
     // Track non-fatal errors for debugging
     const errors: ScanError[] = [];
 
-    // Find React root
-    const root = findReactRoot();
-    if (!root) {
-        throw new Error('Could not find React root fiber node');
-    }
-
-    console.log('✓ Found React root');
-
-    // Traverse fiber tree to get components with timeout protection
-    let components: ComponentInfo[] = [];
-    try {
-        // Add a safeguard - limit traversal to prevent infinite loops
-        const MAX_COMPONENTS = 10000;
-        components = traverseFiberTree(root);
-        if (components.length > MAX_COMPONENTS) {
-            console.warn(`[react-a11y-scanner] Component limit reached (${MAX_COMPONENTS}), truncating`);
-            components = components.slice(0, MAX_COMPONENTS);
-        }
-    } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        const errorStack = error instanceof Error ? error.stack : undefined;
-        console.error('[react-a11y-scanner] Fiber traversal failed:', error);
-        errors.push({
-            phase: 'fiber-traversal',
-            message: errorMessage,
-            stack: errorStack,
-            recoverable: true,
-        });
-        components = [];
-    }
-    console.log(`✓ Found ${components.length} components`);
+    console.log('🔍 Starting generic accessibility scan...');
 
     // Run axe accessibility scan (full results)
     const axeResults = await runAxeFullScan(options.tags);
@@ -88,25 +107,8 @@ export async function scan(options: BrowserScanOptions = {}): Promise<BrowserSca
         });
     }
 
-    // Build DOM-to-component map for attribution
-    const domToComponentMap = buildDomToComponentMap(components);
-
-    // Attribute violations to components
-    const attributedViolations = attributeViolationsToComponents(axeResults.violations, domToComponentMap);
-    console.log(`✓ Attributed violations to components`);
-
-    // Attribute passes to components (lighter attribution)
-    const attributedPasses = attributePassesToComponents(axeResults.passes, domToComponentMap);
-    console.log(`✓ Attributed ${attributedPasses.length} passing rules`);
-
-    // Attribute incomplete results (needs manual review)
-    const attributedIncomplete = attributeIncompleteToComponents(axeResults.incomplete, domToComponentMap);
-    if (attributedIncomplete.length > 0) {
-        console.log(`⚠️  ${attributedIncomplete.length} rules need manual review`);
-    }
-
     // Run keyboard tests if requested
-    let keyboardTests: BrowserScanData['keyboardTests'] = undefined;
+    let keyboardTests: KeyboardTestResults | undefined;
     if (options.includeKeyboardTests) {
         console.log('🎹 Starting keyboard tests...');
         console.warn('⚠️  Keyboard testing is experimental and may not detect all issues');
@@ -127,24 +129,26 @@ export async function scan(options: BrowserScanOptions = {}): Promise<BrowserSca
     }
 
     // Run WCAG 2.2 custom checks
-    let wcag22Results: BrowserScanData['wcag22'] = undefined;
-    try {
-        wcag22Results = runWCAG22Checks();
-    } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        const errorStack = error instanceof Error ? error.stack : undefined;
-        console.error('❌ Failed to run WCAG 2.2 checks:', error);
-        errors.push({
-            phase: 'wcag22-checks',
-            message: errorMessage,
-            stack: errorStack,
-            recoverable: true,
-        });
+    let wcag22Results: WCAG22Results | undefined;
+    if (options.includeWcag22Checks !== false) {
+        try {
+            wcag22Results = runWCAG22Checks();
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            const errorStack = error instanceof Error ? error.stack : undefined;
+            console.error('❌ Failed to run WCAG 2.2 checks:', error);
+            errors.push({
+                phase: 'wcag22-checks',
+                message: errorMessage,
+                stack: errorStack,
+                recoverable: true,
+            });
+        }
     }
 
     // Build accessibility tree
     console.log('🌳 Building accessibility tree...');
-    let accessibilityTree;
+    let accessibilityTree: unknown;
     try {
         accessibilityTree = buildAccessibilityTree();
         console.log('✓ Accessibility tree built');
@@ -161,10 +165,11 @@ export async function scan(options: BrowserScanOptions = {}): Promise<BrowserSca
     }
 
     return {
-        components,
-        violations: attributedViolations,
-        passes: attributedPasses,
-        incomplete: attributedIncomplete,
+        // Generic scan doesn't provide component info - that comes from framework plugins
+        components: [],
+        violations: axeResults.violations,
+        passes: axeResults.passes,
+        incomplete: axeResults.incomplete,
         inapplicable: axeResults.inapplicable,
         keyboardTests,
         wcag22: wcag22Results,
@@ -173,7 +178,18 @@ export async function scan(options: BrowserScanOptions = {}): Promise<BrowserSca
     };
 }
 
+// ============================================================================
+// Global Window Export
+// ============================================================================
+
 // Expose to global window for evaluation
 if (typeof window !== 'undefined') {
-    window.ReactA11yScanner = { scan };
+    (window as any).A11yScanner = { scan };
+}
+
+// Type augmentation for window
+declare global {
+    interface Window {
+        A11yScanner?: A11yScannerAPI;
+    }
 }

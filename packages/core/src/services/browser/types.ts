@@ -69,6 +69,7 @@ export interface IBrowserService {
 
     /**
      * Detect if React is present on the page
+     * @deprecated Use @accessibility-toolkit/react plugin's detect() method instead
      */
     detectReact(): Effect.Effect<boolean, EffectBrowserNotLaunchedError>;
 

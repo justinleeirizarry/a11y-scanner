@@ -13,7 +13,7 @@ import {
     updateConfig,
     loadEnvConfig,
     hasEnvConfig,
-} from "@react-a11y-scanner/core";
+} from "@accessibility-toolkit/core";
 
 // Configure logger to use stderr to avoid corrupting JSON-RPC on stdout
 logger.setUseStderr(true);
@@ -25,7 +25,7 @@ if (hasEnvConfig()) {
 
 // Create server instance
 const server = new McpServer({
-    name: "react-a11y-scanner",
+    name: "accessibility-toolkit",
     version: "1.0.0",
 });
 
@@ -77,7 +77,7 @@ server.registerTool(
 async function main() {
     const transport = new StdioServerTransport();
     await server.connect(transport);
-    logger.info("React A11y Scanner MCP Server running on stdio");
+    logger.info("Accessibility Toolkit MCP Server running on stdio");
 }
 
 main().catch((error) => {

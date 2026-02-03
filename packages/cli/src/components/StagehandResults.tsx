@@ -4,7 +4,7 @@ import type {
     StagehandKeyboardResults,
     TreeAnalysisResult,
     WcagAuditResult,
-} from '@react-a11y-scanner/core';
+} from '@accessibility-toolkit/core';
 
 type StagehandMode = 'stagehand-keyboard' | 'stagehand-tree' | 'wcag-audit';
 type StagehandResultType = StagehandKeyboardResults | TreeAnalysisResult | WcagAuditResult;

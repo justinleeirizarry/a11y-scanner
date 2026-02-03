@@ -39,7 +39,7 @@ export class ScannerService implements IScannerService {
     isBundleInjected(page: Page): Effect.Effect<boolean> {
         return Effect.promise(() =>
             page.evaluate(() => {
-                return typeof window.ReactA11yScanner !== 'undefined';
+                return typeof (window as any).A11yScanner !== 'undefined';
             })
         );
     }
@@ -126,7 +126,7 @@ export class ScannerService implements IScannerService {
                                 history.pushState = () => {};
                                 history.replaceState = () => {};
 
-                                const result = window.ReactA11yScanner!.scan({
+                                const result = (window as any).A11yScanner!.scan({
                                     tags: scanTags,
                                     includeKeyboardTests: runKeyboardTests,
                                 });
@@ -152,8 +152,8 @@ export class ScannerService implements IScannerService {
             }
 
             // Validate results have expected structure
+            // Note: components array is only populated when using framework plugins (e.g., React)
             if (!Array.isArray(rawData.components)) {
-                logger.warn('Scan returned invalid component data');
                 rawData.components = [];
             }
 
@@ -167,8 +167,11 @@ export class ScannerService implements IScannerService {
                 logger.debug('No accessibility tree generated - page may have no accessible content');
             }
 
+            const componentInfo = rawData.components.length > 0
+                ? ` and ${rawData.components.length} components`
+                : '';
             logger.info(
-                `Scan complete: Found ${rawData.components.length} components and ${rawData.violations.length} violations`
+                `Scan complete: Found ${rawData.violations.length} violations${componentInfo}`
             );
 
             return rawData;

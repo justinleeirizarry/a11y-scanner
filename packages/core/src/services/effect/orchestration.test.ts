@@ -159,7 +159,7 @@ describe('Effect Orchestration', () => {
             expect(processorService.process).toHaveBeenCalled();
         });
 
-        it('should fail with ReactNotDetectedError when React is not found', async () => {
+        it('should fail with ReactNotDetectedError when React is not found and requireReact is true', async () => {
             const browserService = createMockBrowserService({
                 detectReact: vi.fn(() => Effect.succeed(false)),
             });
@@ -176,6 +176,7 @@ describe('Effect Orchestration', () => {
                 url: 'http://example.com',
                 browser: 'chromium',
                 headless: true,
+                requireReact: true,
             };
 
             const effect = performScan(options);
@@ -185,6 +186,32 @@ describe('Effect Orchestration', () => {
             if (Exit.isFailure(exit) && exit.cause._tag === 'Fail') {
                 expect(exit.cause.error._tag).toBe('ReactNotDetectedError');
             }
+        });
+
+        it('should succeed when React is not found and requireReact is false (generic scanning)', async () => {
+            const browserService = createMockBrowserService({
+                detectReact: vi.fn(() => Effect.succeed(false)),
+            });
+            const scannerService = createMockScannerService();
+            const processorService = createMockProcessorService();
+
+            const testLayer = createTestLayer(
+                browserService,
+                scannerService,
+                processorService
+            );
+
+            const options: EffectScanOptions = {
+                url: 'http://example.com',
+                browser: 'chromium',
+                headless: true,
+                // requireReact: false is the default
+            };
+
+            const effect = performScan(options);
+            const exit = await Effect.runPromiseExit(Effect.provide(effect, testLayer));
+
+            expect(Exit.isSuccess(exit)).toBe(true);
         });
 
         it('should fail with BrowserLaunchError when browser fails to launch', async () => {

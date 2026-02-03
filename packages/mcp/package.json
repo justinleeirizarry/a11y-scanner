@@ -1,7 +1,7 @@
 {
-    "name": "@react-a11y-scanner/mcp",
+    "name": "@accessibility-toolkit/mcp",
     "version": "0.1.0",
-    "description": "MCP server for React A11y Scanner",
+    "description": "MCP server for Accessibility Toolkit",
     "main": "dist/server.js",
     "type": "module",
     "bin": {
@@ -20,11 +20,12 @@
         "mcp",
         "accessibility",
         "a11y",
-        "react"
+        "wcag",
+        "axe"
     ],
     "license": "MIT",
     "dependencies": {
-        "@react-a11y-scanner/core": "workspace:*",
+        "@accessibility-toolkit/core": "workspace:*",
         "@modelcontextprotocol/sdk": "^1.22.0",
         "zod": "^3.25.76"
     },

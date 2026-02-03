@@ -18,7 +18,7 @@ import {
     EXIT_CODES,
     setExitCode,
     generateAndExport,
-} from '@react-a11y-scanner/core';
+} from '@accessibility-toolkit/core';
 import type {
     ScanResults,
     TestGenerationResults as TestGenResults,
@@ -27,7 +27,7 @@ import type {
     TreeAnalysisResult,
     WcagAuditResult,
     WcagLevel,
-} from '@react-a11y-scanner/core';
+} from '@accessibility-toolkit/core';
 
 type AppMode = 'scan' | 'generate-test' | 'stagehand-keyboard' | 'stagehand-tree' | 'wcag-audit';
 

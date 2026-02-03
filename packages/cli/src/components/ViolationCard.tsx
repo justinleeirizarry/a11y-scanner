@@ -1,10 +1,10 @@
 import React from "react";
 import { Box, Text } from "ink";
-import type { AttributedViolation } from "@react-a11y-scanner/core";
+import type { AttributedViolation } from "@accessibility-toolkit/core";
 import {
   generateContextualFix,
   hasContextualSupport,
-} from "@react-a11y-scanner/core";
+} from "@accessibility-toolkit/core";
 import { colors, impactColors } from "../colors.js";
 
 interface ViolationCardProps {

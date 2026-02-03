@@ -1,7 +1,7 @@
 {
-    "name": "@react-a11y-scanner/core",
+    "name": "@accessibility-toolkit/core",
     "version": "0.1.0",
-    "description": "Core library for React A11y Scanner - combines React Fiber inspection with accessibility testing",
+    "description": "Core library for Accessibility Toolkit - framework-agnostic accessibility testing with axe-core",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "type": "module",
@@ -16,25 +16,23 @@
     ],
     "scripts": {
         "build": "tsc && npm run build:scanner",
-        "build:scanner": "esbuild src/scanner/browser-bundle.ts --bundle --platform=browser --format=iife --global-name=ReactA11yScanner --outfile=dist/scanner-bundle.js",
+        "build:scanner": "esbuild src/scanner/browser-bundle.ts --bundle --platform=browser --format=iife --global-name=A11yScanner --outfile=dist/scanner-bundle.js",
         "dev": "tsc --watch",
-        "dev:scanner": "esbuild src/scanner/browser-bundle.ts --bundle --platform=browser --format=iife --global-name=ReactA11yScanner --outfile=dist/scanner-bundle.js --watch",
+        "dev:scanner": "esbuild src/scanner/browser-bundle.ts --bundle --platform=browser --format=iife --global-name=A11yScanner --outfile=dist/scanner-bundle.js --watch",
         "test": "vitest run",
         "test:watch": "vitest"
     },
     "keywords": [
-        "react",
         "accessibility",
         "a11y",
         "testing",
         "axe",
-        "fiber"
+        "wcag",
+        "keyboard"
     ],
     "license": "MIT",
     "dependencies": {
-        "@browserbasehq/stagehand": "^3.0.3",
         "axe-core": "^4.8.3",
-        "bippy": "^0.5.16",
         "dotenv": "^17.2.3",
         "effect": "^3.19.15",
         "playwright": "^1.56.1",

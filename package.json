@@ -1,8 +1,8 @@
 {
-    "name": "react-a11y-scanner-monorepo",
+    "name": "accessibility-toolkit-monorepo",
     "version": "0.1.0",
     "private": true,
-    "description": "Monorepo for React A11y Scanner - CLI tool that combines React Fiber inspection with accessibility testing",
+    "description": "Monorepo for Accessibility Toolkit - Generic accessibility testing with optional React support and AI-powered auditing",
     "type": "module",
     "scripts": {
         "build": "pnpm -r build",
@@ -12,17 +12,17 @@
         "test:ui": "vitest --ui",
         "test:coverage": "vitest run --coverage",
         "clean": "pnpm -r exec rm -rf dist node_modules && rm -rf node_modules",
-        "start": "pnpm --filter @react-a11y-scanner/cli start"
+        "start": "pnpm --filter @accessibility-toolkit/cli start"
     },
     "keywords": [
-        "react",
         "accessibility",
         "a11y",
         "testing",
         "cli",
         "axe",
-        "fiber",
-        "components"
+        "wcag",
+        "react",
+        "ai-auditor"
     ],
     "author": "",
     "license": "MIT",

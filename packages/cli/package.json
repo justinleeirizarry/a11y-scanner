@@ -1,7 +1,7 @@
 {
-    "name": "@react-a11y-scanner/cli",
+    "name": "@accessibility-toolkit/cli",
     "version": "0.1.0",
-    "description": "CLI tool for React accessibility scanning",
+    "description": "CLI tool for accessibility testing with optional React and AI auditor support",
     "main": "dist/index.js",
     "type": "module",
     "exports": {
@@ -9,7 +9,7 @@
         "./dist/index.js": "./dist/index.js"
     },
     "bin": {
-        "react-a11y-scanner": "./bin/cli.js"
+        "a11y-toolkit": "./bin/cli.js"
     },
     "files": [
         "dist",
@@ -23,14 +23,17 @@
         "test:watch": "vitest"
     },
     "keywords": [
-        "react",
         "accessibility",
         "a11y",
-        "cli"
+        "cli",
+        "wcag",
+        "axe"
     ],
     "license": "MIT",
     "dependencies": {
-        "@react-a11y-scanner/core": "workspace:*",
+        "@accessibility-toolkit/core": "workspace:*",
+        "@accessibility-toolkit/react": "workspace:*",
+        "@accessibility-toolkit/ai-auditor": "workspace:*",
         "chalk": "^5.3.0",
         "dotenv": "^17.2.3",
         "ink": "^4.4.1",

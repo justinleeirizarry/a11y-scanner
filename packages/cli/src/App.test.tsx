@@ -19,7 +19,7 @@ const mockTestGenService = vi.hoisted(() => ({
     close: vi.fn(),
 }));
 
-vi.mock('@react-a11y-scanner/core', async (importOriginal) => {
+vi.mock('@accessibility-toolkit/core', async (importOriginal) => {
     const actual = await importOriginal();
     return {
         ...actual as object,
@@ -47,7 +47,7 @@ vi.mock('path', async (importOriginal) => {
     };
 });
 
-import type { ScanResults, TestGenerationResults } from '@react-a11y-scanner/core';
+import type { ScanResults, TestGenerationResults } from '@accessibility-toolkit/core';
 
 describe('App Component', () => {
     // Store original process.exitCode
