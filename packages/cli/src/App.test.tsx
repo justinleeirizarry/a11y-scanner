@@ -30,20 +30,13 @@ vi.mock('@accessibility-toolkit/core', async (importOriginal) => {
     };
 });
 
-vi.mock('fs/promises', async (importOriginal) => {
+vi.mock(import('fs/promises'), async (importOriginal) => {
     const actual = await importOriginal();
     return {
-        ...actual as object,
+        ...actual,
+        default: actual.default ?? actual,
         mkdir: vi.fn().mockResolvedValue(undefined),
         writeFile: vi.fn().mockResolvedValue(undefined),
-    };
-});
-
-vi.mock('path', async (importOriginal) => {
-    const actual = await importOriginal();
-    return {
-        ...actual as object,
-        dirname: vi.fn().mockReturnValue('tests'),
     };
 });
 
@@ -160,6 +153,7 @@ describe('App Component', () => {
                 outputFile: undefined,
                 ciMode: false,
                 ciThreshold: 0,
+                reactBundlePath: expect.stringContaining('react-bundle.js'),
             }, expect.anything());
 
             unmount();

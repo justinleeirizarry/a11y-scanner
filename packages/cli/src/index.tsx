@@ -12,6 +12,7 @@ import { render } from 'ink';
 import meow from 'meow';
 import { Effect } from 'effect';
 import App from './App.js';
+import { getReactBundlePath } from '@accessibility-toolkit/react';
 import type { BrowserType, WcagLevel } from '@accessibility-toolkit/core';
 import {
     validateUrl,
@@ -449,6 +450,7 @@ if (!isTTY) {
                     outputFile: cli.flags.output,
                     ciMode: cli.flags.ci,
                     ciThreshold: cli.flags.threshold,
+                    reactBundlePath: getReactBundlePath(),
                 }, AppLayer);
 
                 // In quiet mode, output plain text; otherwise full JSON

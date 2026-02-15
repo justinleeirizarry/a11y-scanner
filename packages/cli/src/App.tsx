@@ -19,6 +19,7 @@ import {
     setExitCode,
     generateAndExport,
 } from '@accessibility-toolkit/core';
+import { getReactBundlePath } from '@accessibility-toolkit/react';
 import type {
     ScanResults,
     TestGenerationResults as TestGenResults,
@@ -258,6 +259,7 @@ const App: React.FC<AppProps> = ({
                 setScanState('scanning');
 
                 try {
+                    const rbp = getReactBundlePath();
                     const { results, ciPassed } = await runScanAsPromise({
                         url,
                         browser,
@@ -267,6 +269,7 @@ const App: React.FC<AppProps> = ({
                         outputFile: output,
                         ciMode: ci,
                         ciThreshold: threshold,
+                        reactBundlePath: rbp,
                     }, AppLayer);
 
                     if (cancelled) return;

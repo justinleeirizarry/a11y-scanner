@@ -20,7 +20,7 @@
 // Plugin Export
 // =============================================================================
 
-export { ReactPlugin, default } from './plugin.js';
+export { ReactPlugin, getReactBundlePath, default } from './plugin.js';
 
 // =============================================================================
 // Types

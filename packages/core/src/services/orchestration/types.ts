@@ -20,6 +20,8 @@ export interface BaseScanOptions {
     ciThreshold?: number;
     /** Require React to be detected on the page (default: false for generic scanning) */
     requireReact?: boolean;
+    /** Path to the React plugin bundle (react-bundle.js) for component attribution */
+    reactBundlePath?: string;
 }
 
 /**

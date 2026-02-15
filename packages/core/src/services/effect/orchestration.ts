@@ -7,7 +7,7 @@
 import { Effect, Exit, Cause, Chunk, Option, pipe, type Layer } from 'effect';
 import { mkdir, writeFile } from 'fs/promises';
 import { dirname } from 'path';
-import type { ScanResults } from '../../types.js';
+import type { ScanResults, BrowserScanData } from '../../types.js';
 import type { BaseScanOptions, ScanOperationResult } from '../orchestration/types.js';
 import { logger } from '../../utils/logger.js';
 import {
@@ -18,6 +18,7 @@ import {
 import {
     EffectReactNotDetectedError,
     EffectFileSystemError,
+    EffectScanDataError,
     type BrowserErrors,
     type ScanErrors,
 } from '../../errors/effect-errors.js';
@@ -99,6 +100,7 @@ export const performScan = (
             outputFile,
             ciMode,
             ciThreshold = 0,
+            reactBundlePath,
         } = options;
 
         // Launch browser
@@ -130,11 +132,17 @@ export const performScan = (
         });
 
         // Run scan with retry logic
-        const rawData = yield* pipe(
+        let rawData = yield* pipe(
             scanner.scan(page, { tags, includeKeyboardTests }),
             Effect.retry(retrySchedule),
             Effect.tap(() => Effect.sync(() => logger.info('Scan completed successfully')))
         );
+
+        // If React detected and React bundle path provided, inject and attribute
+        logger.debug(`React detected: ${hasReact}, bundle path: ${reactBundlePath ?? 'not provided'}`);
+        if (hasReact && reactBundlePath) {
+            rawData = yield* attributeWithReactPlugin(page, rawData, reactBundlePath);
+        }
 
         // Process results
         const results = yield* processor.process(rawData, {
@@ -194,6 +202,90 @@ export const performScanWithCleanup = (
             Effect.ensuring(browser.close())
         );
     });
+
+// ============================================================================
+// React Plugin Attribution
+// ============================================================================
+
+/**
+ * Inject the React plugin bundle and attribute violations to React components
+ *
+ * This injects react-bundle.js into the page, which uses Bippy to traverse
+ * the React Fiber tree and map DOM elements to component names.
+ */
+const attributeWithReactPlugin = (
+    page: import('playwright').Page,
+    rawData: BrowserScanData,
+    reactBundlePath: string
+): Effect.Effect<BrowserScanData, EffectScanDataError> =>
+    Effect.gen(function* () {
+        // Inject the React plugin bundle
+        yield* Effect.tryPromise({
+            try: () => page.addScriptTag({ path: reactBundlePath }),
+            catch: (error) => {
+                const msg = error instanceof Error ? error.message : String(error);
+                logger.warn(`Failed to inject React bundle: ${msg}`);
+                return new EffectScanDataError({
+                    reason: `Failed to inject React plugin bundle: ${msg}`
+                });
+            }
+        });
+
+        // Verify ReactA11yPlugin is available
+        const hasPlugin = yield* Effect.tryPromise({
+            try: () => page.evaluate(() => typeof (window as any).ReactA11yPlugin !== 'undefined'),
+            catch: () => new EffectScanDataError({ reason: 'Failed to verify React plugin injection' })
+        });
+
+        if (!hasPlugin) {
+            logger.warn('React plugin bundle did not expose ReactA11yPlugin on window');
+            return rawData;
+        }
+
+        logger.info('React plugin injected, attributing violations to components...');
+
+        // Call ReactA11yPlugin.attributeViolations in browser context
+        const attributed = yield* Effect.tryPromise({
+            try: () => page.evaluate(
+                ({ violations, passes, incomplete }) => {
+                    return (window as any).ReactA11yPlugin.attributeViolations(
+                        violations,
+                        passes || [],
+                        incomplete || []
+                    );
+                },
+                {
+                    violations: rawData.violations,
+                    passes: rawData.passes || [],
+                    incomplete: rawData.incomplete || [],
+                }
+            ),
+            catch: (error) => {
+                const msg = error instanceof Error ? error.message : String(error);
+                logger.warn(`React attribution failed: ${msg}`);
+                return new EffectScanDataError({ reason: `React attribution failed: ${msg}` });
+            }
+        });
+
+        if (attributed && attributed.components) {
+            logger.info(`React attribution complete: ${attributed.components.length} components found`);
+            return {
+                ...rawData,
+                components: attributed.components,
+                violations: attributed.violations,
+                passes: attributed.passes,
+                incomplete: attributed.incomplete,
+            };
+        }
+
+        return rawData;
+    }).pipe(
+        // Don't fail the entire scan if React attribution fails - just log and continue
+        Effect.catchAll((error) => {
+            logger.warn(`React component attribution failed, continuing without it: ${error.reason}`);
+            return Effect.succeed(rawData);
+        })
+    );
 
 // ============================================================================
 // File Output Helpers
