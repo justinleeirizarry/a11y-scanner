@@ -52,7 +52,7 @@ describe('Browser Bundle', () => {
     });
 
     describe('Scanner Initialization', () => {
-        it('should expose ReactA11yScanner on window after injection', async () => {
+        it('should expose A11yScanner on window after injection', async () => {
             await page.goto(TEST_APP_FIXTURE, { waitUntil: 'networkidle' });
             await page.waitForTimeout(2000); // Wait for React to render
 
@@ -63,15 +63,15 @@ describe('Browser Bundle', () => {
                 document.head.appendChild(script);
             }, scannerBundle);
 
-            // Check if ReactA11yScanner is available
+            // Check if A11yScanner is available
             const hasScanner = await page.evaluate(() => {
-                return typeof window.ReactA11yScanner !== 'undefined';
+                return typeof window.A11yScanner !== 'undefined';
             });
 
             expect(hasScanner).toBe(true);
         }, 30000);
 
-        it('should have scan function on ReactA11yScanner', async () => {
+        it('should have scan function on A11yScanner', async () => {
             await page.goto(TEST_APP_FIXTURE, { waitUntil: 'networkidle' });
             await page.waitForTimeout(2000);
 
@@ -83,8 +83,8 @@ describe('Browser Bundle', () => {
 
             const hasScanFunction = await page.evaluate(() => {
                 return (
-                    typeof window.ReactA11yScanner !== 'undefined' &&
-                    typeof window.ReactA11yScanner.scan === 'function'
+                    typeof window.A11yScanner !== 'undefined' &&
+                    typeof window.A11yScanner.scan === 'function'
                 );
             });
 
@@ -104,7 +104,7 @@ describe('Browser Bundle', () => {
             }, scannerBundle);
 
             const result = await page.evaluate(async () => {
-                return await window.ReactA11yScanner!.scan();
+                return await window.A11yScanner!.scan();
             });
 
             // Verify structure
@@ -120,7 +120,7 @@ describe('Browser Bundle', () => {
             expect(Array.isArray(result.passes)).toBe(true);
         }, 60000);
 
-        it('should find React components in test fixture', async () => {
+        it('should return empty components array (generic scanner has no framework detection)', async () => {
             await page.goto(TEST_APP_FIXTURE, { waitUntil: 'networkidle' });
             await page.waitForTimeout(2000);
 
@@ -131,19 +131,11 @@ describe('Browser Bundle', () => {
             }, scannerBundle);
 
             const result = await page.evaluate(async () => {
-                return await window.ReactA11yScanner!.scan();
+                return await window.A11yScanner!.scan();
             });
 
-            // Test fixture has these components: App, Header, ImageGallery, LoginForm, ColorPicker, LinkSection
-            expect(result.components.length).toBeGreaterThan(0);
-
-            // Check component structure
-            for (const component of result.components) {
-                expect(component).toHaveProperty('name');
-                expect(component).toHaveProperty('type');
-                expect(component).toHaveProperty('path');
-                expect(Array.isArray(component.path)).toBe(true);
-            }
+            // Generic scanner returns empty components - framework plugins provide component data
+            expect(result.components).toEqual([]);
         }, 60000);
 
         it('should detect accessibility violations', async () => {
@@ -157,7 +149,7 @@ describe('Browser Bundle', () => {
             }, scannerBundle);
 
             const result = await page.evaluate(async () => {
-                return await window.ReactA11yScanner!.scan();
+                return await window.A11yScanner!.scan();
             });
 
             // Test fixture has intentional violations
@@ -187,7 +179,7 @@ describe('Browser Bundle', () => {
             }, scannerBundle);
 
             const result = await page.evaluate(async () => {
-                return await window.ReactA11yScanner!.scan();
+                return await window.A11yScanner!.scan();
             });
 
             const violationIds = result.violations.map((v: any) => v.id);
@@ -199,7 +191,7 @@ describe('Browser Bundle', () => {
             expect(violationIds).toContain('label');
         }, 60000);
 
-        it('should attribute violations to React components', async () => {
+        it('should return violations with standard axe node structure (no component attribution)', async () => {
             await page.goto(TEST_APP_FIXTURE, { waitUntil: 'networkidle' });
             await page.waitForTimeout(2000);
 
@@ -210,25 +202,17 @@ describe('Browser Bundle', () => {
             }, scannerBundle);
 
             const result = await page.evaluate(async () => {
-                return await window.ReactA11yScanner!.scan();
+                return await window.A11yScanner!.scan();
             });
 
-            // Check that violations have component attribution in nodes
-            const violationsWithComponents = result.violations.filter((v: any) =>
-                v.nodes.some((n: any) => n.component !== null)
-            );
+            // Generic scanner returns raw axe nodes without component attribution
+            expect(result.violations.length).toBeGreaterThan(0);
 
-            expect(violationsWithComponents.length).toBeGreaterThan(0);
-
-            // Check node structure for attributed violations
-            for (const violation of violationsWithComponents) {
+            // Check standard axe node structure
+            for (const violation of result.violations) {
                 for (const node of violation.nodes) {
-                    expect(node).toHaveProperty('component');
-                    expect(node).toHaveProperty('componentPath');
-                    expect(node).toHaveProperty('userComponentPath');
                     expect(node).toHaveProperty('html');
-                    expect(node).toHaveProperty('htmlSnippet');
-                    expect(node).toHaveProperty('cssSelector');
+                    expect(node).toHaveProperty('target');
                 }
             }
         }, 60000);
@@ -246,7 +230,7 @@ describe('Browser Bundle', () => {
             }, scannerBundle);
 
             const result = await page.evaluate(async () => {
-                return await window.ReactA11yScanner!.scan({ includeKeyboardTests: true });
+                return await window.A11yScanner!.scan({ includeKeyboardTests: true });
             });
 
             expect(result.keyboardTests).toBeDefined();
@@ -267,7 +251,7 @@ describe('Browser Bundle', () => {
             }, scannerBundle);
 
             const result = await page.evaluate(async () => {
-                return await window.ReactA11yScanner!.scan({ includeKeyboardTests: false });
+                return await window.A11yScanner!.scan({ includeKeyboardTests: false });
             });
 
             expect(result.keyboardTests).toBeUndefined();
@@ -286,7 +270,7 @@ describe('Browser Bundle', () => {
             }, scannerBundle);
 
             const result = await page.evaluate(async () => {
-                return await window.ReactA11yScanner!.scan();
+                return await window.A11yScanner!.scan();
             });
 
             // WCAG 2.2 results should be present
@@ -308,7 +292,7 @@ describe('Browser Bundle', () => {
             }, scannerBundle);
 
             const result = await page.evaluate(async () => {
-                return await window.ReactA11yScanner!.scan();
+                return await window.A11yScanner!.scan();
             });
 
             expect(result.wcag22).toBeDefined();
@@ -328,11 +312,11 @@ describe('Browser Bundle', () => {
             }, scannerBundle);
 
             const resultAll = await page.evaluate(async () => {
-                return await window.ReactA11yScanner!.scan();
+                return await window.A11yScanner!.scan();
             });
 
             const resultFiltered = await page.evaluate(async () => {
-                return await window.ReactA11yScanner!.scan({ tags: ['wcag2a'] });
+                return await window.A11yScanner!.scan({ tags: ['wcag2a'] });
             });
 
             // Filtered results should be a subset (or equal)
@@ -357,7 +341,7 @@ describe('Browser Bundle', () => {
             }, scannerBundle);
 
             const result = await page.evaluate(async () => {
-                return await window.ReactA11yScanner!.scan();
+                return await window.A11yScanner!.scan();
             });
 
             // Accessibility tree should be present
@@ -378,7 +362,7 @@ describe('Browser Bundle', () => {
 
             // Scan should complete even if some parts fail
             const result = await page.evaluate(async () => {
-                return await window.ReactA11yScanner!.scan({ includeKeyboardTests: true });
+                return await window.A11yScanner!.scan({ includeKeyboardTests: true });
             });
 
             // Result should be valid even if errors occurred
@@ -397,7 +381,7 @@ describe('Browser Bundle', () => {
             }
         }, 60000);
 
-        it('should throw error when React is not detected', async () => {
+        it('should succeed on non-React pages (generic scanner is framework-agnostic)', async () => {
             // Navigate to a non-React page
             await page.goto('data:text/html,<html><body><h1>No React</h1></body></html>');
 
@@ -407,16 +391,14 @@ describe('Browser Bundle', () => {
                 document.head.appendChild(script);
             }, scannerBundle);
 
-            const error = await page.evaluate(async () => {
-                try {
-                    await window.ReactA11yScanner!.scan();
-                    return null;
-                } catch (e) {
-                    return e instanceof Error ? e.message : String(e);
-                }
+            const result = await page.evaluate(async () => {
+                return await window.A11yScanner!.scan();
             });
 
-            expect(error).toContain('React');
+            // Generic scanner should succeed - it doesn't require React
+            expect(result).toBeDefined();
+            expect(result.components).toEqual([]);
+            expect(Array.isArray(result.violations)).toBe(true);
         }, 30000);
     });
 
@@ -432,7 +414,7 @@ describe('Browser Bundle', () => {
             }, scannerBundle);
 
             const result = await page.evaluate(async () => {
-                return await window.ReactA11yScanner!.scan();
+                return await window.A11yScanner!.scan();
             });
 
             // Should have some passing rules
@@ -462,7 +444,7 @@ describe('Browser Bundle', () => {
             }, scannerBundle);
 
             const result = await page.evaluate(async () => {
-                return await window.ReactA11yScanner!.scan();
+                return await window.A11yScanner!.scan();
             });
 
             // Incomplete should be defined (may be empty array)
@@ -483,7 +465,7 @@ describe('Browser Bundle', () => {
             }, scannerBundle);
 
             const result = await page.evaluate(async () => {
-                return await window.ReactA11yScanner!.scan();
+                return await window.A11yScanner!.scan();
             });
 
             // Inapplicable should be defined

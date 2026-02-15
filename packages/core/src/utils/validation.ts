@@ -8,17 +8,17 @@ export interface ValidationResult {
 }
 
 /**
- * Validate URL - only allow http and https protocols
+ * Validate URL - allow http, https, and file protocols
  */
 export function validateUrl(url: string): ValidationResult {
     try {
         const parsed = new URL(url);
 
-        // Only allow http/https protocols
-        if (!['http:', 'https:'].includes(parsed.protocol)) {
+        // Allow http, https, and file protocols
+        if (!['http:', 'https:', 'file:'].includes(parsed.protocol)) {
             return {
                 valid: false,
-                error: `Unsupported protocol "${parsed.protocol}". Only http:// and https:// are allowed.`,
+                error: `Unsupported protocol "${parsed.protocol}". Only http://, https://, and file:// are allowed.`,
             };
         }
 

@@ -167,9 +167,9 @@ export const ViolationCard: React.FC<ViolationCardProps> = ({
           const contextualFix = hasContextual
             ? generateContextualFix(violation.id, {
                 html: node.html,
-                htmlSnippet: node.htmlSnippet,
-                component: node.component,
-                componentPath: node.componentPath,
+                htmlSnippet: node.htmlSnippet ?? node.html,
+                component: node.component ?? null,
+                componentPath: node.componentPath ?? [],
                 failureSummary: node.failureSummary,
                 checks: node.checks,
               })
@@ -251,7 +251,8 @@ export const ViolationCard: React.FC<ViolationCardProps> = ({
 /**
  * Truncate HTML to fit display width
  */
-function truncateHtml(html: string, maxLength: number): string {
+function truncateHtml(html: string | undefined | null, maxLength: number): string {
+  if (!html) return "";
   if (html.length <= maxLength) {
     return html;
   }

@@ -5,95 +5,86 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Build and Development Commands
 
 ```bash
-# Build everything (TypeScript + browser bundle)
+# Build everything (TypeScript + browser bundles)
 pnpm build
 
 # Watch mode for development
-pnpm dev              # TypeScript watch
-pnpm dev:scanner      # Browser bundle watch (esbuild)
+pnpm dev              # TypeScript watch (all packages)
 
 # Run the CLI
-pnpm start <url>          # e.g., pnpm start http://localhost:3000
+pnpm start <url>      # e.g., pnpm start http://localhost:3000
 
 # Run tests
-pnpm test                 # Run all tests once
+pnpm test             # Run all tests once (root vitest config)
 pnpm test src/path/to/file.test.ts  # Run single test file
 pnpm test:watch       # Watch mode
-pnpm test:ui          # Vitest UI
 pnpm test:coverage    # With coverage
 
-# Test with fixture
-pnpm test:fixture     # Scans test/fixtures/test-app.html
+# Run tests for a specific package
+pnpm --filter @accessibility-toolkit/core test
+pnpm --filter @accessibility-toolkit/cli test
+
+# Build individual packages
+pnpm --filter @accessibility-toolkit/core build
+pnpm --filter @accessibility-toolkit/web dev   # Next.js dev server
 ```
 
 ## Architecture Overview
 
-This is a monorepo CLI tool that scans React applications for accessibility violations by combining React Fiber inspection with axe-core testing.
+This is a monorepo accessibility toolkit that scans websites for WCAG violations. Core scanning is framework-agnostic; React support and AI-powered auditing are optional plugins.
 
-### Monorepo Structure
+### Monorepo Structure (`packages/`)
 
-- `packages/core` - Core scanning logic, services, and types
-- `packages/cli` - Ink-based terminal UI
-- `packages/mcp` - MCP server for Claude Desktop integration
+- **`core`** (`@accessibility-toolkit/core`) - Framework-agnostic scanning: axe-core, keyboard tests, WCAG 2.2 checks, fix suggestions, Effect services, Playwright browser control
+- **`react`** (`@accessibility-toolkit/react`) - React plugin: Fiber traversal via Bippy, component attribution. Implements `FrameworkPlugin` interface from core. Has its own esbuild browser bundle (`react-bundle.js`)
+- **`ai-auditor`** (`@accessibility-toolkit/ai-auditor`) - AI-powered auditing via Stagehand/Browserbase. Requires `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`
+- **`cli`** (`@accessibility-toolkit/cli`) - Ink-based terminal UI, meow for arg parsing. Binary: `a11y-toolkit`
+- **`web`** (`@accessibility-toolkit/web`) - Next.js webapp with live Browserbase view for AI audits
+- **`mcp`** (`@accessibility-toolkit/mcp`) - MCP server exposing `scan_url` tool for Claude Desktop
 
-### Two Build Outputs
+### Two Build Outputs per Scanner Package
 
-1. **Node CLI** (`packages/cli/dist/*.js`) - Main CLI application built with TypeScript
-2. **Browser Bundle** (`packages/core/dist/scanner-bundle.js`) - Injected into pages via Playwright, built with esbuild as an IIFE
+1. **Node modules** (`dist/*.js`) - TypeScript compiled with `tsc`
+2. **Browser bundles** - Injected into target pages via Playwright's `page.evaluate()`, built with esbuild as IIFEs:
+   - `packages/core/dist/scanner-bundle.js` (global: `A11yScanner`) - Generic axe-core + keyboard + WCAG checks
+   - `packages/react/dist/react-bundle.js` (global: `ReactA11yPlugin`) - Fiber traversal + component mapping
 
-### Core Flow
+Browser bundles run in a different execution context (the scanned page's browser), not in Node. They are excluded from unit tests.
+
+### Core Scan Flow
 
 ```
-packages/cli/src/index.tsx (CLI entry with meow)
-    → packages/cli/src/App.tsx (Ink React UI)
-    → packages/core/src/services/effect/orchestration.ts (Effect-based scan orchestration)
-        → BrowserService (Playwright browser control)
-        → ScannerService (injects scanner-bundle.js)
-            → packages/core/src/scanner/browser-bundle.ts executes in browser context
-                → fiber/traversal.ts (finds React Fiber root, traverses tree)
-                → axe/runner.ts (runs axe-core)
-                → axe/attribution.ts (maps violations to React components)
-                → keyboard/index.ts (keyboard navigation tests)
-        → ResultsProcessorService (processes results, CI checks)
+CLI (packages/cli/src/index.tsx → App.tsx)
+  → Effect orchestration (packages/core/src/services/effect/orchestration.ts)
+    → BrowserService: launch Playwright, navigate, wait for stability
+    → ScannerService: inject scanner-bundle.js into page
+      → In browser context: axe/runner.ts, keyboard/index.ts, wcag22/index.ts
+    → (Optional) ReactPlugin: inject react-bundle.js, traverse Fiber tree
+    → ResultsProcessorService: process results, format output
 ```
 
-### Key Directories
+### Effect Service Architecture
 
-- `packages/cli/src/` - Ink-based terminal UI components
-- `packages/core/src/scanner/` - Browser-context code (bundled separately)
-  - `fiber/` - React Fiber tree traversal using Bippy
-  - `axe/` - axe-core integration and violation attribution
-  - `keyboard/` - Keyboard accessibility testing
-  - `stagehand/` - Stagehand AI integration for test generation
-- `packages/core/src/services/` - Service layer
-  - `effect/` - Effect-based service implementations (primary)
-  - `browser/` - BrowserService (Playwright wrapper)
-  - `scanner/` - ScannerService (bundle injection)
-  - `processor/` - ResultsProcessorService
-  - `testgen/` - TestGenerationService
-- `packages/core/src/prompts/` - AI prompt generation templates
-- `packages/mcp/src/` - MCP server implementation
+Services use the [Effect](https://effect.website) library for dependency injection, typed errors, and resource management.
 
-### MCP Server
+- **Tags** (`services/effect/tags.ts`) - Service interfaces as `Context.Tag` definitions: `BrowserService`, `ScannerService`, `ResultsProcessorService`, `TestGenerationService`
+- **Layers** (`services/effect/layers.ts`) - Implementations. `BrowserServiceLive` is scoped (auto-closes browser); `BrowserServiceManual` is not
+- **App Layer** (`services/effect/app-layer.ts`) - Pre-composed layers: `AppLayer` (scoped), `AppLayerManual`, `CoreServicesLayer` (for tests, no browser)
+- **Orchestration** (`services/effect/orchestration.ts`) - Main scan workflow using `Effect.gen`
 
-The tool includes an MCP server (`packages/mcp/src/server.ts`) exposing the `scan_url` tool for use with Claude Desktop and other MCP clients.
+### Key Types
 
-### Operating Modes
-
-1. **Accessibility Scan** (default) - Scans page for violations, attributes to React components
-2. **Test Generation** (`--generate-test`) - Uses Stagehand AI to discover interactive elements and generate Playwright tests (requires `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` env var)
-
-### Important Types
-
-All core types are in `packages/core/src/types.ts`:
-- `ScanResults` - Final output structure
-- `AttributedViolation` - Violation with React component attribution
-- `KeyboardTestResults` - Keyboard navigation test results
-- `ComponentInfo` - React component info from Fiber traversal
+All in `packages/core/src/types.ts`:
+- `ScanResults` - Complete scan output
+- `AttributedViolation` - Violation mapped to React component (when using React plugin)
+- `KeyboardTestResults` - Tab order, focus management, shortcuts
+- `ComponentInfo` - React component from Fiber traversal
+- `FrameworkPlugin` - Interface for framework-specific plugins (detect, scan, attribute)
 
 ### Testing Notes
 
-- Unit tests are co-located with source files (`*.test.ts`)
-- Tests use Vitest with jsdom for DOM testing
-- Browser bundle (`scanner/browser-bundle.ts`) is excluded from unit tests as it runs in browser context
+- Tests are co-located (`*.test.ts` / `*.test.tsx`)
+- Root `vitest.config.ts` runs all package tests with `node` environment
+- `packages/core/vitest.config.ts` uses `jsdom` environment for DOM testing
+- Browser bundle files are excluded from test runs
 - Use `test/fixtures/test-app.html` for manual testing

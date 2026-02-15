@@ -315,7 +315,9 @@ if (cli.flags.quiet) {
 }
 
 // If not a TTY (non-interactive), use JSON output mode
+// Route all logger output to stderr so stdout stays clean for JSON
 if (!isTTY) {
+    logger.setUseStderr(true);
     (async () => {
         try {
             if (isStagehandKeyboardMode) {
@@ -443,6 +445,7 @@ if (!isTTY) {
                     headless: cli.flags.headless,
                     tags: cli.flags.tags ? cli.flags.tags.split(',') : undefined,
                     includeKeyboardTests: cli.flags.keyboardNav,
+                    outputFile: cli.flags.output,
                     ciMode: cli.flags.ci,
                     ciThreshold: cli.flags.threshold,
                 }, AppLayer);
@@ -509,8 +512,27 @@ if (!isTTY) {
                 }
             }
         } catch (error) {
+            // Extract meaningful error message from Effect FiberFailure/TaggedErrors
+            let errorMessage: string;
+            const err = error as Record<string, unknown>;
+            // Effect FiberFailure wraps the actual cause
+            const causeKey = Symbol.for('effect/Runtime/FiberFailure/Cause');
+            const cause = err && typeof err === 'object' ? (err as Record<symbol, unknown>)[causeKey] as Record<string, unknown> | undefined : undefined;
+            const failure = (cause as { _tag?: string; error?: Record<string, unknown> })?.error;
+            if (failure && typeof failure === 'object' && '_tag' in failure) {
+                const tag = String(failure._tag);
+                const reason = failure.reason ? String(failure.reason) : undefined;
+                const errUrl = failure.url ? String(failure.url) : undefined;
+                errorMessage = reason
+                    ? `${tag}: ${reason}${errUrl ? ` (${errUrl})` : ''}`
+                    : `${tag}${errUrl ? `: ${errUrl}` : ''}`;
+            } else if (error instanceof Error) {
+                errorMessage = error.message;
+            } else {
+                errorMessage = String(error);
+            }
             console.error(JSON.stringify({
-                error: error instanceof Error ? error.message : String(error),
+                error: errorMessage,
                 stack: error instanceof Error ? error.stack : undefined,
             }, null, 2));
             setExitCode(EXIT_CODES.RUNTIME_ERROR);

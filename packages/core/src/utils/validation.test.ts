@@ -28,10 +28,9 @@ describe('validateUrl', () => {
         expect(result.valid).toBe(true);
     });
 
-    it('should reject file:// protocol', () => {
-        const result = validateUrl('file:///etc/passwd');
-        expect(result.valid).toBe(false);
-        expect(result.error).toContain('Unsupported protocol "file:"');
+    it('should accept file:// protocol for local testing', () => {
+        const result = validateUrl('file:///path/to/test.html');
+        expect(result.valid).toBe(true);
     });
 
     it('should reject javascript: protocol', () => {

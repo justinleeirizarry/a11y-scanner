@@ -13,7 +13,7 @@ import {
     AppLayer,
     createResultsProcessorService,
     type ScanResults,
-} from '@react-a11y-scanner/core';
+} from '@accessibility-toolkit/core';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

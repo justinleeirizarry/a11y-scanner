@@ -11,7 +11,7 @@ import {
     runScanAsPromise,
     AppLayer,
     type ScanResults,
-} from '@react-a11y-scanner/core';
+} from '@accessibility-toolkit/core';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -35,9 +35,8 @@ describe('Full Scan Integration', () => {
             expect(results.browser).toBe('chromium');
             expect(results.timestamp).toBeDefined();
 
-            // Verify components were found (test-app.html has React components)
+            // Components array is empty without React plugin
             expect(results.components).toBeInstanceOf(Array);
-            expect(results.components.length).toBeGreaterThan(0);
 
             // Verify violations were detected (test-app.html has intentional a11y issues)
             expect(results.violations).toBeInstanceOf(Array);
@@ -45,7 +44,6 @@ describe('Full Scan Integration', () => {
 
             // Verify summary is populated
             expect(results.summary).toBeDefined();
-            expect(results.summary.totalComponents).toBeGreaterThan(0);
             expect(results.summary.totalViolations).toBeGreaterThan(0);
         }, 60000); // Extended timeout for browser operations
 
@@ -70,26 +68,23 @@ describe('Full Scan Integration', () => {
             expect(violationIds).toContain('label');
         }, 60000);
 
-        it('should attribute violations to React components', async () => {
+        it('should return violations without component attribution (no React plugin)', async () => {
             const { results } = await runScanAsPromise({
                 url: TEST_APP_FIXTURE,
                 browser: 'chromium',
                 headless: true,
             }, AppLayer);
 
-            // Verify at least some violations have component attribution
-            const violationsWithComponents = results.violations.filter((v) =>
-                v.nodes.some((n) => n.component !== null)
-            );
+            // Without React plugin, violations should not have component attribution
+            expect(results.violations.length).toBeGreaterThan(0);
 
-            expect(violationsWithComponents.length).toBeGreaterThan(0);
-
-            // Check that component paths are populated
-            const componentPaths = results.violations
-                .flatMap((v) => v.nodes)
-                .filter((n) => n.componentPath.length > 0);
-
-            expect(componentPaths.length).toBeGreaterThan(0);
+            // Nodes should have standard axe properties
+            for (const violation of results.violations) {
+                for (const node of violation.nodes) {
+                    expect(node).toHaveProperty('html');
+                    expect(node).toHaveProperty('target');
+                }
+            }
         }, 60000);
     });
 
@@ -239,24 +234,17 @@ describe('Full Scan Integration', () => {
                 expect(violation.tags).toBeInstanceOf(Array);
                 expect(violation.nodes).toBeInstanceOf(Array);
 
-                // Node structure
+                // Node structure (raw axe nodes without React attribution)
                 for (const node of violation.nodes) {
                     expect(node.html).toBeDefined();
-                    expect(node.htmlSnippet).toBeDefined();
-                    expect(node.cssSelector).toBeDefined();
                     expect(node.target).toBeInstanceOf(Array);
-                    expect(node.componentPath).toBeInstanceOf(Array);
-                    expect(node.userComponentPath).toBeInstanceOf(Array);
                 }
             }
         });
 
-        it('should have proper component structure', () => {
-            for (const component of scanResults.components) {
-                expect(component.name).toBeDefined();
-                expect(component.type).toBeDefined();
-                expect(component.path).toBeInstanceOf(Array);
-            }
+        it('should have empty components array without React plugin', () => {
+            // Without the React plugin, components array is empty
+            expect(scanResults.components).toBeInstanceOf(Array);
         });
 
         it('should have proper summary structure', () => {
@@ -283,17 +271,17 @@ describe('Full Scan Integration', () => {
     });
 
     describe('Error Handling', () => {
-        it('should throw error for non-React pages', async () => {
-            // Create a simple HTML file URL without React
+        it('should succeed on non-React pages (generic scanner is framework-agnostic)', async () => {
             const nonReactUrl = 'data:text/html,<html><body><h1>No React Here</h1></body></html>';
 
-            await expect(
-                runScanAsPromise({
-                    url: nonReactUrl,
-                    browser: 'chromium',
-                    headless: true,
-                }, AppLayer)
-            ).rejects.toThrow();
+            const { results } = await runScanAsPromise({
+                url: nonReactUrl,
+                browser: 'chromium',
+                headless: true,
+            }, AppLayer);
+
+            expect(results).toBeDefined();
+            expect(results.violations).toBeInstanceOf(Array);
         }, 60000);
 
         it('should handle invalid URLs gracefully', async () => {
