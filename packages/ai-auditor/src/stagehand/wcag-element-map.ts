@@ -5,8 +5,8 @@
  * for prioritizing elements by WCAG conformance level.
  */
 
-import { getWcagCriteriaForViolation, formatCriterionDisplay, type WcagCriterion } from '../../data/index.js';
-import type { ElementType } from '../../types.js';
+import { getWcagCriteriaForViolation, formatCriterionDisplay, type WcagCriterion } from '@accessibility-toolkit/core';
+import type { ElementType } from '../types.js';
 
 /**
  * Maps element types to axe-core rules that commonly apply to them.
@@ -25,16 +25,6 @@ const ELEMENT_TYPE_TO_AXE_RULES: Record<ElementType, string[]> = {
 
 /**
  * Get WCAG criteria related to a specific element type.
- *
- * Uses the element-to-axe-rule mapping to find all relevant WCAG criteria
- * that apply to testing this type of element.
- *
- * @param type - The element type to get criteria for
- * @returns Array of unique WcagCriterion objects
- *
- * @example
- * const criteria = getRelatedCriteria('button');
- * // Returns criteria like 4.1.2 Name, Role, Value (Level A)
  */
 export function getRelatedCriteria(type: ElementType): WcagCriterion[] {
     const rules = ELEMENT_TYPE_TO_AXE_RULES[type] || [];
@@ -52,17 +42,6 @@ export function getRelatedCriteria(type: ElementType): WcagCriterion[] {
 
 /**
  * Sort elements by WCAG conformance level priority.
- *
- * Elements related to Level A criteria come first (most critical),
- * followed by Level AA, then Level AAA. This ensures the most
- * important accessibility tests are prioritized.
- *
- * @param elements - Array of elements with a type property
- * @returns New array sorted by WCAG priority (Level A first)
- *
- * @example
- * const sorted = sortByWcagPriority(elements);
- * // Elements testing Level A criteria appear first
  */
 export function sortByWcagPriority<T extends { type: ElementType }>(elements: T[]): T[] {
     const levelPriority: Record<string, number> = { 'A': 1, 'AA': 2, 'AAA': 3 };
@@ -85,13 +64,6 @@ export function sortByWcagPriority<T extends { type: ElementType }>(elements: T[
 
 /**
  * Format WCAG criteria as a comment string for generated tests.
- *
- * @param criteria - Array of WCAG criteria to format
- * @returns Formatted string suitable for a code comment
- *
- * @example
- * const comment = formatCriteriaComment(criteria);
- * // Returns: "WCAG: 4.1.2 Name, Role, Value (A), 2.4.3 Focus Order (A)"
  */
 export function formatCriteriaComment(criteria: WcagCriterion[]): string {
     if (criteria.length === 0) {

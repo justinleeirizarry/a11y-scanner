@@ -6,17 +6,17 @@
  */
 import { Effect } from 'effect';
 import type { Page } from 'playwright';
-import { StagehandScanner } from '../../scanner/stagehand/index.js';
-import { TestGenerator } from '../../scanner/stagehand/test-generator.js';
-import type { ElementDiscovery } from '../../types.js';
-import { logger } from '../../utils/logger.js';
+import { StagehandScanner } from '../stagehand/scanner.js';
+import { TestGenerator } from '../stagehand/test-generator.js';
+import type { ElementDiscovery } from '../types.js';
+import { logger } from '@accessibility-toolkit/core';
 import {
     EffectTestGenNotInitializedError,
     EffectTestGenInitError,
     EffectTestGenNavigationError,
     EffectTestGenDiscoveryError,
-} from '../../errors/effect-errors.js';
-import type { TestGenerationConfig, ITestGenerationService } from './types.js';
+} from '../errors.js';
+import type { TestGenerationConfig, ITestGenerationService } from './testgen-types.js';
 
 /**
  * TestGenerationService - Clean interface for AI-driven test generation

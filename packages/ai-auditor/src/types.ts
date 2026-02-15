@@ -290,6 +290,27 @@ export interface WcagAuditResult {
 }
 
 // ============================================================================
+// Stagehand Scanner Config Types
+// ============================================================================
+
+/**
+ * Configuration for the Stagehand AI scanner
+ */
+export interface StagehandConfig {
+    enabled: boolean;
+    model?: string;
+    apiKey?: string;
+    verbose?: boolean;
+}
+
+/**
+ * Results from Stagehand element discovery
+ */
+export interface StagehandResults {
+    elements: ElementDiscovery[];
+}
+
+// ============================================================================
 // Test Generation Types
 // ============================================================================
 

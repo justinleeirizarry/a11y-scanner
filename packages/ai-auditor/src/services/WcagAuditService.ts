@@ -6,14 +6,14 @@
  */
 import { Effect } from 'effect';
 import type { Page } from 'playwright';
-import { StagehandWcagAuditAgent } from '../../scanner/stagehand/wcag-audit-agent.js';
-import type { WcagAuditOptions, WcagAuditResult } from '../../types.js';
-import { logger } from '../../utils/logger.js';
+import { StagehandWcagAuditAgent } from '../stagehand/wcag-audit-agent.js';
+import type { WcagAuditOptions, WcagAuditResult } from '../types.js';
+import { logger } from '@accessibility-toolkit/core';
 import {
     EffectWcagAuditInitError,
     EffectWcagAuditError,
     EffectWcagAuditNotInitializedError,
-} from '../../errors/effect-errors.js';
+} from '../errors.js';
 import type { IWcagAuditService } from './types.js';
 
 /**

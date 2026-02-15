@@ -1,4 +1,4 @@
-import type { ElementDiscovery } from "../../types.js";
+import type { ElementDiscovery } from "../types.js";
 import { getRelatedCriteria, sortByWcagPriority, formatCriteriaComment } from './wcag-element-map.js';
 
 export class TestGenerator {
@@ -15,7 +15,7 @@ test('Accessibility Interaction Test', async ({ page }) => {
     test.setTimeout(300000);
 
     const originalUrl = '${url}';
-    
+
     // 1. Set viewport to ensure responsive elements are visible
     await page.setViewportSize({ width: 1920, height: 1080 });
 
@@ -42,7 +42,7 @@ test('Accessibility Interaction Test', async ({ page }) => {
 
     // 4. Interact with discovered elements
     ${interactions}
-    
+
     console.log('\\n✅ Test completed - checked all ${elements.length} discovered elements');
 });
 `;

@@ -25,8 +25,15 @@ vi.mock('@accessibility-toolkit/core', async (importOriginal) => {
         ...actual as object,
         runScanAsPromise: mockRunScanAsPromise,
         AppLayer: {},
-        createTestGenerationService: vi.fn(() => mockTestGenService),
         generateAndExport: mockGenerateAndExport,
+    };
+});
+
+vi.mock('@accessibility-toolkit/ai-auditor', async (importOriginal) => {
+    const actual = await importOriginal();
+    return {
+        ...actual as object,
+        createTestGenerationService: vi.fn(() => mockTestGenService),
     };
 });
 
@@ -40,7 +47,8 @@ vi.mock(import('fs/promises'), async (importOriginal) => {
     };
 });
 
-import type { ScanResults, TestGenerationResults } from '@accessibility-toolkit/core';
+import type { ScanResults } from '@accessibility-toolkit/core';
+import type { TestGenerationResults } from '@accessibility-toolkit/ai-auditor';
 
 describe('App Component', () => {
     // Store original process.exitCode

@@ -21,10 +21,6 @@ import {
     validateBrowser,
     runScanAsPromise,
     AppLayer,
-    createTestGenerationService,
-    createKeyboardTestService,
-    createTreeAnalysisService,
-    createWcagAuditService,
     EXIT_CODES,
     setExitCode,
     exitWithCode,
@@ -36,6 +32,12 @@ import {
     generateAndExport,
     ScanError,
 } from '@accessibility-toolkit/core';
+import {
+    createTestGenerationService,
+    createKeyboardTestService,
+    createTreeAnalysisService,
+    createWcagAuditService,
+} from '@accessibility-toolkit/ai-auditor';
 
 // Load configuration from environment variables (REACT_A11Y_*)
 if (hasEnvConfig()) {

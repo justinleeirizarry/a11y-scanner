@@ -33,7 +33,8 @@
         "@accessibility-toolkit/core": "workspace:*",
         "@browserbasehq/stagehand": "^3.0.3",
         "@browserbasehq/sdk": "^2.0.0",
-        "effect": "^3.19.15"
+        "effect": "^3.19.15",
+        "zod": "^3.22.0"
     },
     "devDependencies": {
         "@types/node": "^20.10.0",

@@ -48,10 +48,109 @@ export {
 } from './browserbase/session.js';
 
 // =============================================================================
+// Stagehand Scanners
+// =============================================================================
+
+export {
+    StagehandScanner,
+    StagehandKeyboardTester,
+    StagehandTreeAnalyzer,
+    StagehandWcagAuditAgent,
+    TestGenerator,
+    // Prompt builders
+    buildWcagAuditPrompt,
+    buildCriteriaList,
+    buildFocusedAuditPrompt,
+    getKeyboardCriteria,
+    getVisualCriteria,
+    getFormsCriteria,
+    getNavigationCriteria,
+    getInitialAnalysisInstruction,
+    getFinalSummaryInstruction,
+    // Tree rules
+    VALID_LANDMARK_ROLES,
+    INTERACTIVE_ROLES,
+    ROLES_REQUIRING_NAME,
+    HEADING_ROLES,
+    FORM_CONTROL_ROLES,
+    VALID_ARIA_ROLES,
+    TREE_ISSUE_WCAG_MAP,
+    isValidRole,
+    isLandmarkRole,
+    isInteractiveRole,
+    roleRequiresName,
+    isFormControlRole,
+    getHeadingLevelFromRole,
+    // WCAG element mapping
+    getRelatedCriteria,
+    sortByWcagPriority,
+    formatCriteriaComment,
+} from './stagehand/index.js';
+
+// =============================================================================
+// Services
+// =============================================================================
+
+export {
+    // Keyboard Test Service
+    KeyboardTestService,
+    createKeyboardTestService,
+    // Tree Analysis Service
+    TreeAnalysisService,
+    createTreeAnalysisService,
+    // WCAG Audit Service
+    WcagAuditService,
+    createWcagAuditService,
+    // Test Generation Service
+    TestGenerationService,
+    createTestGenerationService,
+    // Service interfaces
+    type IKeyboardTestService,
+    type ITreeAnalysisService,
+    type IWcagAuditService,
+    type TestGenerationConfig,
+    type ITestGenerationService,
+} from './services/index.js';
+
+// =============================================================================
+// Errors
+// =============================================================================
+
+export {
+    // Test Generation Errors
+    EffectTestGenNotInitializedError,
+    EffectTestGenInitError,
+    EffectTestGenNavigationError,
+    EffectTestGenDiscoveryError,
+    // Keyboard Test Errors
+    EffectKeyboardTestInitError,
+    EffectKeyboardTestError,
+    EffectKeyboardTestNotInitializedError,
+    // Tree Analysis Errors
+    EffectTreeAnalysisInitError,
+    EffectTreeAnalysisError,
+    EffectTreeAnalysisNotInitializedError,
+    // WCAG Audit Errors
+    EffectWcagAuditInitError,
+    EffectWcagAuditError,
+    EffectWcagAuditNotInitializedError,
+    // Error type unions
+    type TestGenErrors,
+    type KeyboardTestErrors,
+    type TreeAnalysisErrors,
+    type WcagAuditErrors,
+    type StagehandErrors,
+} from './errors.js';
+
+// =============================================================================
 // Types
 // =============================================================================
 
 export type {
+    // Stagehand config types
+    StagehandConfig,
+    StagehandResults,
+
     // Keyboard testing types
     StagehandKeyboardConfig,
     StagehandKeyboardIssue,
@@ -78,15 +177,3 @@ export type {
     TestGenerationOptions,
     TestGenerationResults,
 } from './types.js';
-
-// NOTE: Stagehand scanners and services are currently provided by @accessibility-toolkit/core
-// They will be migrated to this package in a future release.
-// For now, use imports from @accessibility-toolkit/core for:
-// - StagehandKeyboardTester
-// - AccessibilityTreeAnalyzer
-// - WcagAuditAgent
-// - StagehandTestGenerator
-// - KeyboardTestService
-// - TreeAnalysisService
-// - WcagAuditService
-// - TestGenerationService

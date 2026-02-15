@@ -4,8 +4,8 @@
  * System prompts and instructions for the WCAG audit agent.
  */
 
-import type { WcagLevel } from '../../types.js';
-import { WCAG_CRITERIA, getAllCriteriaByLevel } from '../../data/index.js';
+import type { WcagLevel } from '../types.js';
+import { WCAG_CRITERIA, getAllCriteriaByLevel } from '@accessibility-toolkit/core';
 
 /**
  * Build the main WCAG audit system prompt

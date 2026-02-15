@@ -10,7 +10,7 @@ import type {
     TreeAnalysisResult,
     WcagAuditOptions,
     WcagAuditResult,
-} from '../../types.js';
+} from '../types.js';
 import type {
     EffectKeyboardTestInitError,
     EffectKeyboardTestError,
@@ -21,7 +21,7 @@ import type {
     EffectWcagAuditInitError,
     EffectWcagAuditError,
     EffectWcagAuditNotInitializedError,
-} from '../../errors/effect-errors.js';
+} from '../errors.js';
 
 /**
  * Effect-first Keyboard Test Service interface

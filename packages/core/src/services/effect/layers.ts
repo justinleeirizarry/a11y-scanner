@@ -17,14 +17,10 @@ import {
     BrowserService,
     ScannerService,
     ResultsProcessorService,
-    TestGenerationService,
     type EffectBrowserService,
     type EffectScannerService,
     type EffectResultsProcessorService,
-    type EffectTestGenerationService,
 } from './tags.js';
-import { createTestGenerationService } from '../testgen/index.js';
-import { TestGenerationService as TestGenerationServiceClass } from '../testgen/TestGenerationService.js';
 
 // ============================================================================
 // Browser Service Layer
@@ -95,26 +91,3 @@ export const BrowserServiceManual = Layer.succeed(
     createBrowserService() as EffectBrowserService
 );
 
-// ============================================================================
-// Test Generation Service Layer
-// ============================================================================
-
-/**
- * TestGenerationService layer with scoped lifecycle
- *
- * The service now returns Effects directly, so no wrapping is needed.
- * The scanner is automatically closed when the scope ends.
- */
-export const TestGenerationServiceLive = Layer.scoped(
-    TestGenerationService,
-    Effect.gen(function* () {
-        const instance = createTestGenerationService() as TestGenerationServiceClass;
-
-        // Register cleanup finalizer - runs when scope ends
-        yield* Effect.addFinalizer(() =>
-            Effect.catchAll(instance.close(), () => Effect.void)
-        );
-
-        return instance as EffectTestGenerationService;
-    })
-);

@@ -13,9 +13,8 @@ import type {
     TreeIssueType,
     A11yTreeNode,
     WcagCriterionInfo,
-} from "../../types.js";
-import { logger } from "../../utils/logger.js";
-import { getCriterionById } from "../../data/index.js";
+} from "../types.js";
+import { logger, getCriterionById } from "@accessibility-toolkit/core";
 import {
     TREE_ISSUE_WCAG_MAP,
     isValidRole,

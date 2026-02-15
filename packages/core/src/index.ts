@@ -36,23 +36,6 @@ export {
     type CIResult,
     type IResultsProcessorService,
 
-    // Test Generation Service
-    TestGenerationService,
-    createTestGenerationService,
-    type TestGenerationConfig,
-    type ITestGenerationService,
-
-    // Stagehand Services (Keyboard, Tree, WCAG Audit)
-    KeyboardTestService,
-    createKeyboardTestService,
-    TreeAnalysisService,
-    createTreeAnalysisService,
-    WcagAuditService,
-    createWcagAuditService,
-    type IKeyboardTestService,
-    type ITreeAnalysisService,
-    type IWcagAuditService,
-
     // Orchestration Types (service migrated to Effect-based implementation)
     type BaseScanOptions,
     type ScanOperationResult,
@@ -75,11 +58,9 @@ export {
     BrowserService as BrowserServiceTag,
     ScannerService as ScannerServiceTag,
     ResultsProcessorService as ResultsProcessorServiceTag,
-    TestGenerationService as TestGenerationServiceTag,
     type EffectBrowserService,
     type EffectScannerService,
     type EffectResultsProcessorService,
-    type EffectTestGenerationService,
     type ScanWorkflowServices,
 
     // Effect layers
@@ -89,7 +70,6 @@ export {
     BrowserServiceLive,
     ScannerServiceLive,
     ResultsProcessorServiceLive,
-    TestGenerationServiceLive,
 } from './services/effect/index.js';
 
 // =============================================================================
@@ -125,34 +105,6 @@ export type {
 
     // Keyboard testing types
     KeyboardTestResults,
-
-    // Stagehand/test generation types
-    StagehandConfig,
-    ElementType,
-    ElementDiscovery,
-    StagehandResults,
-    TestGenerationOptions,
-    TestGenerationResults,
-
-    // Stagehand keyboard testing types
-    StagehandKeyboardConfig,
-    StagehandKeyboardIssue,
-    StagehandKeyboardIssueType,
-    StagehandKeyboardResults,
-    TabOrderEntry,
-
-    // Stagehand tree analysis types
-    TreeAnalysisConfig,
-    TreeAnalysisResult,
-    TreeIssue,
-    TreeIssueType,
-    A11yTreeNode,
-
-    // Stagehand WCAG audit types
-    WcagAuditOptions,
-    WcagAuditResult,
-    AuditFinding,
-    AuditStatus,
 
     // Scan types
     ScanResults,
@@ -199,35 +151,11 @@ export {
     EffectFileSystemError,
     EffectServiceStateError,
     EffectScanDataError,
-    EffectTestGenNotInitializedError,
-    EffectTestGenInitError,
-    EffectTestGenNavigationError,
-    EffectTestGenDiscoveryError,
-
-    // Keyboard test errors
-    EffectKeyboardTestInitError,
-    EffectKeyboardTestError,
-    EffectKeyboardTestNotInitializedError,
-
-    // Tree analysis errors
-    EffectTreeAnalysisInitError,
-    EffectTreeAnalysisError,
-    EffectTreeAnalysisNotInitializedError,
-
-    // WCAG audit errors
-    EffectWcagAuditInitError,
-    EffectWcagAuditError,
-    EffectWcagAuditNotInitializedError,
 
     // Error type unions
     type BrowserErrors,
     type ScanErrors,
     type ValidationErrors,
-    type TestGenErrors,
-    type KeyboardTestErrors,
-    type TreeAnalysisErrors,
-    type WcagAuditErrors,
-    type StagehandErrors,
     type ScanWorkflowErrors,
 } from './errors/effect-errors.js';
 

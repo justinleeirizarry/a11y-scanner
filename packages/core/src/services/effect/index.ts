@@ -10,11 +10,9 @@ export {
     BrowserService,
     ScannerService,
     ResultsProcessorService,
-    TestGenerationService,
     type EffectBrowserService,
     type EffectScannerService,
     type EffectResultsProcessorService,
-    type EffectTestGenerationService,
     type ScanWorkflowServices,
 } from './tags.js';
 
@@ -24,7 +22,6 @@ export {
     BrowserServiceManual,
     ScannerServiceLive,
     ResultsProcessorServiceLive,
-    TestGenerationServiceLive,
 } from './layers.js';
 
 // Composed Application Layers

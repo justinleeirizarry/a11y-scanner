@@ -6,14 +6,14 @@
  */
 import { Effect } from 'effect';
 import type { Page } from 'playwright';
-import { StagehandTreeAnalyzer } from '../../scanner/stagehand/a11y-tree-analyzer.js';
-import type { TreeAnalysisConfig, TreeAnalysisResult } from '../../types.js';
-import { logger } from '../../utils/logger.js';
+import { StagehandTreeAnalyzer } from '../stagehand/a11y-tree-analyzer.js';
+import type { TreeAnalysisConfig, TreeAnalysisResult } from '../types.js';
+import { logger } from '@accessibility-toolkit/core';
 import {
     EffectTreeAnalysisInitError,
     EffectTreeAnalysisError,
     EffectTreeAnalysisNotInitializedError,
-} from '../../errors/effect-errors.js';
+} from '../errors.js';
 import type { ITreeAnalysisService } from './types.js';
 
 /**

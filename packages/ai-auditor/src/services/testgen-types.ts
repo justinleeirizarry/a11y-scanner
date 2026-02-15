@@ -3,13 +3,13 @@
  */
 import type { Effect } from 'effect';
 import type { Page } from 'playwright';
-import type { ElementDiscovery, TestGenerationResults } from '../../types.js';
+import type { ElementDiscovery } from '../types.js';
 import type {
     EffectTestGenNotInitializedError,
     EffectTestGenInitError,
     EffectTestGenNavigationError,
     EffectTestGenDiscoveryError,
-} from '../../errors/effect-errors.js';
+} from '../errors.js';
 
 export interface TestGenerationConfig {
     model?: string;
@@ -57,4 +57,3 @@ export interface ITestGenerationService {
      */
     isInitialized(): Effect.Effect<boolean>;
 }
-

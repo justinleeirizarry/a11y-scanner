@@ -11,24 +11,28 @@ import StagehandResults from './components/StagehandResults.js';
 import {
     runScanAsPromise,
     AppLayer,
-    createTestGenerationService,
-    createKeyboardTestService,
-    createTreeAnalysisService,
-    createWcagAuditService,
     EXIT_CODES,
     setExitCode,
     generateAndExport,
 } from '@accessibility-toolkit/core';
+import {
+    createTestGenerationService,
+    createKeyboardTestService,
+    createTreeAnalysisService,
+    createWcagAuditService,
+} from '@accessibility-toolkit/ai-auditor';
 import { getReactBundlePath } from '@accessibility-toolkit/react';
 import type {
     ScanResults,
-    TestGenerationResults as TestGenResults,
     BrowserType,
+    WcagLevel,
+} from '@accessibility-toolkit/core';
+import type {
+    TestGenerationResults as TestGenResults,
     StagehandKeyboardResults,
     TreeAnalysisResult,
     WcagAuditResult,
-    WcagLevel,
-} from '@accessibility-toolkit/core';
+} from '@accessibility-toolkit/ai-auditor';
 
 type AppMode = 'scan' | 'generate-test' | 'stagehand-keyboard' | 'stagehand-tree' | 'wcag-audit';
 

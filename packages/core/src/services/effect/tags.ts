@@ -21,15 +21,9 @@ import {
     EffectReactNotDetectedError,
     EffectScannerInjectionError,
     EffectScanDataError,
-    EffectTestGenNotInitializedError,
-    EffectTestGenInitError,
-    EffectTestGenNavigationError,
-    EffectTestGenDiscoveryError,
     type BrowserErrors,
     type ScanErrors,
 } from '../../errors/effect-errors.js';
-import type { TestGenerationConfig } from '../testgen/types.js';
-import type { ElementDiscovery } from '../../types.js';
 
 // ============================================================================
 // Browser Service
@@ -175,69 +169,10 @@ export class ResultsProcessorService extends Context.Tag('ResultsProcessorServic
 >() {}
 
 // ============================================================================
-// Test Generation Service
-// ============================================================================
-
-/**
- * Test Generation Service interface for Effect
- *
- * Manages AI-driven test generation using Stagehand.
- */
-export interface EffectTestGenerationService {
-    /**
-     * Initialize the Stagehand scanner
-     */
-    readonly init: (config?: TestGenerationConfig) => Effect.Effect<void, EffectTestGenInitError>;
-
-    /**
-     * Get the underlying page instance
-     */
-    readonly getPage: () => Effect.Effect<Page, EffectTestGenNotInitializedError>;
-
-    /**
-     * Navigate to a URL
-     */
-    readonly navigateTo: (
-        url: string
-    ) => Effect.Effect<void, EffectTestGenNotInitializedError | EffectTestGenNavigationError>;
-
-    /**
-     * Discover interactive elements on the page using AI
-     */
-    readonly discoverElements: () => Effect.Effect<
-        ElementDiscovery[],
-        EffectTestGenNotInitializedError | EffectTestGenDiscoveryError
-    >;
-
-    /**
-     * Generate a Playwright test file from discovered elements
-     */
-    readonly generateTest: (url: string, elements: ElementDiscovery[]) => Effect.Effect<string>;
-
-    /**
-     * Close the scanner and clean up resources
-     */
-    readonly close: () => Effect.Effect<void>;
-
-    /**
-     * Check if service is initialized
-     */
-    readonly isInitialized: () => Effect.Effect<boolean>;
-}
-
-/**
- * Tag for TestGenerationService dependency injection
- */
-export class TestGenerationService extends Context.Tag('TestGenerationService')<
-    TestGenerationService,
-    EffectTestGenerationService
->() {}
-
-// ============================================================================
 // Convenience type aliases
 // ============================================================================
 
 /**
  * All service dependencies for the scan workflow
  */
-export type ScanWorkflowServices = BrowserService | ScannerService | ResultsProcessorService | TestGenerationService;
+export type ScanWorkflowServices = BrowserService | ScannerService | ResultsProcessorService;

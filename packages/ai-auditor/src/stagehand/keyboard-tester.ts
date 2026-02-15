@@ -12,9 +12,8 @@ import type {
     StagehandKeyboardResults,
     TabOrderEntry,
     WcagCriterionInfo,
-} from "../../types.js";
-import { logger } from "../../utils/logger.js";
-import { getCriterionById } from "../../data/index.js";
+} from "../types.js";
+import { logger, getCriterionById } from "@accessibility-toolkit/core";
 
 // WCAG criteria relevant to keyboard accessibility
 const KEYBOARD_WCAG_CRITERIA = {

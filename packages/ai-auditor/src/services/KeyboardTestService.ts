@@ -6,14 +6,14 @@
  */
 import { Effect } from 'effect';
 import type { Page } from 'playwright';
-import { StagehandKeyboardTester } from '../../scanner/stagehand/keyboard-tester.js';
-import type { StagehandKeyboardConfig, StagehandKeyboardResults } from '../../types.js';
-import { logger } from '../../utils/logger.js';
+import { StagehandKeyboardTester } from '../stagehand/keyboard-tester.js';
+import type { StagehandKeyboardConfig, StagehandKeyboardResults } from '../types.js';
+import { logger } from '@accessibility-toolkit/core';
 import {
     EffectKeyboardTestInitError,
     EffectKeyboardTestError,
     EffectKeyboardTestNotInitializedError,
-} from '../../errors/effect-errors.js';
+} from '../errors.js';
 import type { IKeyboardTestService } from './types.js';
 
 /**
