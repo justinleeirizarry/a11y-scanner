@@ -33,6 +33,7 @@ import {
     logger,
     LogLevel,
     generateAndExport,
+    ScanError,
 } from '@accessibility-toolkit/core';
 
 // Load configuration from environment variables (REACT_A11Y_*)
@@ -512,27 +513,10 @@ if (!isTTY) {
                 }
             }
         } catch (error) {
-            // Extract meaningful error message from Effect FiberFailure/TaggedErrors
-            let errorMessage: string;
-            const err = error as Record<string, unknown>;
-            // Effect FiberFailure wraps the actual cause
-            const causeKey = Symbol.for('effect/Runtime/FiberFailure/Cause');
-            const cause = err && typeof err === 'object' ? (err as Record<symbol, unknown>)[causeKey] as Record<string, unknown> | undefined : undefined;
-            const failure = (cause as { _tag?: string; error?: Record<string, unknown> })?.error;
-            if (failure && typeof failure === 'object' && '_tag' in failure) {
-                const tag = String(failure._tag);
-                const reason = failure.reason ? String(failure.reason) : undefined;
-                const errUrl = failure.url ? String(failure.url) : undefined;
-                errorMessage = reason
-                    ? `${tag}: ${reason}${errUrl ? ` (${errUrl})` : ''}`
-                    : `${tag}${errUrl ? `: ${errUrl}` : ''}`;
-            } else if (error instanceof Error) {
-                errorMessage = error.message;
-            } else {
-                errorMessage = String(error);
-            }
+            const errorMessage = error instanceof Error ? error.message : String(error);
             console.error(JSON.stringify({
                 error: errorMessage,
+                ...(error instanceof ScanError ? { tag: error.tag, details: error.details } : {}),
                 stack: error instanceof Error ? error.stack : undefined,
             }, null, 2));
             setExitCode(EXIT_CODES.RUNTIME_ERROR);

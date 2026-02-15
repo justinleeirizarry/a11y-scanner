@@ -179,6 +179,9 @@ export type {
 // =============================================================================
 
 
+// ScanError - thrown by runScanAsPromise for well-formatted error messages
+export { ScanError, formatTaggedError } from './errors/scan-error.js';
+
 // Effect-compatible errors (Data.TaggedError) - preferred for Effect workflows
 export {
     // Effect error types (prefixed)

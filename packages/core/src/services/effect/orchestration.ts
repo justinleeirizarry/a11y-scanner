@@ -4,7 +4,7 @@
  * This module provides Effect-based scan workflows with proper error typing
  * and automatic resource management.
  */
-import { Effect, pipe, type Layer } from 'effect';
+import { Effect, Exit, Cause, Chunk, Option, pipe, type Layer } from 'effect';
 import { mkdir, writeFile } from 'fs/promises';
 import { dirname } from 'path';
 import type { ScanResults } from '../../types.js';
@@ -21,6 +21,7 @@ import {
     type BrowserErrors,
     type ScanErrors,
 } from '../../errors/effect-errors.js';
+import { ScanError, formatTaggedError } from '../../errors/scan-error.js';
 import { createRetrySchedule } from '../../utils/effect-retry.js';
 import { getConfig } from '../../config/index.js';
 
@@ -262,11 +263,29 @@ const writeResultsToFile = (
 export const runScanAsPromise = (
     options: EffectScanOptions,
     layer: Layer.Layer<BrowserService | ScannerService | ResultsProcessorService, never, never>
-): Promise<EffectScanResult> =>
-    Effect.runPromise(
-        pipe(
-            performScan(options),
-            Effect.provide(layer),
-            Effect.scoped
-        )
+): Promise<EffectScanResult> => {
+    const program = pipe(
+        performScan(options),
+        Effect.provide(layer),
+        Effect.scoped
     );
+    return Effect.runPromiseExit(program).then((exit) => {
+        if (Exit.isSuccess(exit)) {
+            return exit.value;
+        }
+        // Extract typed failures from the Cause
+        const failures = Cause.failures(exit.cause);
+        const firstError = Chunk.head(failures);
+        if (Option.isSome(firstError)) {
+            const tagged = firstError.value as { _tag: string; [key: string]: unknown };
+            throw new ScanError(
+                tagged._tag,
+                formatTaggedError(tagged),
+                { ...tagged },
+                tagged
+            );
+        }
+        // Defects or interrupts — no typed error available
+        throw new Error(Cause.pretty(exit.cause));
+    });
+};
