@@ -87,7 +87,6 @@ export {
     browserConfigSchema,
     scanConfigSchema,
     frameworkConfigSchema,
-    stagehandConfigSchema,
     type ScannerConfigSchema,
     type PartialScannerConfig,
     type ConfigValidationResult,

@@ -31,11 +31,6 @@ const ENV_VAR_MAP = {
     SCAN_MAX_RETRIES: { path: ['scan', 'maxRetries'], type: 'number' },
     SCAN_RETRY_DELAY_BASE: { path: ['scan', 'retryDelayBase'], type: 'number' },
     SCAN_MAX_ELEMENTS_TO_CHECK: { path: ['scan', 'maxElementsToCheck'], type: 'number' },
-
-    // Stagehand config
-    STAGEHAND_ENABLED: { path: ['stagehand', 'enabled'], type: 'boolean' },
-    STAGEHAND_MODEL: { path: ['stagehand', 'model'], type: 'string' },
-    STAGEHAND_VERBOSE: { path: ['stagehand', 'verbose'], type: 'boolean' },
 } as const;
 
 /**
@@ -189,21 +184,6 @@ export function getEnvVarDocs(): Record<string, { description: string; type: str
             description: 'Maximum elements to check for React detection',
             type: 'number',
             default: '100',
-        },
-        [`${ENV_PREFIX}STAGEHAND_ENABLED`]: {
-            description: 'Enable Stagehand AI test generation',
-            type: 'boolean',
-            default: 'false',
-        },
-        [`${ENV_PREFIX}STAGEHAND_MODEL`]: {
-            description: 'AI model for test generation',
-            type: 'string',
-            default: 'anthropic/claude-3-5-sonnet-latest',
-        },
-        [`${ENV_PREFIX}STAGEHAND_VERBOSE`]: {
-            description: 'Enable verbose Stagehand logging',
-            type: 'boolean',
-            default: 'false',
         },
     };
 }

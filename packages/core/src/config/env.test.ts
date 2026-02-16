@@ -63,25 +63,16 @@ describe('Environment Variable Configuration', () => {
             expect(config.browser?.timeout).toBe(60000);
         });
 
-        it('should parse string env vars', () => {
-            process.env.REACT_A11Y_STAGEHAND_MODEL = 'openai/gpt-4';
-
-            const config = loadEnvConfig();
-            expect(config.stagehand?.model).toBe('openai/gpt-4');
-        });
-
         it('should handle multiple env vars', () => {
             process.env.REACT_A11Y_BROWSER_HEADLESS = 'false';
             process.env.REACT_A11Y_BROWSER_TIMEOUT = '45000';
             process.env.REACT_A11Y_SCAN_MAX_RETRIES = '5';
-            process.env.REACT_A11Y_STAGEHAND_ENABLED = 'true';
 
             const config = loadEnvConfig();
 
             expect(config.browser?.headless).toBe(false);
             expect(config.browser?.timeout).toBe(45000);
             expect(config.scan?.maxRetries).toBe(5);
-            expect(config.stagehand?.enabled).toBe(true);
         });
 
         it('should ignore invalid boolean values', () => {
@@ -141,19 +132,6 @@ describe('Environment Variable Configuration', () => {
             });
         });
 
-        it('should load all stagehand config options', () => {
-            process.env.REACT_A11Y_STAGEHAND_ENABLED = 'true';
-            process.env.REACT_A11Y_STAGEHAND_MODEL = 'custom/model';
-            process.env.REACT_A11Y_STAGEHAND_VERBOSE = 'true';
-
-            const config = loadEnvConfig();
-
-            expect(config.stagehand).toEqual({
-                enabled: true,
-                model: 'custom/model',
-                verbose: true,
-            });
-        });
     });
 
     describe('hasEnvConfig', () => {
@@ -172,7 +150,7 @@ describe('Environment Variable Configuration', () => {
         });
 
         it('should detect any supported env var', () => {
-            process.env.REACT_A11Y_STAGEHAND_VERBOSE = 'true';
+            process.env.REACT_A11Y_SCAN_MAX_RETRIES = '5';
             expect(hasEnvConfig()).toBe(true);
         });
     });
@@ -191,7 +169,6 @@ describe('Environment Variable Configuration', () => {
             expect(vars).toContain('REACT_A11Y_BROWSER_HEADLESS');
             expect(vars).toContain('REACT_A11Y_BROWSER_TIMEOUT');
             expect(vars).toContain('REACT_A11Y_SCAN_MAX_RETRIES');
-            expect(vars).toContain('REACT_A11Y_STAGEHAND_ENABLED');
         });
 
         it('should have correct prefix on all vars', () => {

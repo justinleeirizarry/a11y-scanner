@@ -74,25 +74,12 @@ export const frameworkConfigSchema = z.object({
 });
 
 /**
- * Stagehand (AI test generation) configuration schema
- */
-export const stagehandConfigSchema = z.object({
-    /** Enable Stagehand AI test generation */
-    enabled: z.boolean().default(false),
-    /** Model to use for test generation */
-    model: z.string().default('anthropic/claude-3-5-sonnet-latest'),
-    /** Enable verbose logging */
-    verbose: z.boolean().default(false),
-});
-
-/**
  * Complete scanner configuration schema
  */
 export const scannerConfigSchema = z.object({
     browser: browserConfigSchema.default({}),
     scan: scanConfigSchema.default({}),
     framework: frameworkConfigSchema.default({}),
-    stagehand: stagehandConfigSchema.default({}),
 });
 
 /**

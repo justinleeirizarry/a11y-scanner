@@ -7,7 +7,6 @@ import {
     browserConfigSchema,
     scanConfigSchema,
     frameworkConfigSchema,
-    stagehandConfigSchema,
     validateConfig,
     parseConfig,
     formatConfigErrors,
@@ -114,32 +113,6 @@ describe('Config Schema Validation', () => {
         });
     });
 
-    describe('stagehandConfigSchema', () => {
-        it('should accept valid stagehand config', () => {
-            const config = {
-                enabled: true,
-                model: 'openai/gpt-4',
-                verbose: true,
-            };
-
-            const result = stagehandConfigSchema.safeParse(config);
-            expect(result.success).toBe(true);
-        });
-
-        it('should apply defaults', () => {
-            const result = stagehandConfigSchema.parse({});
-
-            expect(result.enabled).toBe(false);
-            expect(result.model).toBe('anthropic/claude-3-5-sonnet-latest');
-            expect(result.verbose).toBe(false);
-        });
-
-        it('should reject invalid model type', () => {
-            const result = stagehandConfigSchema.safeParse({ model: 123 });
-            expect(result.success).toBe(false);
-        });
-    });
-
     describe('scannerConfigSchema (full config)', () => {
         it('should accept valid full config', () => {
             const config = {
@@ -153,9 +126,6 @@ describe('Config Schema Validation', () => {
                 framework: {
                     patterns: ['CustomWrapper'],
                 },
-                stagehand: {
-                    enabled: true,
-                },
             };
 
             const result = scannerConfigSchema.safeParse(config);
@@ -168,7 +138,6 @@ describe('Config Schema Validation', () => {
             expect(result.browser.headless).toBe(true);
             expect(result.scan.maxRetries).toBe(3);
             expect(result.framework.patterns.length).toBeGreaterThan(0);
-            expect(result.stagehand.enabled).toBe(false);
         });
 
         it('should merge partial config with defaults', () => {
@@ -257,12 +226,10 @@ describe('Config Schema Validation', () => {
             const _headless: boolean = config.browser.headless;
             const _timeout: number = config.browser.timeout;
             const _patterns: string[] = config.framework.patterns;
-            const _model: string = config.stagehand.model;
 
             expect(_headless).toBe(true);
             expect(_timeout).toBe(30000);
             expect(_patterns).toBeInstanceOf(Array);
-            expect(typeof _model).toBe('string');
         });
     });
 
