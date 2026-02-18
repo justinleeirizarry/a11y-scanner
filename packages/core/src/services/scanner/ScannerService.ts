@@ -10,6 +10,7 @@ import { dirname, join } from 'path';
 import type { BrowserScanData } from '../../types.js';
 import { logger } from '../../utils/logger.js';
 import { EffectScannerInjectionError, EffectScanDataError } from '../../errors/effect-errors.js';
+import { decodeBrowserScanDataLenient } from '../../schemas/decode.js';
 import type { ScanExecutionOptions, IScannerService } from './types.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -112,7 +113,7 @@ export class ScannerService implements IScannerService {
 
         return Effect.gen(this, function* () {
             // Execute the scan in the browser context
-            const rawData = yield* Effect.tryPromise({
+            const rawEvaluateData = yield* Effect.tryPromise({
                 try: async () => {
                     // Block navigation during scan to prevent context destruction
                     return await page.evaluate(
@@ -139,12 +140,15 @@ export class ScannerService implements IScannerService {
                             }
                         },
                         { scanTags: tags, runKeyboardTests: includeKeyboardTests }
-                    ) as BrowserScanData;
+                    );
                 },
                 catch: (error) => new EffectScanDataError({
                     reason: error instanceof Error ? error.message : String(error)
                 })
             });
+
+            // Validate browser data through schema (lenient: logs warnings, falls back to raw cast)
+            const rawData = yield* decodeBrowserScanDataLenient(rawEvaluateData);
 
             // Validate that we got results
             if (!rawData) {

@@ -197,7 +197,7 @@ export function buildDomToComponentMap(components: ComponentInfo[]): Map<Element
 
     for (const component of components) {
         if (component.domNode) {
-            map.set(component.domNode, component);
+            map.set(component.domNode as Element, component);
         }
     }
 

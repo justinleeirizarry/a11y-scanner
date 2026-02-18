@@ -269,3 +269,9 @@ export {
     type WcagCriterion,
     type AxeWcagMapping,
 } from './data/index.js';
+
+// =============================================================================
+// Schemas — Effect Schema definitions (runtime validation + types)
+// =============================================================================
+
+export * as Schemas from './schemas/index.js';
