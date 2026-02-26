@@ -452,7 +452,7 @@ if (!isTTY) {
                     outputFile: cli.flags.output,
                     ciMode: cli.flags.ci,
                     ciThreshold: cli.flags.threshold,
-                    reactBundlePath: getReactBundlePath(),
+                    reactBundlePath: cli.flags.react ? getReactBundlePath() : undefined,
                 }, AppLayer);
 
                 // In quiet mode, output plain text; otherwise full JSON
@@ -539,6 +539,7 @@ if (!isTTY) {
             mode={appMode}
             url={url}
             browser={cli.flags.browser as BrowserType}
+            react={cli.flags.react}
             output={cli.flags.output}
             ci={cli.flags.ci}
             threshold={cli.flags.threshold}

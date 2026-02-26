@@ -161,8 +161,38 @@ describe('App Component', () => {
                 outputFile: undefined,
                 ciMode: false,
                 ciThreshold: 0,
-                reactBundlePath: expect.stringContaining('react-bundle.js'),
+                reactBundlePath: undefined,
             }, expect.anything());
+
+            unmount();
+        });
+
+        it('should pass reactBundlePath when react prop is true', async () => {
+            const mockResults = createMockScanResults(0);
+            mockRunScanAsPromise.mockResolvedValue(createMockScanResponse(mockResults));
+
+            const { unmount } = render(
+                <App
+                    mode="scan"
+                    url="http://localhost:3000"
+                    browser="chromium"
+                    ci={false}
+                    threshold={0}
+                    headless={true}
+                    react={true}
+                />
+            );
+
+            await vi.waitFor(() => {
+                expect(mockRunScanAsPromise).toHaveBeenCalled();
+            }, { timeout: 1000 });
+
+            expect(mockRunScanAsPromise).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    reactBundlePath: expect.stringContaining('react-bundle.js'),
+                }),
+                expect.anything()
+            );
 
             unmount();
         });

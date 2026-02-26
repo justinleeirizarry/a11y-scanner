@@ -49,6 +49,7 @@ interface AppProps {
     keyboardNav?: boolean;
     tree?: boolean;
     quiet?: boolean;
+    react?: boolean;
     generateTest?: boolean;
     testFile?: string;
     stagehandModel?: string;
@@ -80,6 +81,7 @@ const App: React.FC<AppProps> = ({
     keyboardNav,
     tree,
     quiet,
+    react,
     generateTest,
     testFile,
     stagehandModel,
@@ -263,7 +265,6 @@ const App: React.FC<AppProps> = ({
                 setScanState('scanning');
 
                 try {
-                    const rbp = getReactBundlePath();
                     const { results, ciPassed } = await runScanAsPromise({
                         url,
                         browser,
@@ -273,7 +274,7 @@ const App: React.FC<AppProps> = ({
                         outputFile: output,
                         ciMode: ci,
                         ciThreshold: threshold,
-                        reactBundlePath: rbp,
+                        reactBundlePath: react ? getReactBundlePath() : undefined,
                     }, AppLayer);
 
                     if (cancelled) return;
@@ -331,7 +332,7 @@ const App: React.FC<AppProps> = ({
         return () => {
             cancelled = true;
         };
-    }, [mode, url, browser, headless, ci, threshold, output, ai, tags, keyboardNav, tree, generateTest, stagehandModel, stagehandVerbose, maxTabPresses, includeFullTree, auditLevel, maxSteps, testFile, exit]);
+    }, [mode, url, browser, headless, ci, threshold, output, ai, tags, keyboardNav, tree, react, generateTest, stagehandModel, stagehandVerbose, maxTabPresses, includeFullTree, auditLevel, maxSteps, testFile, exit]);
 
     // Error state
     if (scanState === 'error' || testGenState === 'error' || stagehandState === 'error') {

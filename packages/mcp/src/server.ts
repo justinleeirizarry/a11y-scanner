@@ -14,6 +14,7 @@ import {
     loadEnvConfig,
     hasEnvConfig,
 } from "@accessibility-toolkit/core";
+import { getReactBundlePath } from "@accessibility-toolkit/react";
 
 // Configure logger to use stderr to avoid corrupting JSON-RPC on stdout
 logger.setUseStderr(true);
@@ -39,9 +40,10 @@ server.registerTool(
             browser: z.enum(["chromium", "firefox", "webkit"]).optional().default("chromium").describe("Browser to use for scanning"),
             mobile: z.boolean().optional().default(false).describe("Emulate a mobile device"),
             include_tree: z.boolean().optional().default(false).describe("Include the full accessibility tree in the response (can be large)"),
+            react: z.boolean().optional().default(false).describe("Enable React component attribution (requires a React app at the target URL)"),
         },
     },
-    async ({ url, browser, mobile, include_tree }) => {
+    async ({ url, browser, mobile, include_tree, react }) => {
         try {
             logger.info(`Starting scan for ${url} using ${browser}`);
 
@@ -50,6 +52,7 @@ server.registerTool(
                 browser: browser as "chromium" | "firefox" | "webkit",
                 headless: true,
                 includeKeyboardTests: true,
+                reactBundlePath: react ? getReactBundlePath() : undefined,
             }, AppLayer);
 
             const processor = createResultsProcessorService();

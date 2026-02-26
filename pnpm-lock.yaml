@@ -143,6 +143,9 @@ importers:
       '@accessibility-toolkit/core':
         specifier: workspace:*
         version: link:../core
+      '@accessibility-toolkit/react':
+        specifier: workspace:*
+        version: link:../react
       '@modelcontextprotocol/sdk':
         specifier: ^1.22.0
         version: 1.22.0

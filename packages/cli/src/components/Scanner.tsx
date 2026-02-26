@@ -28,7 +28,7 @@ const Scanner: React.FC<ScannerProps> = ({ url, browser }) => {
                 <Text color="green">
                     <Spinner type="dots" />
                 </Text>
-                <Text>  Analyzing accessibility tree and scanning React components...</Text>
+                <Text>  Scanning for accessibility violations...</Text>
             </Box>
         </Box>
     );
