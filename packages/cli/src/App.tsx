@@ -50,6 +50,8 @@ interface AppProps {
     tree?: boolean;
     quiet?: boolean;
     react?: boolean;
+    disableRules?: string[];
+    exclude?: string[];
     generateTest?: boolean;
     testFile?: string;
     stagehandModel?: string;
@@ -82,6 +84,8 @@ const App: React.FC<AppProps> = ({
     tree,
     quiet,
     react,
+    disableRules,
+    exclude,
     generateTest,
     testFile,
     stagehandModel,
@@ -275,6 +279,8 @@ const App: React.FC<AppProps> = ({
                         ciMode: ci,
                         ciThreshold: threshold,
                         reactBundlePath: react ? getReactBundlePath() : undefined,
+                        disableRules,
+                        exclude,
                     }, AppLayer);
 
                     if (cancelled) return;
@@ -332,7 +338,7 @@ const App: React.FC<AppProps> = ({
         return () => {
             cancelled = true;
         };
-    }, [mode, url, browser, headless, ci, threshold, output, ai, tags, keyboardNav, tree, react, generateTest, stagehandModel, stagehandVerbose, maxTabPresses, includeFullTree, auditLevel, maxSteps, testFile, exit]);
+    }, [mode, url, browser, headless, ci, threshold, output, ai, tags, keyboardNav, tree, react, disableRules, exclude, generateTest, stagehandModel, stagehandVerbose, maxTabPresses, includeFullTree, auditLevel, maxSteps, testFile, exit]);
 
     // Error state
     if (scanState === 'error' || testGenState === 'error' || stagehandState === 'error') {

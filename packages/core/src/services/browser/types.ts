@@ -23,6 +23,9 @@ export interface BrowserServiceConfig {
     navigationCheckInterval?: number;
     networkIdleTimeout?: number;
     postNavigationDelay?: number;
+    viewport?: { width: number; height: number };
+    isMobile?: boolean;
+    hasTouch?: boolean;
 }
 
 export interface NavigateOptions {

@@ -48,6 +48,7 @@ export {
 export {
     // Effect orchestration
     runScanAsPromise,
+    runMultiScanAsPromise,
     performScan,
     performScanWithCleanup,
     type EffectScanOptions,
@@ -175,6 +176,7 @@ export {
     hasEnvConfig,
     getSupportedEnvVars,
     getEnvVarDocs,
+    loadConfigFile,
 } from './config/index.js';
 
 // =============================================================================

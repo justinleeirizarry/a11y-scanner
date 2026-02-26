@@ -37,7 +37,7 @@ export async function runAxeScan(tags?: string[]): Promise<AxeViolation[]> {
  * Run axe-core accessibility scan with full results
  * Returns violations, passes, incomplete, and inapplicable
  */
-export async function runAxeFullScan(tags?: string[]): Promise<AxeFullResults> {
+export async function runAxeFullScan(tags?: string[], disableRules?: string[], exclude?: string[]): Promise<AxeFullResults> {
     try {
         const options: RunOptions = {
             // Request all result types
@@ -47,7 +47,19 @@ export async function runAxeFullScan(tags?: string[]): Promise<AxeFullResults> {
                 : { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa', 'best-practice'] }
         };
 
-        const results = await axe.run(document, options);
+        // Disable specific rules by ID
+        if (disableRules && disableRules.length > 0) {
+            options.rules = Object.fromEntries(
+                disableRules.map(id => [id, { enabled: false }])
+            );
+        }
+
+        // Build axe context (with optional exclude selectors)
+        const context = exclude && exclude.length > 0
+            ? { exclude: exclude.map(s => [s] as string[]) }
+            : document;
+
+        const results = await axe.run(context as any, options);
 
         return {
             violations: results.violations as AxeViolation[],

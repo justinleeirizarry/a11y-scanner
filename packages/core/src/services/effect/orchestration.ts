@@ -101,10 +101,21 @@ export const performScan = (
             ciMode,
             ciThreshold = 0,
             reactBundlePath,
+            mobile,
+            disableRules,
+            exclude,
         } = options;
 
-        // Launch browser
-        yield* browser.launch({ browserType, headless });
+        // Launch browser (with mobile viewport if requested)
+        yield* browser.launch({
+            browserType,
+            headless,
+            ...(mobile ? {
+                viewport: { width: 375, height: 812 },
+                isMobile: true,
+                hasTouch: true,
+            } : {}),
+        });
 
         // Navigate to URL
         yield* browser.navigate(url);
@@ -133,7 +144,7 @@ export const performScan = (
 
         // Run scan with retry logic
         let rawData = yield* pipe(
-            scanner.scan(page, { tags, includeKeyboardTests }),
+            scanner.scan(page, { tags, includeKeyboardTests, disableRules, exclude }),
             Effect.retry(retrySchedule),
             Effect.tap(() => Effect.sync(() => logger.info('Scan completed successfully')))
         );
@@ -380,4 +391,27 @@ export const runScanAsPromise = (
         // Defects or interrupts — no typed error available
         throw new Error(Cause.pretty(exit.cause));
     });
+};
+
+// ============================================================================
+// Multi-Page Scanning
+// ============================================================================
+
+/**
+ * Run scans for multiple URLs sequentially and return a Promise.
+ *
+ * Each URL gets its own browser session (launched and closed per scan).
+ * Results are returned as an array, one per URL.
+ */
+export const runMultiScanAsPromise = async (
+    urls: string[],
+    baseOptions: Omit<EffectScanOptions, 'url'>,
+    layer: Layer.Layer<BrowserService | ScannerService | ResultsProcessorService, never, never>
+): Promise<EffectScanResult[]> => {
+    const results: EffectScanResult[] = [];
+    for (const url of urls) {
+        const result = await runScanAsPromise({ ...baseOptions, url }, layer);
+        results.push(result);
+    }
+    return results;
 };

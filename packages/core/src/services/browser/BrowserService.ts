@@ -84,7 +84,11 @@ export class BrowserService implements IBrowserService {
                             throw new Error(`Unsupported browser type: ${config.browserType}`);
                     }
 
-                    this.page = await this.browser.newPage();
+                    this.page = await this.browser.newPage({
+                        ...(config.viewport ? { viewport: config.viewport } : {}),
+                        ...(config.isMobile !== undefined ? { isMobile: config.isMobile } : {}),
+                        ...(config.hasTouch !== undefined ? { hasTouch: config.hasTouch } : {}),
+                    });
                     logger.debug(`Browser ${config.browserType} launched successfully`);
                 },
                 catch: (error) => {

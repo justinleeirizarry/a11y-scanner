@@ -23,6 +23,31 @@ export interface FocusManagementResults {
     focusRestorationTests: FocusRestorationTest[];
 }
 
+interface StyleSnapshot {
+    outlineWidth: string;
+    outlineStyle: string;
+    outlineColor: string;
+    borderWidth: string;
+    borderStyle: string;
+    borderColor: string;
+    boxShadow: string;
+    backgroundColor: string;
+}
+
+function captureStyleSnapshot(el: HTMLElement): StyleSnapshot {
+    const style = window.getComputedStyle(el);
+    return {
+        outlineWidth: style.outlineWidth,
+        outlineStyle: style.outlineStyle,
+        outlineColor: style.outlineColor,
+        borderWidth: style.borderWidth,
+        borderStyle: style.borderStyle,
+        borderColor: style.borderColor,
+        boxShadow: style.boxShadow,
+        backgroundColor: style.backgroundColor,
+    };
+}
+
 /**
  * Validate focus indicators for all focusable elements
  */
@@ -43,15 +68,16 @@ function validateFocusIndicators(): FocusIndicatorIssue[] {
         const htmlEl = el as HTMLElement;
         const selector = generateSelector(htmlEl);
 
-        // Temporarily focus the element to check styles
+        // Capture styles BEFORE focusing
         const originalFocus = document.activeElement;
+        const normalSnapshot = captureStyleSnapshot(htmlEl);
+
+        // Focus the element and capture styles AFTER
         htmlEl.focus();
+        const focusedSnapshot = captureStyleSnapshot(htmlEl);
 
-        const focusedStyle = window.getComputedStyle(htmlEl);
-        const normalStyle = window.getComputedStyle(htmlEl);
-
-        // Check if focus indicator is visible
-        const hasFocusIndicator = checkFocusIndicatorVisibility(htmlEl, focusedStyle);
+        // Check if focus indicator changed (compare pre/post)
+        const hasFocusIndicator = checkFocusIndicatorVisibility(normalSnapshot, focusedSnapshot);
 
         if (!hasFocusIndicator) {
             issues.push({
@@ -61,8 +87,8 @@ function validateFocusIndicators(): FocusIndicatorIssue[] {
                 severity: 'critical',
             });
         } else {
-            // Check contrast of focus indicator
-            const contrastIssue = checkFocusIndicatorContrast(htmlEl, focusedStyle);
+            // Check contrast of focus indicator against pre-focus background
+            const contrastIssue = checkFocusIndicatorContrast(htmlEl, normalSnapshot, focusedSnapshot);
             if (contrastIssue) {
                 issues.push(contrastIssue);
             }
@@ -80,26 +106,36 @@ function validateFocusIndicators(): FocusIndicatorIssue[] {
 }
 
 /**
- * Check if element has a visible focus indicator
+ * Check if focus caused a visible style change (comparing pre/post snapshots)
  */
-function checkFocusIndicatorVisibility(element: HTMLElement, style: CSSStyleDeclaration): boolean {
-    // Check for outline
-    if (style.outlineWidth !== '0px' && style.outlineStyle !== 'none') {
-        return true;
+function checkFocusIndicatorVisibility(normal: StyleSnapshot, focused: StyleSnapshot): boolean {
+    // Check for outline change on focus
+    if (focused.outlineWidth !== normal.outlineWidth ||
+        focused.outlineStyle !== normal.outlineStyle ||
+        focused.outlineColor !== normal.outlineColor) {
+        if (focused.outlineWidth !== '0px' && focused.outlineStyle !== 'none') {
+            return true;
+        }
     }
 
-    // Check for border change
-    if (style.borderWidth !== '0px' && style.borderStyle !== 'none') {
-        return true;
+    // Check for border change on focus
+    if (focused.borderWidth !== normal.borderWidth ||
+        focused.borderStyle !== normal.borderStyle ||
+        focused.borderColor !== normal.borderColor) {
+        if (focused.borderWidth !== '0px' && focused.borderStyle !== 'none') {
+            return true;
+        }
     }
 
-    // Check for box-shadow
-    if (style.boxShadow && style.boxShadow !== 'none') {
-        return true;
+    // Check for box-shadow change on focus
+    if (focused.boxShadow !== normal.boxShadow) {
+        if (focused.boxShadow && focused.boxShadow !== 'none') {
+            return true;
+        }
     }
 
-    // Check for background color change
-    if (style.backgroundColor && style.backgroundColor !== 'rgba(0, 0, 0, 0)') {
+    // Check for background color change on focus
+    if (focused.backgroundColor !== normal.backgroundColor) {
         return true;
     }
 
@@ -174,25 +210,25 @@ function calculateContrastRatio(color1: { r: number; g: number; b: number }, col
 }
 
 /**
- * Check focus indicator contrast ratio
+ * Check focus indicator contrast ratio using pre-focus background as baseline
  */
-function checkFocusIndicatorContrast(element: HTMLElement, style: CSSStyleDeclaration): FocusIndicatorIssue | null {
-    // Determine indicator color
+function checkFocusIndicatorContrast(element: HTMLElement, normal: StyleSnapshot, focused: StyleSnapshot): FocusIndicatorIssue | null {
+    // Determine the focus indicator color (from the focused state)
     let indicatorColor: { r: number; g: number; b: number } | null = null;
-    let bgColor: { r: number; g: number; b: number } | null = null;
 
     // Try to get outline color (most common focus indicator)
-    if (style.outlineColor && style.outlineColor !== 'invert') {
-        indicatorColor = parseColor(style.outlineColor);
+    if (focused.outlineColor && focused.outlineColor !== 'invert' &&
+        focused.outlineColor !== normal.outlineColor) {
+        indicatorColor = parseColor(focused.outlineColor);
     }
 
-    // Fallback to border color
-    if (!indicatorColor && style.borderColor) {
-        indicatorColor = parseColor(style.borderColor);
+    // Fallback to border color if it changed
+    if (!indicatorColor && focused.borderColor !== normal.borderColor) {
+        indicatorColor = parseColor(focused.borderColor);
     }
 
-    // Get background color of the element
-    bgColor = parseColor(style.backgroundColor);
+    // Use pre-focus background as the baseline for contrast comparison
+    const bgColor = parseColor(normal.backgroundColor);
 
     // If we couldn't parse colors, assume it's OK (can't determine)
     if (!indicatorColor || !bgColor) {
@@ -203,7 +239,6 @@ function checkFocusIndicatorContrast(element: HTMLElement, style: CSSStyleDeclar
     const contrastRatio = calculateContrastRatio(indicatorColor, bgColor);
 
     // WCAG minimum for focus indicators is 3:1
-    // Enhanced is 4.5:1
     if (contrastRatio < 3) {
         return {
             element: generateSelector(element),

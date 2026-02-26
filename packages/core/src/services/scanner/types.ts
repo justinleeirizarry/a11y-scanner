@@ -12,6 +12,8 @@ import type { EffectScannerInjectionError, EffectScanDataError } from '../../err
 export interface ScanExecutionOptions {
     tags?: string[];
     includeKeyboardTests?: boolean;
+    disableRules?: string[];
+    exclude?: string[];
 }
 
 /**

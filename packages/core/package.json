@@ -33,6 +33,7 @@
     "license": "MIT",
     "dependencies": {
         "axe-core": "^4.8.3",
+        "cosmiconfig": "^9.0.0",
         "dotenv": "^17.2.3",
         "effect": "^3.19.15",
         "playwright": "^1.56.1",

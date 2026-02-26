@@ -97,3 +97,4 @@ export {
     getSupportedEnvVars,
     getEnvVarDocs,
 } from './env.js';
+export { loadConfigFile } from './file.js';

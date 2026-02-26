@@ -49,4 +49,5 @@ export {
     performScan,
     performScanWithCleanup,
     runScanAsPromise,
+    runMultiScanAsPromise,
 } from './orchestration.js';

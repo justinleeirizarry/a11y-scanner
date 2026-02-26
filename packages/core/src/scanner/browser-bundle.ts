@@ -38,6 +38,10 @@ export interface GenericBrowserScanOptions {
     includeKeyboardTests?: boolean;
     /** Include WCAG 2.2 custom checks */
     includeWcag22Checks?: boolean;
+    /** Axe rule IDs to disable */
+    disableRules?: string[];
+    /** CSS selectors to exclude from scanning */
+    exclude?: string[];
 }
 
 /**
@@ -94,7 +98,7 @@ export async function scan(options: GenericBrowserScanOptions = {}): Promise<Gen
     console.log('🔍 Starting generic accessibility scan...');
 
     // Run axe accessibility scan (full results)
-    const axeResults = await runAxeFullScan(options.tags);
+    const axeResults = await runAxeFullScan(options.tags, options.disableRules, options.exclude);
     console.log(`✓ Found ${axeResults.violations.length} violations, ${axeResults.passes.length} passes, ${axeResults.incomplete.length} incomplete`);
 
     // Check if axe had an error

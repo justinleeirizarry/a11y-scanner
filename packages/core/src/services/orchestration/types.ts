@@ -22,6 +22,12 @@ export interface BaseScanOptions {
     requireReact?: boolean;
     /** Path to the React plugin bundle (react-bundle.js) for component attribution */
     reactBundlePath?: string;
+    /** Emulate a mobile device (375x812 viewport, touch enabled) */
+    mobile?: boolean;
+    /** Axe rule IDs to disable (e.g. ['color-contrast']) */
+    disableRules?: string[];
+    /** CSS selectors to exclude from scanning */
+    exclude?: string[];
 }
 
 /**

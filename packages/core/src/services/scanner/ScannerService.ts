@@ -109,7 +109,7 @@ export class ScannerService implements IScannerService {
      * Note: Retry logic is handled at the orchestration layer using Effect.retry()
      */
     private _executeScan(page: Page, options?: ScanExecutionOptions): Effect.Effect<BrowserScanData, EffectScanDataError> {
-        const { tags, includeKeyboardTests } = options ?? {};
+        const { tags, includeKeyboardTests, disableRules, exclude } = options ?? {};
 
         return Effect.gen(this, function* () {
             // Execute the scan in the browser context
@@ -117,7 +117,7 @@ export class ScannerService implements IScannerService {
                 try: async () => {
                     // Block navigation during scan to prevent context destruction
                     return await page.evaluate(
-                        ({ scanTags, runKeyboardTests }) => {
+                        ({ scanTags, runKeyboardTests, rulesToDisable, excludeSelectors }) => {
                             // Save original navigation methods
                             const originalPushState = history.pushState;
                             const originalReplaceState = history.replaceState;
@@ -130,6 +130,8 @@ export class ScannerService implements IScannerService {
                                 const result = (window as any).A11yScanner!.scan({
                                     tags: scanTags,
                                     includeKeyboardTests: runKeyboardTests,
+                                    disableRules: rulesToDisable,
+                                    exclude: excludeSelectors,
                                 });
 
                                 return result;
@@ -139,7 +141,7 @@ export class ScannerService implements IScannerService {
                                 history.replaceState = originalReplaceState;
                             }
                         },
-                        { scanTags: tags, runKeyboardTests: includeKeyboardTests }
+                        { scanTags: tags, runKeyboardTests: includeKeyboardTests, rulesToDisable: disableRules, excludeSelectors: exclude }
                     );
                 },
                 catch: (error) => new EffectScanDataError({

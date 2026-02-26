@@ -5,6 +5,7 @@ import { Effect } from "effect";
 import { z } from "zod";
 import {
     runScanAsPromise,
+    runMultiScanAsPromise,
     AppLayer,
     createResultsProcessorService,
     logger,
@@ -41,9 +42,11 @@ server.registerTool(
             mobile: z.boolean().optional().default(false).describe("Emulate a mobile device"),
             include_tree: z.boolean().optional().default(false).describe("Include the full accessibility tree in the response (can be large)"),
             react: z.boolean().optional().default(false).describe("Enable React component attribution (requires a React app at the target URL)"),
+            disable_rules: z.array(z.string()).optional().describe("Axe rule IDs to disable (e.g. ['color-contrast'])"),
+            exclude: z.array(z.string()).optional().describe("CSS selectors to exclude from scanning"),
         },
     },
-    async ({ url, browser, mobile, include_tree, react }) => {
+    async ({ url, browser, mobile, include_tree, react, disable_rules, exclude }) => {
         try {
             logger.info(`Starting scan for ${url} using ${browser}`);
 
@@ -53,6 +56,9 @@ server.registerTool(
                 headless: true,
                 includeKeyboardTests: true,
                 reactBundlePath: react ? getReactBundlePath() : undefined,
+                mobile,
+                disableRules: disable_rules,
+                exclude,
             }, AppLayer);
 
             const processor = createResultsProcessorService();
@@ -71,6 +77,63 @@ server.registerTool(
                         text: `Scan failed: ${errorMessage}`,
                     },
                 ],
+                isError: true,
+            };
+        }
+    }
+);
+
+// Register multi-URL scan tool
+server.registerTool(
+    "scan_urls",
+    {
+        description: "Scan multiple URLs for accessibility violations",
+        inputSchema: {
+            urls: z.array(z.string().url()).min(1).describe("The URLs to scan"),
+            browser: z.enum(["chromium", "firefox", "webkit"]).optional().default("chromium").describe("Browser to use for scanning"),
+            mobile: z.boolean().optional().default(false).describe("Emulate a mobile device"),
+            include_tree: z.boolean().optional().default(false).describe("Include the full accessibility tree in the response (can be large)"),
+            react: z.boolean().optional().default(false).describe("Enable React component attribution (requires React apps at the target URLs)"),
+            disable_rules: z.array(z.string()).optional().describe("Axe rule IDs to disable (e.g. ['color-contrast'])"),
+            exclude: z.array(z.string()).optional().describe("CSS selectors to exclude from scanning"),
+        },
+    },
+    async ({ urls, browser, mobile, include_tree, react, disable_rules, exclude }) => {
+        try {
+            logger.info(`Starting multi-page scan for ${urls.length} URLs using ${browser}`);
+
+            const scanResults = await runMultiScanAsPromise(
+                urls,
+                {
+                    browser: browser as "chromium" | "firefox" | "webkit",
+                    headless: true,
+                    includeKeyboardTests: true,
+                    reactBundlePath: react ? getReactBundlePath() : undefined,
+                    mobile,
+                    disableRules: disable_rules,
+                    exclude,
+                },
+                AppLayer,
+            );
+
+            const processor = createResultsProcessorService();
+            const allContent: Array<{ type: "text"; text: string }> = [];
+
+            for (let i = 0; i < scanResults.length; i++) {
+                const { results } = scanResults[i];
+                const content = Effect.runSync(processor.formatForMCP(results, { includeTree: include_tree }));
+                if (urls.length > 1) {
+                    allContent.push({ type: "text" as const, text: `\n--- Results for ${urls[i]} ---\n` });
+                }
+                allContent.push(...content);
+            }
+
+            return { content: allContent };
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            logger.error(`Multi-page scan failed: ${errorMessage}`);
+            return {
+                content: [{ type: "text", text: `Scan failed: ${errorMessage}` }],
                 isError: true,
             };
         }

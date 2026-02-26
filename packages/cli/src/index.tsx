@@ -20,6 +20,7 @@ import {
     validateThreshold,
     validateBrowser,
     runScanAsPromise,
+    runMultiScanAsPromise,
     AppLayer,
     EXIT_CODES,
     setExitCode,
@@ -27,6 +28,7 @@ import {
     updateConfig,
     loadEnvConfig,
     hasEnvConfig,
+    loadConfigFile,
     logger,
     LogLevel,
     generateAndExport,
@@ -39,7 +41,12 @@ import {
     createWcagAuditService,
 } from '@accessibility-toolkit/ai-auditor';
 
-// Load configuration from environment variables (REACT_A11Y_*)
+// Load configuration: config file first, then env vars override
+const configFileResult = await loadConfigFile();
+if (configFileResult) {
+    updateConfig(configFileResult.config);
+    logger.debug(`Loaded config from ${configFileResult.filepath}`);
+}
 if (hasEnvConfig()) {
     updateConfig(loadEnvConfig());
 }
@@ -47,7 +54,7 @@ if (hasEnvConfig()) {
 const cli = meow(
     `
   Usage
-    $ a11y-toolkit <url>
+    $ a11y-toolkit <url> [url2] [url3] ...
 
   Accessibility Scan Options
     --browser, -b      Browser to use (chromium, firefox, webkit) [default: chromium]
@@ -58,6 +65,8 @@ const cli = meow(
     --headless         Run browser in headless mode [default: true]
     --ai               Generate AI prompt for fixing violations (markdown)
     --tags             Comma-separated list of axe-core tags (e.g. wcag2a,best-practice)
+    --disable-rules    Comma-separated axe rule IDs to disable (e.g. color-contrast,link-name)
+    --exclude          Comma-separated CSS selectors to exclude from scanning
     --keyboard-nav     Run keyboard navigation tests [default: true]
     --tree             Show component hierarchy view
     --quiet, -q        Minimal output - show only summary line
@@ -82,6 +91,9 @@ const cli = meow(
     $ a11y-toolkit https://example.com
     $ a11y-toolkit https://example.com --browser firefox
     $ a11y-toolkit https://example.com --output report.json --ci
+
+    # Multiple URLs
+    $ a11y-toolkit https://example.com https://example.com/about https://example.com/contact
 
     # React App with Component Attribution
     $ a11y-toolkit https://my-react-app.com --react
@@ -129,6 +141,14 @@ const cli = meow(
                 default: false,
             },
             tags: {
+                type: 'string',
+                default: '',
+            },
+            disableRules: {
+                type: 'string',
+                default: '',
+            },
+            exclude: {
                 type: 'string',
                 default: '',
             },
@@ -192,20 +212,23 @@ const cli = meow(
     }
 );
 
-// Validate URL argument
+// Validate URL argument(s)
 if (cli.input.length === 0) {
     console.error('Error: URL is required\n');
     cli.showHelp();
     exitWithCode(EXIT_CODES.VALIDATION_ERROR);
 }
 
-const url = cli.input[0];
+const urls = cli.input;
+const url = urls[0]; // Primary URL (used for single-page modes)
 
-// Validate URL format and protocol
-const urlValidation = validateUrl(url);
-if (!urlValidation.valid) {
-    console.error(`Error: ${urlValidation.error}\n`);
-    exitWithCode(EXIT_CODES.VALIDATION_ERROR);
+// Validate all URL formats
+for (const u of urls) {
+    const urlValidation = validateUrl(u);
+    if (!urlValidation.valid) {
+        console.error(`Error: ${urlValidation.error}\n`);
+        exitWithCode(EXIT_CODES.VALIDATION_ERROR);
+    }
 }
 
 // Validate browser type
@@ -443,8 +466,7 @@ if (!isTTY) {
                 }
             } else {
                 // Accessibility scan mode using Effect-based orchestration
-                const { results, ciPassed } = await runScanAsPromise({
-                    url,
+                const commonOptions = {
                     browser: cli.flags.browser as BrowserType,
                     headless: cli.flags.headless,
                     tags: cli.flags.tags ? cli.flags.tags.split(',') : undefined,
@@ -453,65 +475,81 @@ if (!isTTY) {
                     ciMode: cli.flags.ci,
                     ciThreshold: cli.flags.threshold,
                     reactBundlePath: cli.flags.react ? getReactBundlePath() : undefined,
-                }, AppLayer);
+                    disableRules: cli.flags.disableRules ? cli.flags.disableRules.split(',') : undefined,
+                    exclude: cli.flags.exclude ? cli.flags.exclude.split(',') : undefined,
+                };
 
-                // In quiet mode, output plain text; otherwise full JSON
-                if (cli.flags.quiet) {
-                    const { summary, violations } = results;
-                    const statusIcon = summary.totalViolations > 0 ? 'x' : 'v';
-                    console.log(`${statusIcon} ${url} - ${summary.totalViolations} violations, ${summary.totalPasses} passes`);
+                const scanResults = urls.length > 1
+                    ? await runMultiScanAsPromise(urls, commonOptions, AppLayer)
+                    : [await runScanAsPromise({ ...commonOptions, url }, AppLayer)];
 
-                    if (summary.totalViolations > 0) {
-                        const { violationsBySeverity } = summary;
-                        const severityParts = [];
-                        if (violationsBySeverity.critical > 0) severityParts.push(`${violationsBySeverity.critical} critical`);
-                        if (violationsBySeverity.serious > 0) severityParts.push(`${violationsBySeverity.serious} serious`);
-                        if (violationsBySeverity.moderate > 0) severityParts.push(`${violationsBySeverity.moderate} moderate`);
-                        if (violationsBySeverity.minor > 0) severityParts.push(`${violationsBySeverity.minor} minor`);
-                        if (severityParts.length > 0) console.log(severityParts.join(' '));
-                    }
+                // Helper to output a single scan result
+                const outputResult = (scanUrl: string, { results, ciPassed }: { results: typeof scanResults[0]['results']; ciPassed?: boolean }) => {
+                    if (cli.flags.quiet) {
+                        const { summary, violations } = results;
+                        const statusIcon = summary.totalViolations > 0 ? 'x' : 'v';
+                        console.log(`${statusIcon} ${scanUrl} - ${summary.totalViolations} violations, ${summary.totalPasses} passes`);
 
-                    for (const violation of violations) {
-                        console.log(`[${violation.impact}] ${violation.id}: ${violation.description}`);
-                        for (const node of violation.nodes) {
-                            const componentName = node.userComponentPath?.length
-                                ? node.userComponentPath[node.userComponentPath.length - 1]
-                                : node.component || 'Unknown';
-                            console.log(`  - ${componentName}${node.cssSelector ? ` (${node.cssSelector})` : ''}`);
+                        if (summary.totalViolations > 0) {
+                            const { violationsBySeverity } = summary;
+                            const severityParts = [];
+                            if (violationsBySeverity.critical > 0) severityParts.push(`${violationsBySeverity.critical} critical`);
+                            if (violationsBySeverity.serious > 0) severityParts.push(`${violationsBySeverity.serious} serious`);
+                            if (violationsBySeverity.moderate > 0) severityParts.push(`${violationsBySeverity.moderate} moderate`);
+                            if (violationsBySeverity.minor > 0) severityParts.push(`${violationsBySeverity.minor} minor`);
+                            if (severityParts.length > 0) console.log(severityParts.join(' '));
                         }
-                        if (violation.helpUrl) console.log(`  Docs: ${violation.helpUrl}`);
-                    }
-                } else {
-                    // Output JSON to stdout with circular reference handling
-                    const seen = new WeakSet();
-                    const jsonOutput = JSON.stringify(results, (key, value) => {
-                        if (typeof value === 'object' && value !== null) {
-                            if (seen.has(value)) {
-                                return '[Circular]';
+
+                        for (const violation of violations) {
+                            console.log(`[${violation.impact}] ${violation.id}: ${violation.description}`);
+                            for (const node of violation.nodes) {
+                                const componentName = node.userComponentPath?.length
+                                    ? node.userComponentPath[node.userComponentPath.length - 1]
+                                    : node.component || 'Unknown';
+                                console.log(`  - ${componentName}${node.cssSelector ? ` (${node.cssSelector})` : ''}`);
                             }
-                            seen.add(value);
+                            if (violation.helpUrl) console.log(`  Docs: ${violation.helpUrl}`);
                         }
-                        return value;
-                    }, 2);
-                    console.log(jsonOutput);
-                }
+                    } else {
+                        const seen = new WeakSet();
+                        const jsonOutput = JSON.stringify(results, (key, value) => {
+                            if (typeof value === 'object' && value !== null) {
+                                if (seen.has(value)) {
+                                    return '[Circular]';
+                                }
+                                seen.add(value);
+                            }
+                            return value;
+                        }, 2);
+                        console.log(jsonOutput);
+                    }
 
-                // Handle AI prompt generation
-                if (cli.flags.ai) {
-                    const promptPath = generateAndExport(
-                        results,
-                        {
-                            template: 'fix-all',
-                            format: 'md',
-                            outputPath: undefined,
-                        }
-                    );
-                    console.error(`AI prompt written to: ${promptPath}`);
+                    // Handle AI prompt generation
+                    if (cli.flags.ai) {
+                        const promptPath = generateAndExport(
+                            results,
+                            {
+                                template: 'fix-all',
+                                format: 'md',
+                                outputPath: undefined,
+                            }
+                        );
+                        console.error(`AI prompt written to: ${promptPath}`);
+                    }
+
+                    return ciPassed;
+                };
+
+                // Output each result
+                let allCiPassed = true;
+                for (let i = 0; i < scanResults.length; i++) {
+                    const ciPassed = outputResult(urls[i], scanResults[i]);
+                    if (ciPassed === false) allCiPassed = false;
                 }
 
                 // Handle CI mode
                 if (cli.flags.ci) {
-                    setExitCode(ciPassed ? EXIT_CODES.SUCCESS : EXIT_CODES.VIOLATIONS_FOUND);
+                    setExitCode(allCiPassed ? EXIT_CODES.SUCCESS : EXIT_CODES.VIOLATIONS_FOUND);
                 } else {
                     setExitCode(EXIT_CODES.SUCCESS);
                 }
@@ -527,7 +565,11 @@ if (!isTTY) {
         }
     })();
 } else {
-    // TTY mode: render the Ink UI
+    // TTY mode: render the Ink UI (single URL only)
+    if (urls.length > 1) {
+        console.error(`Note: Interactive mode only supports one URL. Scanning ${url} only.`);
+        console.error('Use non-interactive mode (pipe output) for multi-URL scanning.\n');
+    }
     // Determine mode for App component
     const appMode = isTestGenerationMode ? 'generate-test' :
         isStagehandKeyboardMode ? 'stagehand-keyboard' :
@@ -546,6 +588,8 @@ if (!isTTY) {
             headless={cli.flags.headless}
             ai={cli.flags.ai}
             tags={cli.flags.tags ? cli.flags.tags.split(',') : undefined}
+            disableRules={cli.flags.disableRules ? cli.flags.disableRules.split(',') : undefined}
+            exclude={cli.flags.exclude ? cli.flags.exclude.split(',') : undefined}
             keyboardNav={cli.flags.keyboardNav}
             tree={cli.flags.tree}
             quiet={cli.flags.quiet}

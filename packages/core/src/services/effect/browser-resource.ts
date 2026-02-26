@@ -57,7 +57,11 @@ const launchBrowser = async (config: BrowserServiceConfig): Promise<BrowserResou
             throw new Error(`Unsupported browser type: ${config.browserType}`);
     }
 
-    const page = await browser.newPage();
+    const page = await browser.newPage({
+        ...(config.viewport ? { viewport: config.viewport } : {}),
+        ...(config.isMobile !== undefined ? { isMobile: config.isMobile } : {}),
+        ...(config.hasTouch !== undefined ? { hasTouch: config.hasTouch } : {}),
+    });
     logger.debug(`Browser ${config.browserType} launched successfully`);
 
     return { browser, page, browserType: config.browserType };
