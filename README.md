@@ -11,7 +11,6 @@ A monorepo for accessibility testing tools. The core scanner is framework-agnost
 | [`cli`](packages/cli) | Ink-based terminal UI. Binary: `a11y-toolkit` |
 | [`mcp`](packages/mcp) | MCP server exposing `scan_url` tool for Claude Desktop |
 | [`ai-auditor`](packages/ai-auditor) | AI-powered auditing via Stagehand/Browserbase |
-| [`web`](packages/web) | Next.js webapp with live Browserbase view for AI audits |
 
 ## Quick Start
 
