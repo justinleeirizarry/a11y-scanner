@@ -1,0 +1,22 @@
+{
+    "name": "@accessibility-toolkit/web",
+    "version": "0.1.0",
+    "description": "Web UI for accessibility scanning",
+    "type": "module",
+    "scripts": {
+        "dev": "tsx src/server.ts",
+        "build": "tsc",
+        "start": "node dist/server.js"
+    },
+    "dependencies": {
+        "@accessibility-toolkit/core": "workspace:*",
+        "@accessibility-toolkit/react": "workspace:*",
+        "@hono/node-server": "^1.13.0",
+        "hono": "^4.7.0"
+    },
+    "devDependencies": {
+        "@types/node": "^20.10.0",
+        "tsx": "^4.19.0",
+        "typescript": "^5.3.0"
+    }
+}

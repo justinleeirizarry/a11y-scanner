@@ -47,3 +47,12 @@ export type BrowserType = typeof BrowserType.Type;
 // Fix suggestion priority
 export const FixPriority = Schema.Literal('critical', 'high', 'medium', 'low');
 export type FixPriority = typeof FixPriority.Type;
+
+// Source location from element-source (framework-agnostic)
+export const SourceLocation = Schema.Struct({
+    filePath: Schema.String,
+    lineNumber: Schema.NullOr(Schema.Number),
+    columnNumber: Schema.NullOr(Schema.Number),
+    componentName: Schema.optional(Schema.NullOr(Schema.String)),
+});
+export type SourceLocation = Mutable<typeof SourceLocation.Type>;

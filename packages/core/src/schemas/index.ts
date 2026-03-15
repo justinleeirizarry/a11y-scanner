@@ -18,6 +18,7 @@ export {
     WcagPrinciple,
     BrowserType,
     FixPriority,
+    SourceLocation,
 } from './primitives.js';
 
 // WCAG

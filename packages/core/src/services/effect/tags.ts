@@ -71,9 +71,9 @@ export interface EffectBrowserService {
     readonly waitForStability: () => Effect.Effect<StabilityCheckResult, EffectBrowserNotLaunchedError>;
 
     /**
-     * Detect if React is present on the page
+     * Detect if a supported framework is present on the page
      */
-    readonly detectReact: () => Effect.Effect<boolean, EffectBrowserNotLaunchedError>;
+    readonly detectFramework: () => Effect.Effect<boolean, EffectBrowserNotLaunchedError>;
 
     /**
      * Close the browser and clean up resources

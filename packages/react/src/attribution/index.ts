@@ -1,9 +1,9 @@
 /**
  * Violation attribution - maps axe violations to React components
- * Uses Bippy for direct DOM→fiber lookup when possible
+ * Uses element-source for direct DOM→component lookup when possible
  */
 
-import { getFiberFromHostInstance, getFiberStack, getDisplayName } from 'bippy';
+import { resolveElementInfo } from 'element-source';
 import type {
     AxeResult,
     AxeViolation,
@@ -22,29 +22,35 @@ import { filterUserComponents, isFrameworkComponent } from '../fiber/framework-f
 import { generateCssSelector, extractHtmlSnippet } from './utils.js';
 
 /**
- * Try to get component info directly from DOM element using Bippy
+ * Try to get component info directly from DOM element using element-source
  */
-function getComponentFromElement(element: Element): ComponentInfo | null {
+async function getComponentFromElement(element: Element): Promise<ComponentInfo | null> {
     try {
-        const fiber = getFiberFromHostInstance(element);
-        if (!fiber) return null;
+        const info = await resolveElementInfo(element);
+        if (!info?.componentName) return null;
 
-        const name = getDisplayName(fiber);
-        if (!name) return null;
+        const path = info.stack
+            ?.map(s => s.componentName)
+            .filter((n): n is string => typeof n === 'string' && n.length > 0)
+            .reverse() ?? [];
 
-        // Get the fiber stack for the full component path
-        const stack = getFiberStack(fiber);
-        const path = stack
-            .map((f: any) => getDisplayName(f))
-            .filter((name: any): name is string => typeof name === 'string' && name.length > 0)
-            .reverse();
+        // Build the full source stack with locations at each component level
+        const sourceStack = info.stack
+            ?.filter(s => s.filePath)
+            .map(s => ({
+                filePath: s.filePath,
+                lineNumber: s.lineNumber,
+                columnNumber: s.columnNumber,
+                componentName: s.componentName,
+            })) ?? [];
 
         return {
-            name,
-            type: typeof fiber.type === 'string' ? 'host' : 'component',
-            props: fiber.memoizedProps,
+            name: info.componentName,
+            type: info.tagName === info.componentName ? 'host' : 'component',
             domNode: element,
             path,
+            source: info.source ?? undefined,
+            sourceStack: sourceStack.length > 0 ? sourceStack : undefined,
         };
     } catch {
         return null;
@@ -71,33 +77,31 @@ function convertChecks(checks: AxeCheckResult[] | undefined): AttributedCheck[] 
 
 /**
  * Attribute violations to React components
- * Uses Bippy for direct DOM→fiber lookup when possible
+ * Uses element-source for direct DOM→component lookup when possible
  */
-export function attributeViolationsToComponents(
+export async function attributeViolationsToComponents(
     violations: AxeViolation[],
     domToComponentMap: Map<Element, ComponentInfo>
-): AttributedViolation[] {
+): Promise<AttributedViolation[]> {
     const attributed: AttributedViolation[] = [];
 
     for (const violation of violations) {
         const attributedNodes: AttributedViolationNode[] = [];
 
         for (const node of violation.nodes) {
-            // Get the first target selector (axe returns an array, first is most specific)
             const selector = node.target[0];
 
             let element: Element | null = null;
             let component: ComponentInfo | null = null;
 
             try {
-                // Try to find the element using the selector
                 element = document.querySelector(selector);
 
                 if (element) {
-                    // Try Bippy's direct lookup first (more accurate)
-                    component = getComponentFromElement(element);
+                    // Try element-source's direct lookup first (more accurate)
+                    component = await getComponentFromElement(element);
 
-                    // Fallback to pre-built map if Bippy lookup fails
+                    // Fallback to pre-built map if element-source lookup fails
                     if (!component) {
                         component = findComponentForElement(element, domToComponentMap);
                     }
@@ -111,7 +115,6 @@ export function attributeViolationsToComponents(
             const cssSelector = element ? generateCssSelector(element) : node.target[0];
             const htmlSnippet = extractHtmlSnippet(node.html);
 
-            // Build checks object if any check data exists
             const hasChecks = node.any?.length || node.all?.length || node.none?.length;
             const checks = hasChecks ? {
                 any: convertChecks(node.any),
@@ -130,6 +133,8 @@ export function attributeViolationsToComponents(
                 target: node.target,
                 failureSummary: node.failureSummary || '',
                 isFrameworkComponent: isFramework,
+                source: component?.source,
+                sourceStack: component?.sourceStack,
                 checks,
             });
         }
@@ -151,70 +156,75 @@ export function attributeViolationsToComponents(
 /**
  * Attribute passes to React components (lighter attribution - just component name)
  */
-export function attributePassesToComponents(
+export async function attributePassesToComponents(
     passes: AxeResult[],
     domToComponentMap: Map<Element, ComponentInfo>
-): AttributedPass[] {
-    return passes.map(pass => ({
-        id: pass.id,
-        impact: pass.impact,
-        description: pass.description,
-        help: pass.help,
-        helpUrl: pass.helpUrl,
-        tags: pass.tags || [],
-        nodes: pass.nodes.map(node => {
+): Promise<AttributedPass[]> {
+    const results: AttributedPass[] = [];
+
+    for (const pass of passes) {
+        const nodes: AttributedPass['nodes'] = [];
+        for (const node of pass.nodes) {
             const selector = node.target[0];
             let component: ComponentInfo | null = null;
 
             try {
                 const element = document.querySelector(selector);
                 if (element) {
-                    component = getComponentFromElement(element) ||
+                    component = await getComponentFromElement(element) ||
                         findComponentForElement(element, domToComponentMap);
                 }
             } catch {
                 // Ignore selector errors
             }
 
-            return {
+            nodes.push({
                 component: component?.name || null,
                 html: node.html,
                 htmlSnippet: extractHtmlSnippet(node.html),
                 target: node.target
-            };
-        })
-    }));
+            });
+        }
+
+        results.push({
+            id: pass.id,
+            impact: pass.impact,
+            description: pass.description,
+            help: pass.help,
+            helpUrl: pass.helpUrl,
+            tags: pass.tags || [],
+            nodes,
+        });
+    }
+
+    return results;
 }
 
 /**
  * Attribute incomplete results to React components
  */
-export function attributeIncompleteToComponents(
+export async function attributeIncompleteToComponents(
     incomplete: AxeResult[],
     domToComponentMap: Map<Element, ComponentInfo>
-): AttributedIncomplete[] {
-    return incomplete.map(item => ({
-        id: item.id,
-        impact: item.impact,
-        description: item.description,
-        help: item.help,
-        helpUrl: item.helpUrl,
-        tags: item.tags || [],
-        nodes: item.nodes.map(node => {
+): Promise<AttributedIncomplete[]> {
+    const results: AttributedIncomplete[] = [];
+
+    for (const item of incomplete) {
+        const nodes: AttributedIncomplete['nodes'] = [];
+        for (const node of item.nodes) {
             const selector = node.target[0];
             let component: ComponentInfo | null = null;
 
             try {
                 const element = document.querySelector(selector);
                 if (element) {
-                    component = getComponentFromElement(element) ||
+                    component = await getComponentFromElement(element) ||
                         findComponentForElement(element, domToComponentMap);
                 }
             } catch {
                 // Ignore selector errors
             }
 
-            // Build checks object if any check data exists
             const hasChecks = node.any?.length || node.all?.length || node.none?.length;
             const checks = hasChecks ? {
                 any: convertChecks(node.any),
@@ -222,17 +232,28 @@ export function attributeIncompleteToComponents(
                 none: convertChecks(node.none)
             } : undefined;
 
-            // Get reason for manual review from checks
             const message = node.any?.[0]?.message || node.all?.[0]?.message || undefined;
 
-            return {
+            nodes.push({
                 component: component?.name || null,
                 html: node.html,
                 htmlSnippet: extractHtmlSnippet(node.html),
                 target: node.target,
                 message,
                 checks
-            };
-        })
-    }));
+            });
+        }
+
+        results.push({
+            id: item.id,
+            impact: item.impact,
+            description: item.description,
+            help: item.help,
+            helpUrl: item.helpUrl,
+            tags: item.tags || [],
+            nodes,
+        });
+    }
+
+    return results;
 }

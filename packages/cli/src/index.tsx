@@ -12,7 +12,7 @@ import { render } from 'ink';
 import meow from 'meow';
 import { Effect } from 'effect';
 import App from './App.js';
-import { getReactBundlePath } from '@accessibility-toolkit/react';
+import { getComponentBundlePath } from '@accessibility-toolkit/react';
 import type { BrowserType, WcagLevel } from '@accessibility-toolkit/core';
 import {
     validateUrl,
@@ -58,7 +58,7 @@ const cli = meow(
 
   Accessibility Scan Options
     --browser, -b      Browser to use (chromium, firefox, webkit) [default: chromium]
-    --react            Enable React component attribution (requires React app)
+    --no-components    Disable automatic component attribution (React, Vue, Svelte, Solid)
     --output, -o       Output file path (JSON format)
     --ci               CI mode - exit with code 1 if violations found
     --threshold        Maximum allowed violations in CI mode [default: 0]
@@ -95,9 +95,9 @@ const cli = meow(
     # Multiple URLs
     $ a11y-toolkit https://example.com https://example.com/about https://example.com/contact
 
-    # React App with Component Attribution
-    $ a11y-toolkit https://my-react-app.com --react
-    $ a11y-toolkit https://my-react-app.com --react --ai --tree
+    # Component Attribution (auto-detected, disable with --no-components)
+    $ a11y-toolkit https://my-app.com --no-components
+    $ a11y-toolkit https://my-app.com --ai --tree
 
     # Test Generation
     $ a11y-toolkit https://example.com --generate-test
@@ -116,9 +116,9 @@ const cli = meow(
                 shortFlag: 'b',
                 default: 'chromium',
             },
-            react: {
+            components: {
                 type: 'boolean',
-                default: false,
+                default: true,
             },
             output: {
                 type: 'string',
@@ -474,7 +474,7 @@ if (!isTTY) {
                     outputFile: cli.flags.output,
                     ciMode: cli.flags.ci,
                     ciThreshold: cli.flags.threshold,
-                    reactBundlePath: cli.flags.react ? getReactBundlePath() : undefined,
+                    componentBundlePath: cli.flags.components ? getComponentBundlePath() : undefined,
                     disableRules: cli.flags.disableRules ? cli.flags.disableRules.split(',') : undefined,
                     exclude: cli.flags.exclude ? cli.flags.exclude.split(',') : undefined,
                 };
@@ -581,7 +581,7 @@ if (!isTTY) {
             mode={appMode}
             url={url}
             browser={cli.flags.browser as BrowserType}
-            react={cli.flags.react}
+            components={cli.flags.components}
             output={cli.flags.output}
             ci={cli.flags.ci}
             threshold={cli.flags.threshold}

@@ -34,10 +34,11 @@ export function decodeBrowserScanData(data: unknown): Effect.Effect<BrowserScanD
 export function decodeBrowserScanDataLenient(data: unknown): Effect.Effect<BrowserScanData, never> {
     return decode(data).pipe(
         Effect.map((result) => result as unknown as BrowserScanData),
-        Effect.catchAll((parseError) => {
-            logger.warn(
-                `Browser scan data did not pass schema validation (falling back to raw data): ${String(parseError)}`,
-            );
+        Effect.catchAll((_parseError) => {
+            // Schema validation runs before component attribution, so raw axe data
+            // won't have component fields yet. This is expected — the lenient decoder
+            // passes through the raw data, and attribution fills in the fields later.
+            logger.debug('Browser scan data pre-attribution — schema validation deferred');
             return Effect.succeed(data as BrowserScanData);
         }),
     );

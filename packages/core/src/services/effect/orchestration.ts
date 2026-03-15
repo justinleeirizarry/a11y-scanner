@@ -100,7 +100,7 @@ export const performScan = (
             outputFile,
             ciMode,
             ciThreshold = 0,
-            reactBundlePath,
+            componentBundlePath,
             mobile,
             disableRules,
             exclude,
@@ -123,13 +123,13 @@ export const performScan = (
         // Wait for page stability (important for SPAs)
         yield* browser.waitForStability();
 
-        // Check for React (only fail if explicitly required)
-        const hasReact = yield* browser.detectReact();
-        if (options.requireReact && !hasReact) {
+        // Check for supported framework (only fail if explicitly required)
+        const hasFramework = yield* browser.detectFramework();
+        if (options.requireFramework && !hasFramework) {
             return yield* Effect.fail(new EffectReactNotDetectedError({ url }));
         }
-        if (!hasReact) {
-            logger.debug('React not detected on page - running generic accessibility scan');
+        if (!hasFramework) {
+            logger.debug('No supported framework detected on page - running generic accessibility scan');
         }
 
         // Get page for scanning
@@ -149,10 +149,10 @@ export const performScan = (
             Effect.tap(() => Effect.sync(() => logger.info('Scan completed successfully')))
         );
 
-        // If React detected and React bundle path provided, inject and attribute
-        logger.debug(`React detected: ${hasReact}, bundle path: ${reactBundlePath ?? 'not provided'}`);
-        if (hasReact && reactBundlePath) {
-            rawData = yield* attributeWithReactPlugin(page, rawData, reactBundlePath);
+        // If supported framework detected and component bundle provided, inject and attribute
+        logger.debug(`Framework detected: ${hasFramework}, bundle path: ${componentBundlePath ?? 'not provided'}`);
+        if (hasFramework && componentBundlePath) {
+            rawData = yield* attributeWithComponentPlugin(page, rawData, componentBundlePath);
         }
 
         // Process results
@@ -219,41 +219,41 @@ export const performScanWithCleanup = (
 // ============================================================================
 
 /**
- * Inject the React plugin bundle and attribute violations to React components
+ * Inject the component attribution bundle and attribute violations to components
  *
- * This injects react-bundle.js into the page, which uses Bippy to traverse
- * the React Fiber tree and map DOM elements to component names.
+ * This injects the component bundle into the page, which uses element-source to
+ * resolve DOM elements to their framework component names and source locations.
  */
-const attributeWithReactPlugin = (
+const attributeWithComponentPlugin = (
     page: import('playwright').Page,
     rawData: BrowserScanData,
-    reactBundlePath: string
+    componentBundlePath: string
 ): Effect.Effect<BrowserScanData, EffectScanDataError> =>
     Effect.gen(function* () {
-        // Inject the React plugin bundle
+        // Inject the component attribution bundle
         yield* Effect.tryPromise({
-            try: () => page.addScriptTag({ path: reactBundlePath }),
+            try: () => page.addScriptTag({ path: componentBundlePath }),
             catch: (error) => {
                 const msg = error instanceof Error ? error.message : String(error);
-                logger.warn(`Failed to inject React bundle: ${msg}`);
+                logger.warn(`Failed to inject component bundle: ${msg}`);
                 return new EffectScanDataError({
-                    reason: `Failed to inject React plugin bundle: ${msg}`
+                    reason: `Failed to inject component plugin bundle: ${msg}`
                 });
             }
         });
 
-        // Verify ReactA11yPlugin is available
+        // Verify ReactA11yPlugin is available (window global name kept for bundle compat)
         const hasPlugin = yield* Effect.tryPromise({
             try: () => page.evaluate(() => typeof (window as any).ReactA11yPlugin !== 'undefined'),
-            catch: () => new EffectScanDataError({ reason: 'Failed to verify React plugin injection' })
+            catch: () => new EffectScanDataError({ reason: 'Failed to verify component plugin injection' })
         });
 
         if (!hasPlugin) {
-            logger.warn('React plugin bundle did not expose ReactA11yPlugin on window');
+            logger.warn('Component plugin bundle did not expose ReactA11yPlugin on window');
             return rawData;
         }
 
-        logger.info('React plugin injected, attributing violations to components...');
+        logger.info('Component plugin injected, attributing violations to components...');
 
         // Call ReactA11yPlugin.attributeViolations in browser context
         const attributed = yield* Effect.tryPromise({
@@ -273,13 +273,13 @@ const attributeWithReactPlugin = (
             ),
             catch: (error) => {
                 const msg = error instanceof Error ? error.message : String(error);
-                logger.warn(`React attribution failed: ${msg}`);
-                return new EffectScanDataError({ reason: `React attribution failed: ${msg}` });
+                logger.warn(`Component attribution failed: ${msg}`);
+                return new EffectScanDataError({ reason: `Component attribution failed: ${msg}` });
             }
         });
 
         if (attributed && attributed.components) {
-            logger.info(`React attribution complete: ${attributed.components.length} components found`);
+            logger.info(`Component attribution complete: ${attributed.components.length} components found`);
             return {
                 ...rawData,
                 components: attributed.components,
@@ -291,9 +291,9 @@ const attributeWithReactPlugin = (
 
         return rawData;
     }).pipe(
-        // Don't fail the entire scan if React attribution fails - just log and continue
+        // Don't fail the entire scan if component attribution fails - just log and continue
         Effect.catchAll((error) => {
-            logger.warn(`React component attribution failed, continuing without it: ${error.reason}`);
+            logger.warn(`Component attribution failed, continuing without it: ${error.reason}`);
             return Effect.succeed(rawData);
         })
     );

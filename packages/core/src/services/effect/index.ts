@@ -37,7 +37,7 @@ export {
     makeBrowserResource,
     navigateTo,
     waitForPageStability,
-    detectReact,
+    detectFramework,
     withBrowser,
 } from './browser-resource.js';
 

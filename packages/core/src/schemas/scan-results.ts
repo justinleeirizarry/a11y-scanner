@@ -5,20 +5,19 @@
  * and related option/error types.
  */
 import { Schema } from 'effect';
-import { BrowserType, type Mutable } from './primitives.js';
+import { BrowserType, SourceLocation, type Mutable } from './primitives.js';
 import { AttributedViolation, AttributedPass, AttributedIncomplete, InapplicableRule } from './violations.js';
 import { KeyboardTestResults } from './keyboard.js';
 import { WCAG22Results } from './wcag22-violations.js';
 
-// Component information from Bippy/React fiber traversal
+// Component information from element-source / fiber traversal
 export const ComponentInfo = Schema.Struct({
     name: Schema.String,
     type: Schema.String,
     displayName: Schema.optional(Schema.String),
-    props: Schema.optional(Schema.Record({ key: Schema.String, value: Schema.Unknown })),
-    fiber: Schema.optional(Schema.Unknown),
     domNode: Schema.optional(Schema.Unknown),
     path: Schema.Array(Schema.String),
+    source: Schema.optional(SourceLocation),
 });
 export type ComponentInfo = Mutable<typeof ComponentInfo.Type>;
 

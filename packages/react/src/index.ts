@@ -20,13 +20,14 @@
 // Plugin Export
 // =============================================================================
 
-export { ReactPlugin, getReactBundlePath, default } from './plugin.js';
+export { ReactPlugin, getComponentBundlePath, default } from './plugin.js';
 
 // =============================================================================
 // Types
 // =============================================================================
 
 export type {
+    SourceLocation,
     ComponentInfo,
     ReactScanData,
     AttributedCheck,
@@ -45,6 +46,7 @@ export {
     traverseFiberTree,
     buildDomToComponentMap,
     findComponentForElement,
+    enrichComponentsWithSource,
 } from './fiber/traversal.js';
 
 export {

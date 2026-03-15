@@ -35,8 +35,9 @@ export const fixAllTemplate: PromptTemplate = {
 
         return `# Accessibility Fix Request
 
-You are an expert React developer and accessibility specialist.
+You are an expert developer and accessibility specialist.
 I need you to fix ALL accessibility violations in my application.
+Source file locations are provided where available — use them to navigate directly to the code that needs fixing.
 
 ## Scan Context
 **URL:** ${url}
@@ -55,23 +56,23 @@ ${passesNote}${incompleteNote}
 ${formatViolations(violations)}
 
 ## Requirements
-1. **Fix all violations** while maintaining existing functionality
-2. Use **semantic HTML** where possible (prefer <main>, <nav>, <header>, <footer> over <div>)
+1. **Fix all violations** — use the source file locations to navigate to and edit the right files
+2. Use **semantic HTML** where possible (prefer \`<main>\`, \`<nav>\`, \`<header>\`, \`<footer>\` over \`<div>\`)
 3. Add **ARIA attributes** only when semantic HTML is not sufficient
 4. Ensure **keyboard navigation** works correctly
 5. Maintain current styling and layout
 6. Follow **WCAG 2.1 AA** guidelines
 
 ## Deliverables
-Please provide:
-- Updated code for each affected component
-- Brief explanation of each change
-- Any additional accessibility improvements you recommend
+For each violation:
+1. Open the source file at the specified location
+2. Apply the fix
+3. Briefly explain the change
 
-## Focus Areas
+## Who Benefits
 - Screen reader users
 - Keyboard-only users
-- Users with visual impairments
+- Users with low vision or color blindness
 - Users with motor disabilities`;
     }
 };

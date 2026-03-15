@@ -1,4 +1,4 @@
-import type { AttributedViolation } from '../types.js';
+import type { AttributedViolation, SourceLocation } from '../types.js';
 
 /**
  * Escape HTML tags in text for markdown display
@@ -87,6 +87,33 @@ function formatWcagTags(tags: string[]): string {
 }
 
 /**
+ * Format a source location as file:line:col
+ */
+function formatSource(s: SourceLocation | undefined | null): string {
+    if (!s?.filePath) return '';
+    let loc = s.filePath;
+    if (s.lineNumber) loc += `:${s.lineNumber}`;
+    if (s.columnNumber) loc += `:${s.columnNumber}`;
+    return loc;
+}
+
+/**
+ * Format a source stack as indented trace lines
+ */
+function formatSourceStack(stack: SourceLocation[] | undefined): string {
+    if (!stack || stack.length === 0) return '';
+    return stack
+        .filter(f => f.filePath)
+        .slice(0, 6)
+        .map(f => {
+            const name = f.componentName && filterComponentPath([f.componentName]).length > 0
+                ? `${f.componentName} ` : '';
+            return `  ${name}${formatSource(f)}`;
+        })
+        .join('\n');
+}
+
+/**
  * Format detailed violations for prompts
  */
 export function formatViolations(violations: AttributedViolation[]): string {
@@ -111,20 +138,30 @@ export function formatViolations(violations: AttributedViolation[]): string {
                 .join(', ');
             output += `**WCAG Criteria:** ${criteriaFormatted}\n`;
 
-            // Show principle for context
             const principles = [...new Set(violation.wcagCriteria.map(c => c.principle))];
             if (principles.length === 1) {
                 output += `**Principle:** ${principles[0]}\n`;
             }
         } else if (violation.tags && violation.tags.length > 0) {
-            // Fallback to tag-based formatting
             const wcagFormatted = formatWcagTags(violation.tags);
             if (wcagFormatted) {
                 output += `**WCAG:** ${wcagFormatted}\n`;
             }
         }
 
-        output += `\n**Component Path:** \`${userPath}\`\n`;
+        // Source location — the most actionable field for agents
+        const firstSource = formatSource((firstNode as any)?.source);
+        if (firstSource) {
+            output += `\n**Source:** \`${firstSource}\`\n`;
+        }
+
+        // Source stack — shows component hierarchy with file locations
+        const stackStr = formatSourceStack((firstNode as any)?.sourceStack);
+        if (stackStr) {
+            output += `**Component Stack:**\n${stackStr}\n`;
+        }
+
+        output += `**Component Path:** \`${userPath}\`\n`;
 
         if (firstNode?.cssSelector) {
             output += `**Selector:** \`${firstNode.cssSelector}\`\n`;
@@ -138,7 +175,6 @@ export function formatViolations(violations: AttributedViolation[]): string {
             output += `\n**Failure Summary:**\n> ${escapeHtmlTags(firstNode.failureSummary).split('\n').join('\n> ')}\n`;
         }
 
-        // Add check details if available (more specific failure info)
         if (firstNode?.checks) {
             const checkMessages: string[] = [];
             firstNode.checks.any?.forEach(c => c.message && checkMessages.push(c.message));
@@ -155,12 +191,15 @@ export function formatViolations(violations: AttributedViolation[]): string {
 
         if (violation.fixSuggestion) {
             output += `\n**How to Fix:**\n${violation.fixSuggestion.summary}\n`;
+            if (violation.fixSuggestion.details && violation.fixSuggestion.details !== violation.fixSuggestion.summary) {
+                output += `${escapeHtmlTags(violation.fixSuggestion.details)}\n`;
+            }
             if (violation.fixSuggestion.userImpact) {
                 output += `\n**User Impact:** ${violation.fixSuggestion.userImpact}\n`;
             }
         }
 
-        // Show all instances if multiple
+        // Show all instances with source locations
         if (violation.nodes.length > 1) {
             output += `\n**All Instances (${violation.nodes.length}):**\n`;
             violation.nodes.slice(0, 5).forEach((node, i) => {
@@ -168,7 +207,9 @@ export function formatViolations(violations: AttributedViolation[]): string {
                     node.userComponentPath?.length ? node.userComponentPath : node.componentPath || []
                 );
                 const component = nodePath.length > 0 ? nodePath[nodePath.length - 1] : node.component || 'Unknown';
-                output += `${i + 1}. \`${component}\` - ${node.cssSelector || node.target[0]}\n`;
+                const src = formatSource((node as any)?.source);
+                const loc = src ? ` (${src})` : '';
+                output += `${i + 1}. \`${component}\`${loc} - ${node.cssSelector || node.target[0]}\n`;
             });
             if (violation.nodes.length > 5) {
                 output += `   ... and ${violation.nodes.length - 5} more\n`;

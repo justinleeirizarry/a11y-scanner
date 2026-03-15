@@ -15,7 +15,7 @@ import {
     loadEnvConfig,
     hasEnvConfig,
 } from "@accessibility-toolkit/core";
-import { getReactBundlePath } from "@accessibility-toolkit/react";
+import { getComponentBundlePath } from "@accessibility-toolkit/react";
 
 // Configure logger to use stderr to avoid corrupting JSON-RPC on stdout
 logger.setUseStderr(true);
@@ -41,12 +41,12 @@ server.registerTool(
             browser: z.enum(["chromium", "firefox", "webkit"]).optional().default("chromium").describe("Browser to use for scanning"),
             mobile: z.boolean().optional().default(false).describe("Emulate a mobile device"),
             include_tree: z.boolean().optional().default(false).describe("Include the full accessibility tree in the response (can be large)"),
-            react: z.boolean().optional().default(false).describe("Enable React component attribution (requires a React app at the target URL)"),
+            components: z.boolean().optional().default(true).describe("Auto-detect and attribute violations to framework components (React, Vue, Svelte, Solid). Set false to disable."),
             disable_rules: z.array(z.string()).optional().describe("Axe rule IDs to disable (e.g. ['color-contrast'])"),
             exclude: z.array(z.string()).optional().describe("CSS selectors to exclude from scanning"),
         },
     },
-    async ({ url, browser, mobile, include_tree, react, disable_rules, exclude }) => {
+    async ({ url, browser, mobile, include_tree, components, disable_rules, exclude }) => {
         try {
             logger.info(`Starting scan for ${url} using ${browser}`);
 
@@ -55,7 +55,7 @@ server.registerTool(
                 browser: browser as "chromium" | "firefox" | "webkit",
                 headless: true,
                 includeKeyboardTests: true,
-                reactBundlePath: react ? getReactBundlePath() : undefined,
+                componentBundlePath: components !== false ? getComponentBundlePath() : undefined,
                 mobile,
                 disableRules: disable_rules,
                 exclude,
@@ -93,12 +93,12 @@ server.registerTool(
             browser: z.enum(["chromium", "firefox", "webkit"]).optional().default("chromium").describe("Browser to use for scanning"),
             mobile: z.boolean().optional().default(false).describe("Emulate a mobile device"),
             include_tree: z.boolean().optional().default(false).describe("Include the full accessibility tree in the response (can be large)"),
-            react: z.boolean().optional().default(false).describe("Enable React component attribution (requires React apps at the target URLs)"),
+            components: z.boolean().optional().default(true).describe("Auto-detect and attribute violations to framework components (React, Vue, Svelte, Solid). Set false to disable."),
             disable_rules: z.array(z.string()).optional().describe("Axe rule IDs to disable (e.g. ['color-contrast'])"),
             exclude: z.array(z.string()).optional().describe("CSS selectors to exclude from scanning"),
         },
     },
-    async ({ urls, browser, mobile, include_tree, react, disable_rules, exclude }) => {
+    async ({ urls, browser, mobile, include_tree, components, disable_rules, exclude }) => {
         try {
             logger.info(`Starting multi-page scan for ${urls.length} URLs using ${browser}`);
 
@@ -108,7 +108,7 @@ server.registerTool(
                     browser: browser as "chromium" | "firefox" | "webkit",
                     headless: true,
                     includeKeyboardTests: true,
-                    reactBundlePath: react ? getReactBundlePath() : undefined,
+                    componentBundlePath: components !== false ? getComponentBundlePath() : undefined,
                     mobile,
                     disableRules: disable_rules,
                     exclude,

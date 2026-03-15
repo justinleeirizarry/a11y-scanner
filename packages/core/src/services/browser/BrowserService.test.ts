@@ -232,12 +232,12 @@ describe('BrowserService', () => {
         });
     });
 
-    describe('detectReact', () => {
+    describe('detectFramework', () => {
         it('should return true when React is detected', async () => {
             await Effect.runPromise(service.launch({ browserType: 'chromium', headless: true }));
             mockPage.evaluate.mockResolvedValue(true);
 
-            const result = await Effect.runPromise(service.detectReact());
+            const result = await Effect.runPromise(service.detectFramework());
 
             expect(result).toBe(true);
         });
@@ -246,13 +246,13 @@ describe('BrowserService', () => {
             await Effect.runPromise(service.launch({ browserType: 'chromium', headless: true }));
             mockPage.evaluate.mockResolvedValue(false);
 
-            const result = await Effect.runPromise(service.detectReact());
+            const result = await Effect.runPromise(service.detectFramework());
 
             expect(result).toBe(false);
         });
 
         it('should fail with BrowserNotLaunchedError if browser not launched', async () => {
-            const exit = await Effect.runPromiseExit(service.detectReact());
+            const exit = await Effect.runPromiseExit(service.detectFramework());
 
             expect(Exit.isFailure(exit)).toBe(true);
             if (Exit.isFailure(exit) && exit.cause._tag === 'Fail') {

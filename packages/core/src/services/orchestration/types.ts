@@ -18,10 +18,10 @@ export interface BaseScanOptions {
     outputFile?: string;
     ciMode?: boolean;
     ciThreshold?: number;
-    /** Require React to be detected on the page (default: false for generic scanning) */
-    requireReact?: boolean;
-    /** Path to the React plugin bundle (react-bundle.js) for component attribution */
-    reactBundlePath?: string;
+    /** Require a supported framework to be detected on the page (default: false for generic scanning) */
+    requireFramework?: boolean;
+    /** Path to the component attribution bundle for framework-aware scanning */
+    componentBundlePath?: string;
     /** Emulate a mobile device (375x812 viewport, touch enabled) */
     mobile?: boolean;
     /** Axe rule IDs to disable (e.g. ['color-contrast']) */

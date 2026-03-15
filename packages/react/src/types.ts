@@ -17,7 +17,17 @@ export type {
 } from '@accessibility-toolkit/core';
 
 /**
- * Component information from React Fiber traversal
+ * Source location information from element-source
+ */
+export interface SourceLocation {
+    filePath: string;
+    lineNumber: number | null;
+    columnNumber: number | null;
+    componentName?: string | null;
+}
+
+/**
+ * Component information from element-source / fiber traversal
  */
 export interface ComponentInfo {
     /** Component name (from displayName, function name, or debug source) */
@@ -26,14 +36,14 @@ export interface ComponentInfo {
     type: string;
     /** Display name if different from name */
     displayName?: string;
-    /** Component props */
-    props?: Record<string, any>;
-    /** Reference to the fiber node */
-    fiber?: any;
     /** Associated DOM node (for host components) */
     domNode?: Element | null;
     /** Full path from root component */
     path: string[];
+    /** Source file location */
+    source?: SourceLocation;
+    /** Full source stack */
+    sourceStack?: SourceLocation[];
 }
 
 /**
@@ -84,6 +94,10 @@ export interface AttributedViolationNode {
     failureSummary: string;
     /** Whether this is a framework internal component */
     isFrameworkComponent: boolean;
+    /** Source file location of the nearest component */
+    source?: SourceLocation;
+    /** Full source stack with file locations at each component level */
+    sourceStack?: SourceLocation[];
     /** Detailed check results */
     checks?: {
         any?: AttributedCheck[];

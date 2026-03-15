@@ -14,7 +14,7 @@ import {
     EffectBrowserAlreadyLaunchedError,
     EffectNavigationError,
 } from '../../errors/effect-errors.js';
-import { detectReact as detectReactOnPage } from '../effect/browser-resource.js';
+import { detectFramework as detectFrameworkOnPage } from '../effect/browser-resource.js';
 import type {
     BrowserServiceConfig,
     NavigateOptions,
@@ -247,12 +247,12 @@ export class BrowserService implements IBrowserService {
     }
 
     /**
-     * Detect if React is present on the page
+     * Detect if a supported framework is present on the page
      */
-    detectReact(): Effect.Effect<boolean, EffectBrowserNotLaunchedError> {
+    detectFramework(): Effect.Effect<boolean, EffectBrowserNotLaunchedError> {
         return Effect.gen(this, function* () {
             const page = yield* this.getPage();
-            return yield* detectReactOnPage(page);
+            return yield* detectFrameworkOnPage(page);
         });
     }
 

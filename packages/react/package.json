@@ -31,7 +31,7 @@
     "license": "MIT",
     "dependencies": {
         "@accessibility-toolkit/core": "workspace:*",
-        "bippy": "^0.5.16"
+        "element-source": "^0.0.4"
     },
     "devDependencies": {
         "@types/node": "^20.10.0",

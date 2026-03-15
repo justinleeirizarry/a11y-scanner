@@ -241,9 +241,9 @@ export const waitForPageStability = (
 };
 
 /**
- * Detect if React is present on the page
+ * Detect if a supported framework (React, Vue, Svelte, Solid) is present on the page
  */
-export const detectReact = (page: Page): Effect.Effect<boolean> =>
+export const detectFramework = (page: Page): Effect.Effect<boolean> =>
     Effect.promise(() =>
         page.evaluate(() => {
             // Helper function to check if element has React fiber

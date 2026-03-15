@@ -87,7 +87,7 @@ describe('Effect Orchestration', () => {
         waitForStability: vi.fn(() =>
             Effect.succeed({ isStable: true, navigationCount: 0 })
         ),
-        detectReact: vi.fn(() => Effect.succeed(true)),
+        detectFramework: vi.fn(() => Effect.succeed(true)),
         close: vi.fn(() => Effect.succeed(undefined)),
         ...overrides,
     });
@@ -154,14 +154,14 @@ describe('Effect Orchestration', () => {
             expect(result.results).toEqual(mockScanResults);
             expect(browserService.launch).toHaveBeenCalled();
             expect(browserService.navigate).toHaveBeenCalled();
-            expect(browserService.detectReact).toHaveBeenCalled();
+            expect(browserService.detectFramework).toHaveBeenCalled();
             expect(scannerService.scan).toHaveBeenCalled();
             expect(processorService.process).toHaveBeenCalled();
         });
 
-        it('should fail with ReactNotDetectedError when React is not found and requireReact is true', async () => {
+        it('should fail with ReactNotDetectedError when React is not found and requireFramework is true', async () => {
             const browserService = createMockBrowserService({
-                detectReact: vi.fn(() => Effect.succeed(false)),
+                detectFramework: vi.fn(() => Effect.succeed(false)),
             });
             const scannerService = createMockScannerService();
             const processorService = createMockProcessorService();
@@ -176,7 +176,7 @@ describe('Effect Orchestration', () => {
                 url: 'http://example.com',
                 browser: 'chromium',
                 headless: true,
-                requireReact: true,
+                requireFramework: true,
             };
 
             const effect = performScan(options);
@@ -188,9 +188,9 @@ describe('Effect Orchestration', () => {
             }
         });
 
-        it('should succeed when React is not found and requireReact is false (generic scanning)', async () => {
+        it('should succeed when React is not found and requireFramework is false (generic scanning)', async () => {
             const browserService = createMockBrowserService({
-                detectReact: vi.fn(() => Effect.succeed(false)),
+                detectFramework: vi.fn(() => Effect.succeed(false)),
             });
             const scannerService = createMockScannerService();
             const processorService = createMockProcessorService();
@@ -205,7 +205,7 @@ describe('Effect Orchestration', () => {
                 url: 'http://example.com',
                 browser: 'chromium',
                 headless: true,
-                // requireReact: false is the default
+                // requireFramework: false is the default
             };
 
             const effect = performScan(options);
@@ -337,7 +337,7 @@ describe('Effect Orchestration', () => {
         it('should call close even when scan fails', async () => {
             const closeMock = vi.fn(() => Effect.succeed(undefined));
             const browserService = createMockBrowserService({
-                detectReact: vi.fn(() => Effect.succeed(false)),
+                detectFramework: vi.fn(() => Effect.succeed(false)),
                 close: closeMock,
             });
             const scannerService = createMockScannerService();

@@ -2,9 +2,6 @@
  * React Fiber component name resolution
  */
 
-// @ts-ignore - Bippy utilities
-import { getDisplayName } from 'bippy';
-
 export interface FiberNode {
     type: any;
     stateNode: any;
@@ -29,26 +26,24 @@ export interface FiberNode {
 export function getComponentName(fiber: FiberNode): string | null {
     const type = fiber.type;
 
-    // 1. Try Bippy's resolution first (it handles most cases including HOCs)
-    try {
-        const displayName = getDisplayName(fiber as any);
-        // Only accept if it's not a single letter (minified) unless we have no other choice
-        if (displayName && displayName.length > 1) return displayName;
-
-        // If it is minified (length 1), keep it but try to find a better name below
-        if (displayName) {
-            // If we have a minified name, check if we can get a better one from type
-            if (typeof type === 'function' && (type.displayName || type.name)) {
-                const manualName = type.displayName || type.name;
-                if (manualName.length > 1) return manualName;
+    // 1. Try type.displayName or type.name (functions/classes)
+    if (typeof type === 'function') {
+        const name = type.displayName || type.name;
+        if (name && name.length > 1) return name;
+        // If minified (single letter), try other strategies before accepting
+        if (name) {
+            // Check _debugSource for a better name
+            if ((fiber as any)._debugSource?.fileName) {
+                const match = (fiber as any)._debugSource.fileName.match(/\/([^/]+)\.(tsx?|jsx?)$/);
+                if (match && match[1] && match[1].length > 1) {
+                    return match[1];
+                }
             }
-            return displayName;
+            return name;
         }
-    } catch (error) {
-        // Ignore bippy errors
     }
 
-    // 2. Handle Context Providers explicitly (Bippy might miss some internal ones)
+    // 2. Handle Context Providers explicitly
     if (type && type._context) {
         const contextName = type._context.displayName || 'Context';
         return `${contextName}.Provider`;
@@ -62,12 +57,7 @@ export function getComponentName(fiber: FiberNode): string | null {
         }
     }
 
-    // 4. Manual extraction from type (last resort)
-    if (typeof type === 'function') {
-        const name = type.displayName || type.name;
-        return name || 'Anonymous';
-    }
-
+    // 4. Object types with displayName
     if (typeof type === 'object' && type !== null) {
         if (type.displayName) return type.displayName;
     }

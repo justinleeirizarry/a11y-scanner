@@ -5,7 +5,7 @@ import {
     makeBrowserResource,
     navigateTo,
     waitForPageStability,
-    detectReact,
+    detectFramework,
     withBrowser,
 } from './browser-resource.js';
 import * as configModule from '../../config/index.js';
@@ -265,11 +265,11 @@ describe('browser-resource', () => {
         });
     });
 
-    describe('detectReact', () => {
+    describe('detectFramework', () => {
         it('should return true when React is detected', async () => {
             mockPage.evaluate.mockResolvedValue(true);
 
-            const effect = detectReact(mockPage);
+            const effect = detectFramework(mockPage);
 
             const result = await Effect.runPromise(effect);
 
@@ -279,7 +279,7 @@ describe('browser-resource', () => {
         it('should return false when React is not detected', async () => {
             mockPage.evaluate.mockResolvedValue(false);
 
-            const effect = detectReact(mockPage);
+            const effect = detectFramework(mockPage);
 
             const result = await Effect.runPromise(effect);
 

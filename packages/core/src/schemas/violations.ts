@@ -5,7 +5,7 @@
  * These represent axe-core results attributed to React components (or not).
  */
 import { Schema } from 'effect';
-import { ImpactLevel, ImpactLevelOrNull, FixPriority, type Mutable } from './primitives.js';
+import { ImpactLevel, ImpactLevelOrNull, FixPriority, SourceLocation, type Mutable } from './primitives.js';
 import { WcagLevel } from './primitives.js';
 import { WcagCriterionInfo } from './wcag.js';
 
@@ -59,6 +59,8 @@ const AttributedViolationNode = Schema.Struct({
     target: Schema.Array(Schema.String),
     failureSummary: Schema.String,
     isFrameworkComponent: Schema.Boolean,
+    source: Schema.optional(SourceLocation),
+    sourceStack: Schema.optional(Schema.Array(SourceLocation)),
     checks: Schema.optional(CheckResults),
 });
 

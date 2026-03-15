@@ -21,7 +21,7 @@ import {
     createTreeAnalysisService,
     createWcagAuditService,
 } from '@accessibility-toolkit/ai-auditor';
-import { getReactBundlePath } from '@accessibility-toolkit/react';
+import { getComponentBundlePath } from '@accessibility-toolkit/react';
 import type {
     ScanResults,
     BrowserType,
@@ -49,7 +49,7 @@ interface AppProps {
     keyboardNav?: boolean;
     tree?: boolean;
     quiet?: boolean;
-    react?: boolean;
+    components?: boolean;
     disableRules?: string[];
     exclude?: string[];
     generateTest?: boolean;
@@ -83,7 +83,7 @@ const App: React.FC<AppProps> = ({
     keyboardNav,
     tree,
     quiet,
-    react,
+    components,
     disableRules,
     exclude,
     generateTest,
@@ -278,7 +278,7 @@ const App: React.FC<AppProps> = ({
                         outputFile: output,
                         ciMode: ci,
                         ciThreshold: threshold,
-                        reactBundlePath: react ? getReactBundlePath() : undefined,
+                        componentBundlePath: components ? getComponentBundlePath() : undefined,
                         disableRules,
                         exclude,
                     }, AppLayer);
@@ -338,7 +338,7 @@ const App: React.FC<AppProps> = ({
         return () => {
             cancelled = true;
         };
-    }, [mode, url, browser, headless, ci, threshold, output, ai, tags, keyboardNav, tree, react, disableRules, exclude, generateTest, stagehandModel, stagehandVerbose, maxTabPresses, includeFullTree, auditLevel, maxSteps, testFile, exit]);
+    }, [mode, url, browser, headless, ci, threshold, output, ai, tags, keyboardNav, tree, components, disableRules, exclude, generateTest, stagehandModel, stagehandVerbose, maxTabPresses, includeFullTree, auditLevel, maxSteps, testFile, exit]);
 
     // Error state
     if (scanState === 'error' || testGenState === 'error' || stagehandState === 'error') {

@@ -27,7 +27,7 @@ vi.mock('../browser/index.js', async () => {
             isLaunched: vi.fn(() => Effect.succeed(false)),
             navigate: vi.fn(() => Effect.succeed(undefined)),
             waitForStability: vi.fn(() => Effect.succeed({ isStable: true, navigationCount: 0 })),
-            detectReact: vi.fn(() => Effect.succeed(true)),
+            detectFramework: vi.fn(() => Effect.succeed(true)),
             close: vi.fn(() => Effect.succeed(undefined)),
         })),
     };

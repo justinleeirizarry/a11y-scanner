@@ -3,28 +3,18 @@
  *
  * This file gets bundled and injected into the browser page to traverse
  * the React Fiber tree and attribute violations to components.
+ *
+ * Uses element-source for component attribution and source location resolution.
  */
 
-// @ts-ignore - Bippy is bundled as IIFE by esbuild
-import { instrument } from 'bippy';
-
 // Import React-specific scanner components
-import { findReactRoot, traverseFiberTree, buildDomToComponentMap } from './fiber/traversal.js';
+import { findReactRoot, traverseFiberTree, enrichComponentsWithSource, buildDomToComponentMap } from './fiber/traversal.js';
 import {
     attributeViolationsToComponents,
     attributePassesToComponents,
     attributeIncompleteToComponents
 } from './attribution/index.js';
 import type { ComponentInfo, AttributedViolation, AttributedPass, AttributedIncomplete } from './types.js';
-
-// Initialize Bippy instrumentation immediately
-try {
-    instrument({
-        onCommitFiberRoot: () => { }, // We just need instrumentation active
-    });
-} catch (e) {
-    console.warn('Failed to initialize Bippy instrumentation:', e);
-}
 
 // ============================================================================
 // Types
@@ -70,12 +60,12 @@ export interface ReactAttributedScanData {
  * API exposed on window.ReactA11yPlugin
  */
 export interface ReactA11yPluginAPI {
-    scan: () => ReactBrowserScanData;
+    scan: () => Promise<ReactBrowserScanData>;
     attributeViolations: (
         violations: any[],
         passes: any[],
         incomplete: any[]
-    ) => ReactAttributedScanData;
+    ) => Promise<ReactAttributedScanData>;
 }
 
 // ============================================================================
@@ -85,10 +75,10 @@ export interface ReactA11yPluginAPI {
 /**
  * Scan the page for React components
  *
- * This traverses the React Fiber tree and collects component information.
- * Call this after the core accessibility scan to get component data.
+ * This traverses the React Fiber tree and collects component information,
+ * then enriches components with source location data via element-source.
  */
-export function scan(): ReactBrowserScanData {
+export async function scan(): Promise<ReactBrowserScanData> {
     const errors: ScanError[] = [];
 
     console.log('🔍 Starting React component scan...');
@@ -101,10 +91,9 @@ export function scan(): ReactBrowserScanData {
 
     console.log('✓ Found React root');
 
-    // Traverse fiber tree to get components with timeout protection
+    // Traverse fiber tree to get components
     let components: ComponentInfo[] = [];
     try {
-        // Add a safeguard - limit traversal to prevent infinite loops
         const MAX_COMPONENTS = 10000;
         components = traverseFiberTree(root);
         if (components.length > MAX_COMPONENTS) {
@@ -124,6 +113,13 @@ export function scan(): ReactBrowserScanData {
         components = [];
     }
 
+    // Enrich components with source location data from element-source
+    try {
+        await enrichComponentsWithSource(components);
+    } catch (error) {
+        console.warn('[react-a11y-plugin] Source enrichment failed:', error);
+    }
+
     console.log(`✓ Found ${components.length} React components`);
 
     return {
@@ -136,17 +132,17 @@ export function scan(): ReactBrowserScanData {
  * Attribute axe-core results to React components
  *
  * Takes the raw axe results (violations, passes, incomplete) and
- * returns them with React component attribution.
+ * returns them with React component attribution via element-source.
  */
-export function attributeViolations(
+export async function attributeViolations(
     violations: any[],
     passes: any[],
     incomplete: any[]
-): ReactAttributedScanData {
+): Promise<ReactAttributedScanData> {
     const errors: ScanError[] = [];
 
     // First scan for components
-    const scanData = scan();
+    const scanData = await scan();
     if (scanData.errors) {
         errors.push(...scanData.errors);
     }
@@ -155,15 +151,15 @@ export function attributeViolations(
     const domToComponentMap = buildDomToComponentMap(scanData.components);
 
     // Attribute violations to components
-    const attributedViolations = attributeViolationsToComponents(violations, domToComponentMap);
+    const attributedViolations = await attributeViolationsToComponents(violations, domToComponentMap);
     console.log(`✓ Attributed ${attributedViolations.length} violations to components`);
 
     // Attribute passes to components (lighter attribution)
-    const attributedPasses = attributePassesToComponents(passes, domToComponentMap);
+    const attributedPasses = await attributePassesToComponents(passes, domToComponentMap);
     console.log(`✓ Attributed ${attributedPasses.length} passing rules`);
 
     // Attribute incomplete results (needs manual review)
-    const attributedIncomplete = attributeIncompleteToComponents(incomplete, domToComponentMap);
+    const attributedIncomplete = await attributeIncompleteToComponents(incomplete, domToComponentMap);
     if (attributedIncomplete.length > 0) {
         console.log(`⚠️  ${attributedIncomplete.length} rules need manual review`);
     }

@@ -71,10 +71,9 @@ export interface IBrowserService {
     waitForStability(): Effect.Effect<StabilityCheckResult, EffectBrowserNotLaunchedError>;
 
     /**
-     * Detect if React is present on the page
-     * @deprecated Use @accessibility-toolkit/react plugin's detect() method instead
+     * Detect if a supported framework (React, Vue, Svelte, Solid) is present on the page
      */
-    detectReact(): Effect.Effect<boolean, EffectBrowserNotLaunchedError>;
+    detectFramework(): Effect.Effect<boolean, EffectBrowserNotLaunchedError>;
 
     /**
      * Close the browser

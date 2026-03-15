@@ -30,6 +30,7 @@ export type { AttributedIncomplete } from './schemas/violations.js';
 
 export type { KeyboardTestResults } from './schemas/keyboard.js';
 
+export type { SourceLocation } from './schemas/primitives.js';
 export type { ComponentInfo } from './schemas/scan-results.js';
 export type { ScanResults } from './schemas/scan-results.js';
 export type { ScanOptions } from './schemas/scan-results.js';

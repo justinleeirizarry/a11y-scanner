@@ -161,13 +161,13 @@ describe('App Component', () => {
                 outputFile: undefined,
                 ciMode: false,
                 ciThreshold: 0,
-                reactBundlePath: undefined,
+                componentBundlePath: undefined,
             }, expect.anything());
 
             unmount();
         });
 
-        it('should pass reactBundlePath when react prop is true', async () => {
+        it('should pass componentBundlePath when components prop is true', async () => {
             const mockResults = createMockScanResults(0);
             mockRunScanAsPromise.mockResolvedValue(createMockScanResponse(mockResults));
 
@@ -179,7 +179,7 @@ describe('App Component', () => {
                     ci={false}
                     threshold={0}
                     headless={true}
-                    react={true}
+                    components={true}
                 />
             );
 
@@ -189,7 +189,7 @@ describe('App Component', () => {
 
             expect(mockRunScanAsPromise).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    reactBundlePath: expect.stringContaining('react-bundle.js'),
+                    componentBundlePath: expect.stringContaining('react-bundle.js'),
                 }),
                 expect.anything()
             );

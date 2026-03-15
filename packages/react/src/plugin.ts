@@ -16,12 +16,12 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 /**
- * Get the absolute path to the React browser bundle (react-bundle.js)
+ * Get the absolute path to the component attribution bundle
  *
  * Use this to pass the bundle path to the core scanner for automatic
- * React component attribution when React is detected on a page.
+ * component attribution when a supported framework is detected.
  */
-export function getReactBundlePath(): string {
+export function getComponentBundlePath(): string {
     return join(__dirname, '../dist/react-bundle.js');
 }
 
@@ -29,7 +29,7 @@ export function getReactBundlePath(): string {
  * Load the React bundle for injection into the page
  */
 async function loadReactBundle(): Promise<string> {
-    const bundlePath = getReactBundlePath();
+    const bundlePath = getComponentBundlePath();
     return readFileSync(bundlePath, 'utf-8');
 }
 

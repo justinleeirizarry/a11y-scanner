@@ -1,14 +1,13 @@
 /**
- * React Fiber tree traversal using Bippy for reliable fiber access
+ * React Fiber tree traversal and source enrichment via element-source
  */
 
-import { traverseFiber as bippyTraverseFiber, isHostFiber, isCompositeFiber } from 'bippy';
+import { resolveSource } from 'element-source';
 import { getComponentName, type FiberNode } from './component-resolver.js';
 import type { ComponentInfo } from '../types.js';
 
 /**
  * React DevTools global hook interface
- * This is the structure React exposes for DevTools integration
  */
 interface ReactDevToolsHook {
     getFiberRoots?: (rendererId: number) => Set<FiberRoot>;
@@ -17,7 +16,6 @@ interface ReactDevToolsHook {
 
 /**
  * React Fiber Root container
- * Contains the current fiber tree root
  */
 interface FiberRoot {
     current: FiberNode;
@@ -25,7 +23,6 @@ interface FiberRoot {
 
 /**
  * Element with potential React fiber internal properties
- * React attaches fiber nodes to DOM elements with prefixed keys
  */
 interface ElementWithFiber extends Element {
     [key: string]: FiberNode | FiberRoot | unknown;
@@ -56,7 +53,6 @@ export function findReactRoot(): FiberNode | null {
 
         if (fiberKey) {
             const fiber = (element as ElementWithFiber)[fiberKey] as FiberNode;
-            // Try to find the root by going up the tree
             let current: FiberNode | null = fiber;
             while (current && current.return) {
                 current = current.return;
@@ -92,27 +88,26 @@ export function findReactRoot(): FiberNode | null {
 const MAX_FIBER_COUNT = 50000;
 
 /**
- * Manual fiber tree traversal (fallback for when Bippy fails)
- * Uses a visited set to prevent infinite loops from circular references
+ * Traverse the fiber tree and collect component information
  */
-function manualTraverseFiber(
+export function traverseFiberTree(
     fiber: FiberNode | null,
-    components: ComponentInfo[],
-    path: string[],
+    components: ComponentInfo[] = [],
+    path: string[] = [],
     visited: WeakSet<object> = new WeakSet(),
     count: { value: number } = { value: 0 }
-): void {
-    if (!fiber) return;
+): ComponentInfo[] {
+    if (!fiber) return components;
 
     // Prevent infinite loops
-    if (visited.has(fiber)) return;
+    if (visited.has(fiber)) return components;
     visited.add(fiber);
 
     // Limit total traversal
     count.value++;
     if (count.value > MAX_FIBER_COUNT) {
         console.warn('[react-a11y-scanner] Max fiber count reached, stopping traversal');
-        return;
+        return components;
     }
 
     const name = getComponentName(fiber);
@@ -123,7 +118,6 @@ function manualTraverseFiber(
         const componentInfo: ComponentInfo = {
             name,
             type: fiberType,
-            props: fiber.memoizedProps,
             domNode: fiber.stateNode instanceof Element ? fiber.stateNode : null,
             path: [...path, name],
         };
@@ -134,59 +128,33 @@ function manualTraverseFiber(
     // Traverse children
     const newPath = name ? [...path, name] : path;
     if (fiber.child) {
-        manualTraverseFiber(fiber.child, components, newPath, visited, count);
+        traverseFiberTree(fiber.child, components, newPath, visited, count);
     }
 
     // Traverse siblings
     if (fiber.sibling) {
-        manualTraverseFiber(fiber.sibling, components, path, visited, count);
-    }
-}
-
-/**
- * Traverse the fiber tree and collect component information
- * Uses Bippy's traverseFiber for reliable traversal with fallback to manual
- */
-export function traverseFiberTree(fiber: FiberNode | null, components: ComponentInfo[] = [], path: string[] = []): ComponentInfo[] {
-    if (!fiber) return components;
-
-    // Track current path during traversal
-    const pathStack: string[] = [...path];
-
-    try {
-        // Use Bippy's traverseFiber for reliable traversal
-        // Note: Bippy's Fiber type is structurally compatible with our FiberNode but not identical
-        // The cast is required because Bippy uses its own internal fiber type definition
-        bippyTraverseFiber(fiber as Parameters<typeof bippyTraverseFiber>[0], (currentFiber) => {
-            // Cast to our FiberNode type for consistent handling
-            const fiberNode = currentFiber as unknown as FiberNode;
-            const name = getComponentName(fiberNode);
-
-            if (name && name !== 'Anonymous' && !name.startsWith('_')) {
-                // Determine component type using Bippy's helpers
-                const fiberType = isHostFiber(currentFiber) ? 'host' : 'component';
-
-                const componentInfo: ComponentInfo = {
-                    name,
-                    type: fiberType,
-                    props: fiberNode.memoizedProps,
-                    domNode: fiberNode.stateNode instanceof Element ? fiberNode.stateNode : null,
-                    path: [...pathStack, name],
-                };
-
-                components.push(componentInfo);
-
-                // Update path for children
-                pathStack.push(name);
-            }
-        });
-    } catch (error) {
-        console.warn('[react-a11y-scanner] Bippy traversal failed, using manual fallback:', error);
-        // Fallback to manual traversal
-        manualTraverseFiber(fiber, components, path);
+        traverseFiberTree(fiber.sibling, components, path, visited, count);
     }
 
     return components;
+}
+
+/**
+ * Enrich components with source location data from element-source
+ */
+export async function enrichComponentsWithSource(components: ComponentInfo[]): Promise<void> {
+    for (const component of components) {
+        if (component.domNode) {
+            try {
+                const source = await resolveSource(component.domNode);
+                if (source) {
+                    component.source = source;
+                }
+            } catch {
+                // element-source may fail for some elements; skip silently
+            }
+        }
+    }
 }
 
 /**
