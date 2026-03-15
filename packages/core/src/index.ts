@@ -187,7 +187,6 @@ export {
 export { logger, LogLevel } from './utils/logger.js';
 export { EXIT_CODES, setExitCode, exitWithCode, type ExitCode } from './utils/exit-codes.js';
 export { validateUrl, validateBrowser, validateTags, validateThreshold } from './utils/validation.js';
-export { serializeError, type SerializedError } from './utils/error-serializer.js';
 
 // =============================================================================
 // Prompts
@@ -210,25 +209,8 @@ export {
 // =============================================================================
 
 export {
-    generateFixSuggestion,
     generateContextualFix,
     hasContextualSupport,
-    parseElement,
-    inferLabel,
-    describeWhatsMissing,
-    getElementCategory,
-    renderFix,
-    renderViolationSummary,
-    generateAIPrompt,
-} from './scanner/suggestions/index.js';
-
-export type {
-    ParsedElement,
-    ElementCategory,
-    ContextualFix,
-    ViolationNode,
-    RenderedFix,
-    SuggestionGenerator,
 } from './scanner/suggestions/index.js';
 
 // =============================================================================
@@ -273,8 +255,3 @@ export {
     type AxeWcagMapping,
 } from './data/index.js';
 
-// =============================================================================
-// Schemas — Effect Schema definitions (runtime validation + types)
-// =============================================================================
-
-export * as Schemas from './schemas/index.js';
