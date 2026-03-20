@@ -86,6 +86,7 @@ export type {
     WcagLevel,
     WcagPrinciple,
     WcagCriterionInfo,
+    TestabilityLevel,
     BrowserType,
 
     // Axe-core types

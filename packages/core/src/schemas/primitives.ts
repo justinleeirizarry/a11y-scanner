@@ -48,6 +48,10 @@ export type BrowserType = typeof BrowserType.Type;
 export const FixPriority = Schema.Literal('critical', 'high', 'medium', 'low');
 export type FixPriority = typeof FixPriority.Type;
 
+// How automatable a WCAG criterion is
+export const TestabilityLevel = Schema.Literal('automated', 'semi-automated', 'manual', 'multi-page');
+export type TestabilityLevel = typeof TestabilityLevel.Type;
+
 // Source location from element-source (framework-agnostic)
 export const SourceLocation = Schema.Struct({
     filePath: Schema.String,

@@ -213,21 +213,47 @@ function buildComplianceData(r) {
         if (mapping) mapping.criteria.forEach(id => testedCriteria.add(id));
     }
 
+    // Integrate WCAG 2.2 custom check results
+    if (r.wcag22) {
+        const wcag22Map = {
+            targetSize: '2.5.8',
+            focusObscured: '2.4.11',
+            focusAppearance: '2.4.13',
+            dragging: '2.5.7',
+            authentication: '3.3.8'
+        };
+        for (const [key, criterionId] of Object.entries(wcag22Map)) {
+            testedCriteria.add(criterionId);
+            const violations = r.wcag22[key] || [];
+            if (violations.length > 0) {
+                if (!failedCriteria[criterionId]) failedCriteria[criterionId] = [];
+                for (const v of violations) {
+                    failedCriteria[criterionId].push({
+                        id: key,
+                        help: v.description,
+                        impact: v.impact,
+                        nodes: [{ html: v.html || '', target: [v.selector || ''] }]
+                    });
+                }
+            }
+        }
+    }
+
     // Group criteria by principle and level
     const principles = ['Perceivable', 'Operable', 'Understandable', 'Robust'];
     const levels = ['A', 'AA', 'AAA'];
     const result = { principles: {}, levels: {}, failedCriteria, testedCriteria };
 
     for (const level of levels) {
-        result.levels[level] = { total: 0, passed: 0, failed: 0, notTested: 0 };
+        result.levels[level] = { total: 0, passed: 0, failed: 0, notTested: 0, manualReview: 0 };
     }
 
     for (const principle of principles) {
-        result.principles[principle] = { criteria: [], passed: 0, failed: 0, notTested: 0 };
+        result.principles[principle] = { criteria: [], passed: 0, failed: 0, notTested: 0, manualReview: 0 };
     }
 
     for (const [id, criterion] of Object.entries(criteria)) {
-        const status = failedCriteria[id] ? 'fail' : testedCriteria.has(id) ? 'pass' : 'not-tested';
+        const status = failedCriteria[id] ? 'fail' : testedCriteria.has(id) ? 'pass' : criterion.testability === 'manual' ? 'manual-review' : 'not-tested';
         const entry = { ...criterion, status, violations: failedCriteria[id] || [] };
 
         if (result.principles[criterion.principle]) {
@@ -237,6 +263,7 @@ function buildComplianceData(r) {
             result.levels[criterion.level].total++;
             if (status === 'fail') result.levels[criterion.level].failed++;
             else if (status === 'pass') result.levels[criterion.level].passed++;
+            else if (status === 'manual-review') result.levels[criterion.level].manualReview++;
             else result.levels[criterion.level].notTested++;
         }
 
@@ -263,6 +290,7 @@ function buildComplianceData(r) {
         for (const c of result.principles[p].criteria) {
             if (c.status === 'fail') result.principles[p].failed++;
             else if (c.status === 'pass') result.principles[p].passed++;
+            else if (c.status === 'manual-review') result.principles[p].manualReview++;
             else result.principles[p].notTested++;
         }
     }
@@ -321,12 +349,16 @@ function renderComplianceReport(r) {
 
         const pFailed = filtered.filter(c => c.status === 'fail').length;
         const pPassed = filtered.filter(c => c.status === 'pass').length;
+        const pManualReview = filtered.filter(c => c.status === 'manual-review').length;
         const pNotTested = filtered.filter(c => c.status === 'not-tested').length;
 
         html += '<div class="principle" data-principle="' + pName + '">';
         html += '<div class="principle-header">';
         html += '<div class="principle-name">' + pName + '</div>';
-        html += '<div class="principle-stats">' + pPassed + ' pass &middot; ' + pFailed + ' fail &middot; ' + pNotTested + ' not tested</div>';
+        let statsText = pPassed + ' pass &middot; ' + pFailed + ' fail';
+        if (pManualReview > 0) statsText += ' &middot; ' + pManualReview + ' manual review';
+        if (pNotTested > 0) statsText += ' &middot; ' + pNotTested + ' not tested';
+        html += '<div class="principle-stats">' + statsText + '</div>';
         html += '</div>';
 
         html += '<table class="criteria-table">';
@@ -361,6 +393,7 @@ function filterCriteriaByLevel(criteria, targetLevel) {
 function formatStatus(status) {
     if (status === 'fail') return 'Fail';
     if (status === 'pass') return 'Pass';
+    if (status === 'manual-review') return 'Manual Review';
     return 'Not Tested';
 }
 

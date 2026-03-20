@@ -163,6 +163,7 @@ export function Layout({ children }: { children: HtmlEscapedString | Promise<Htm
   .status-badge.fail { border-color: var(--red); color: var(--red); }
   .status-badge.pass { border-color: var(--green); color: var(--green); }
   .status-badge.not-tested { border-color: var(--border-light); color: #999; }
+  .status-badge.manual-review { border-color: #b08d00; color: #b08d00; }
 
   .criterion-violations { font-size: 0.75rem; color: var(--muted); margin-top: 0.25rem; }
   .criterion-violations span { color: var(--red); font-weight: 600; }

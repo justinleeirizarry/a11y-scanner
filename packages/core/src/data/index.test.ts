@@ -37,6 +37,7 @@ describe('WCAG Criteria Database', () => {
             expect(criterion.guideline).toBeTruthy();
             expect(criterion.description).toBeTruthy();
             expect(criterion.w3cUrl).toMatch(/^https:\/\/www\.w3\.org\/WAI\/WCAG22\/Understanding\//);
+            expect(['automated', 'semi-automated', 'manual', 'multi-page']).toContain(criterion.testability);
         }
     });
 

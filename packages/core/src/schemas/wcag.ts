@@ -7,7 +7,7 @@
  */
 import { Schema } from 'effect';
 import { WCAG_CRITERIA } from '../data/wcag-criteria.js';
-import { WcagLevel, WcagPrinciple, type Mutable } from './primitives.js';
+import { WcagLevel, WcagPrinciple, TestabilityLevel, type Mutable } from './primitives.js';
 
 // All 86 WCAG criterion IDs as a literal union, derived from the WCAG_CRITERIA database
 const wcagIds = Object.keys(WCAG_CRITERIA) as [string, ...string[]];
@@ -21,5 +21,7 @@ export const WcagCriterionInfo = Schema.Struct({
     level: WcagLevel,
     principle: WcagPrinciple,
     w3cUrl: Schema.String,
+    testability: Schema.optional(TestabilityLevel),
+    successCriterionText: Schema.optional(Schema.String),
 });
 export type WcagCriterionInfo = Mutable<typeof WcagCriterionInfo.Type>;

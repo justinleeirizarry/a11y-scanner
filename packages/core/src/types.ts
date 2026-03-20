@@ -13,6 +13,7 @@ export type { SeverityLevel } from './schemas/primitives.js';
 export type { WcagLevel } from './schemas/primitives.js';
 export type { WcagPrinciple } from './schemas/primitives.js';
 export type { BrowserType } from './schemas/primitives.js';
+export type { TestabilityLevel } from './schemas/primitives.js';
 
 export type { WcagCriterionInfo } from './schemas/wcag.js';
 
