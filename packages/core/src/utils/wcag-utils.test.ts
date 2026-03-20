@@ -138,6 +138,9 @@ describe('wcag-utils', () => {
                 authentication: [
                     { id: '5', criterion: '3.3.8', level: 'AA', element: 'form', selector: 'form', html: '<form>', impact: 'serious', description: 'Auth issue', details: {} },
                 ],
+                statusMessages: [],
+                errorIdentification: [],
+                meaningfulSequence: [],
                 summary: {
                     totalViolations: 5,
                     byLevel: { A: 0, AA: 4, AAA: 1 },
@@ -170,6 +173,9 @@ describe('wcag-utils', () => {
                 focusAppearance: [],
                 dragging: [],
                 authentication: [],
+                statusMessages: [],
+                errorIdentification: [],
+                meaningfulSequence: [],
                 summary: {
                     totalViolations: 0,
                     byLevel: { A: 0, AA: 0, AAA: 0 },

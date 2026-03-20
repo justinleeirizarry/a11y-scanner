@@ -383,6 +383,9 @@ describe('WCAG 2.2 Schemas', () => {
             focusAppearance: [],
             dragging: [],
             authentication: [],
+            statusMessages: [],
+            errorIdentification: [],
+            meaningfulSequence: [],
             summary: {
                 totalViolations: 0,
                 byLevel: { A: 0, AA: 0, AAA: 0 },

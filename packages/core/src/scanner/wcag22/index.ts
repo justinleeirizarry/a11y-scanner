@@ -11,6 +11,9 @@ export { checkFocusNotObscured, getOverlayInfo } from './focus-obscured.js';
 export { checkFocusAppearance, getFocusIndicatorDetails } from './focus-appearance.js';
 export { checkDraggingMovements, getDraggableElements } from './dragging.js';
 export { checkAccessibleAuthentication, getAuthenticationInfo } from './authentication.js';
+export { checkStatusMessages, getStatusMessageInfo } from './status-messages.js';
+export { checkErrorIdentification, getErrorIdentificationInfo } from './error-identification.js';
+export { checkMeaningfulSequence, getMeaningfulSequenceInfo } from './meaningful-sequence.js';
 
 import type { WCAG22CheckResults, WCAG22Violation } from './types.js';
 import { checkTargetSize } from './target-size.js';
@@ -18,6 +21,9 @@ import { checkFocusNotObscured } from './focus-obscured.js';
 import { checkFocusAppearance } from './focus-appearance.js';
 import { checkDraggingMovements } from './dragging.js';
 import { checkAccessibleAuthentication } from './authentication.js';
+import { checkStatusMessages } from './status-messages.js';
+import { checkErrorIdentification } from './error-identification.js';
+import { checkMeaningfulSequence } from './meaningful-sequence.js';
 
 /**
  * Run all WCAG 2.2 checks
@@ -41,17 +47,29 @@ export function runWCAG22Checks(): WCAG22CheckResults {
     const authenticationViolations = checkAccessibleAuthentication();
     console.log(`  ✓ Accessible Authentication (3.3.8): ${authenticationViolations.length} violations`);
 
+    const statusMessagesViolations = checkStatusMessages();
+    console.log(`  ✓ Status Messages (4.1.3): ${statusMessagesViolations.length} violations`);
+
+    const errorIdentificationViolations = checkErrorIdentification();
+    console.log(`  ✓ Error Identification (3.3.1): ${errorIdentificationViolations.length} violations`);
+
+    const meaningfulSequenceViolations = checkMeaningfulSequence();
+    console.log(`  ✓ Meaningful Sequence (1.3.2): ${meaningfulSequenceViolations.length} violations`);
+
     // Calculate summary
     const allViolations: WCAG22Violation[] = [
         ...targetSizeViolations,
         ...focusObscuredViolations,
         ...focusAppearanceViolations,
         ...draggingViolations,
-        ...authenticationViolations
+        ...authenticationViolations,
+        ...statusMessagesViolations,
+        ...errorIdentificationViolations,
+        ...meaningfulSequenceViolations
     ];
 
     const byLevel = {
-        A: 0,
+        A: allViolations.filter(v => v.level === 'A').length,
         AA: allViolations.filter(v => v.level === 'AA').length,
         AAA: allViolations.filter(v => v.level === 'AAA').length
     };
@@ -70,6 +88,9 @@ export function runWCAG22Checks(): WCAG22CheckResults {
         focusAppearance: focusAppearanceViolations,
         dragging: draggingViolations,
         authentication: authenticationViolations,
+        statusMessages: statusMessagesViolations,
+        errorIdentification: errorIdentificationViolations,
+        meaningfulSequence: meaningfulSequenceViolations,
         summary: {
             totalViolations: allViolations.length,
             byLevel,

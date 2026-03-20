@@ -51,6 +51,9 @@ export interface WCAG22CheckResults {
     focusAppearance: WCAG22Violation[];
     dragging: WCAG22Violation[];
     authentication: WCAG22Violation[];
+    statusMessages: WCAG22Violation[];
+    errorIdentification: WCAG22Violation[];
+    meaningfulSequence: WCAG22Violation[];
     summary: {
         totalViolations: number;
         byLevel: {

@@ -15,6 +15,9 @@ export const WCAG22ViolationId = Schema.Literal(
     'focus-appearance',
     'dragging-movement',
     'accessible-authentication',
+    'status-messages',
+    'error-identification',
+    'meaningful-sequence',
 );
 export type WCAG22ViolationId = typeof WCAG22ViolationId.Type;
 
@@ -150,6 +153,9 @@ export const WCAG22Results = Schema.Struct({
     focusAppearance: Schema.Array(WCAG22ViolationSummary),
     dragging: Schema.Array(WCAG22ViolationSummary),
     authentication: Schema.Array(WCAG22ViolationSummary),
+    statusMessages: Schema.Array(WCAG22ViolationSummary),
+    errorIdentification: Schema.Array(WCAG22ViolationSummary),
+    meaningfulSequence: Schema.Array(WCAG22ViolationSummary),
     summary: Schema.Struct({
         totalViolations: Schema.Number,
         byLevel: Schema.Struct({

@@ -220,7 +220,10 @@ function buildComplianceData(r) {
             focusObscured: '2.4.11',
             focusAppearance: '2.4.13',
             dragging: '2.5.7',
-            authentication: '3.3.8'
+            authentication: '3.3.8',
+            statusMessages: '4.1.3',
+            errorIdentification: '3.3.1',
+            meaningfulSequence: '1.3.2'
         };
         for (const [key, criterionId] of Object.entries(wcag22Map)) {
             testedCriteria.add(criterionId);
