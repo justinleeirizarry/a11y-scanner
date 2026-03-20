@@ -56,6 +56,7 @@ export {
     StagehandKeyboardTester,
     StagehandTreeAnalyzer,
     StagehandWcagAuditAgent,
+    ScreenReaderNavigator,
     TestGenerator,
     // Prompt builders
     buildWcagAuditPrompt,
@@ -104,10 +105,14 @@ export {
     // Test Generation Service
     TestGenerationService,
     createTestGenerationService,
+    // Screen Reader Navigation Service
+    ScreenReaderNavService,
+    createScreenReaderNavService,
     // Service interfaces
     type IKeyboardTestService,
     type ITreeAnalysisService,
     type IWcagAuditService,
+    type IScreenReaderNavService,
     type TestGenerationConfig,
     type ITestGenerationService,
 } from './services/index.js';
@@ -134,11 +139,16 @@ export {
     EffectWcagAuditInitError,
     EffectWcagAuditError,
     EffectWcagAuditNotInitializedError,
+    // Screen Reader Navigation Errors
+    EffectScreenReaderNavInitError,
+    EffectScreenReaderNavError,
+    EffectScreenReaderNavNotInitializedError,
     // Error type unions
     type TestGenErrors,
     type KeyboardTestErrors,
     type TreeAnalysisErrors,
     type WcagAuditErrors,
+    type ScreenReaderNavErrors,
     type StagehandErrors,
 } from './errors.js';
 
@@ -170,6 +180,15 @@ export type {
     WcagAuditResult,
     AuditFinding,
     AuditStatus,
+
+    // Screen reader navigation types
+    ScreenReaderNavigatorConfig,
+    ScreenReaderNavigationResults,
+    ScreenReaderIssue,
+    ScreenReaderIssueType,
+    LandmarkEntry,
+    HeadingEntry,
+    NavigationStep,
 
     // Test generation types
     ElementType,

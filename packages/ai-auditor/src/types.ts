@@ -290,6 +290,136 @@ export interface WcagAuditResult {
 }
 
 // ============================================================================
+// Screen Reader Navigator Types
+// ============================================================================
+
+/**
+ * Configuration for simulated screen reader navigation
+ */
+export interface ScreenReaderNavigatorConfig {
+    /** Enable verbose logging */
+    verbose?: boolean;
+    /** AI model to use */
+    model?: string;
+    /** Browserbase session ID (for remote sessions with live view) */
+    browserbaseSessionId?: string;
+    /** Test keyboard navigation between elements (default: true) */
+    testKeyboardNav?: boolean;
+    /** Maximum tab presses during keyboard nav test (default: 50) */
+    maxTabPresses?: number;
+}
+
+/**
+ * Types of screen reader navigation issues
+ */
+export type ScreenReaderIssueType =
+    | 'missing-landmark'
+    | 'missing-main-landmark'
+    | 'multiple-main-landmarks'
+    | 'landmark-no-label'
+    | 'heading-skip'
+    | 'missing-h1'
+    | 'multiple-h1'
+    | 'empty-heading'
+    | 'missing-skip-link'
+    | 'broken-skip-link'
+    | 'missing-page-title'
+    | 'generic-link-text'
+    | 'missing-alt-text'
+    | 'missing-form-label'
+    | 'missing-element-name'
+    | 'tab-not-following-landmarks';
+
+/**
+ * A screen reader navigation issue
+ */
+export interface ScreenReaderIssue {
+    /** Type of issue */
+    type: ScreenReaderIssueType;
+    /** Affected element (if applicable) */
+    element?: {
+        role: string;
+        name?: string;
+        level?: number;
+    };
+    /** Human-readable description */
+    message: string;
+    /** Related WCAG criteria */
+    wcagCriteria: import('@accessibility-toolkit/core').WcagCriterionInfo[];
+    /** Issue severity */
+    severity: 'critical' | 'serious' | 'moderate' | 'minor';
+}
+
+/**
+ * A landmark discovered during navigation
+ */
+export interface LandmarkEntry {
+    /** ARIA landmark role */
+    role: string;
+    /** Accessible label */
+    name?: string;
+    /** Number of child nodes */
+    childCount: number;
+}
+
+/**
+ * A heading discovered during navigation
+ */
+export interface HeadingEntry {
+    /** Heading level (1-6) */
+    level: number;
+    /** Heading text content */
+    text: string;
+}
+
+/**
+ * A step in the navigation sequence
+ */
+export interface NavigationStep {
+    /** Type of navigation action */
+    action: 'read-title' | 'list-landmarks' | 'navigate-landmark' | 'list-headings' | 'navigate-heading' | 'tab-focus';
+    /** Human-readable description of the step */
+    description: string;
+    /** Element involved (if applicable) */
+    element?: {
+        role: string;
+        name?: string;
+        level?: number;
+    };
+    /** Timestamp */
+    timestamp: number;
+}
+
+/**
+ * Complete results from screen reader navigation testing
+ */
+export interface ScreenReaderNavigationResults {
+    /** URL that was tested */
+    url: string;
+    /** When the test was performed */
+    timestamp: string;
+    /** Page title */
+    pageTitle: string;
+    /** Landmarks discovered */
+    landmarks: LandmarkEntry[];
+    /** Headings discovered */
+    headings: HeadingEntry[];
+    /** Step-by-step navigation log */
+    navigationSteps: NavigationStep[];
+    /** Issues found */
+    issues: ScreenReaderIssue[];
+    /** Summary statistics */
+    summary: {
+        totalLandmarks: number;
+        totalHeadings: number;
+        totalIssues: number;
+        issuesBySeverity: Record<string, number>;
+        landmarkCoverage: string[];
+        headingStructureValid: boolean;
+    };
+}
+
+// ============================================================================
 // Stagehand Scanner Config Types
 // ============================================================================
 

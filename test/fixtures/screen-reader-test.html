@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Screen Reader Navigation Test Page</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      line-height: 1.6;
+      color: #1a1a1a;
+      background: #f8f9fa;
+    }
+    a { color: #0056b3; }
+    a:focus, button:focus, input:focus, select:focus, textarea:focus {
+      outline: 3px solid #4a90d9;
+      outline-offset: 2px;
+    }
+
+    /* Skip link */
+    .skip-link {
+      position: absolute;
+      top: -40px;
+      left: 0;
+      background: #000;
+      color: #fff;
+      padding: 8px 16px;
+      z-index: 100;
+      transition: top 0.2s;
+    }
+    .skip-link:focus { top: 0; }
+
+    /* Header / Banner */
+    header {
+      background: #1a365d;
+      color: white;
+      padding: 16px 24px;
+    }
+    header h1 { font-size: 1.5rem; }
+
+    /* Navigation */
+    nav { background: #2d3748; padding: 8px 24px; }
+    nav ul { list-style: none; display: flex; gap: 16px; }
+    nav a { color: #e2e8f0; text-decoration: none; padding: 8px 4px; display: inline-block; }
+    nav a:hover, nav a:focus { color: #fff; text-decoration: underline; }
+    nav a[aria-current="page"] { border-bottom: 2px solid #63b3ed; color: #fff; }
+
+    /* Layout */
+    .layout { display: flex; max-width: 1200px; margin: 0 auto; padding: 24px; gap: 24px; }
+    main { flex: 1; min-width: 0; }
+    aside { width: 280px; flex-shrink: 0; }
+
+    /* Cards */
+    .card { background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .card h2 { font-size: 1.25rem; margin-bottom: 12px; color: #1a365d; }
+    .card h3 { font-size: 1.1rem; margin: 16px 0 8px; }
+    .card p { margin-bottom: 12px; color: #4a5568; }
+
+    /* Form */
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-weight: 600; margin-bottom: 4px; }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%; padding: 8px 12px; border: 1px solid #cbd5e0; border-radius: 4px; font-size: 1rem;
+    }
+    .form-group .hint { font-size: 0.875rem; color: #718096; margin-top: 2px; }
+
+    /* Button */
+    .btn { background: #2b6cb0; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 1rem; }
+    .btn:hover { background: #2c5282; }
+
+    /* Table */
+    table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+    th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+    th { background: #edf2f7; font-weight: 600; }
+    caption { font-weight: 600; margin-bottom: 8px; text-align: left; }
+
+    /* Sidebar */
+    .sidebar-card { background: white; border-radius: 8px; padding: 16px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .sidebar-card h2 { font-size: 1.1rem; margin-bottom: 8px; }
+    .sidebar-card ul { padding-left: 20px; }
+    .sidebar-card li { margin-bottom: 4px; }
+
+    /* Footer */
+    footer { background: #1a365d; color: #e2e8f0; padding: 24px; text-align: center; margin-top: 40px; }
+    footer a { color: #90cdf4; }
+
+    /* Alert */
+    .alert { padding: 12px 16px; border-radius: 4px; margin-bottom: 16px; }
+    .alert-info { background: #ebf8ff; border: 1px solid #90cdf4; color: #2a4365; }
+
+    /* Search */
+    .search-form { display: flex; gap: 8px; }
+    .search-form input { flex: 1; }
+
+    /* Intentional issues section */
+    .issues-section { border: 2px dashed #e53e3e; padding: 20px; margin-top: 20px; border-radius: 8px; }
+    .issues-section h2 { color: #e53e3e; }
+  </style>
+</head>
+<body>
+
+  <!-- Skip link -->
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <!-- Banner landmark -->
+  <header role="banner">
+    <h1>Accessibility Testing Dashboard</h1>
+  </header>
+
+  <!-- Navigation landmark -->
+  <nav role="navigation" aria-label="Main navigation">
+    <ul>
+      <li><a href="#" aria-current="page">Dashboard</a></li>
+      <li><a href="#">Reports</a></li>
+      <li><a href="#">Settings</a></li>
+      <li><a href="#">Help</a></li>
+    </ul>
+  </nav>
+
+  <div class="layout">
+    <!-- Main landmark -->
+    <main id="main-content" role="main">
+
+      <!-- Live region for announcements -->
+      <div role="status" aria-live="polite" aria-atomic="true" id="announcements" class="sr-only"></div>
+
+      <!-- Alert -->
+      <div class="alert alert-info" role="alert">
+        Welcome! This page is designed to test screen reader navigation patterns.
+      </div>
+
+      <!-- Section with heading hierarchy -->
+      <section class="card" aria-labelledby="overview-heading">
+        <h2 id="overview-heading">Overview</h2>
+        <p>This dashboard provides accessibility scan results and metrics. Use landmarks, headings, or tab navigation to explore the content.</p>
+
+        <h3>Recent Activity</h3>
+        <p>3 scans completed in the last 24 hours. 2 critical issues found.</p>
+
+        <h3>Quick Stats</h3>
+        <table>
+          <caption>Scan Results Summary</caption>
+          <thead>
+            <tr>
+              <th scope="col">Metric</th>
+              <th scope="col">Value</th>
+              <th scope="col">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Total Violations</td>
+              <td>12</td>
+              <td>Needs attention</td>
+            </tr>
+            <tr>
+              <td>Critical Issues</td>
+              <td>2</td>
+              <td>Urgent</td>
+            </tr>
+            <tr>
+              <td>WCAG AA Compliance</td>
+              <td>78%</td>
+              <td>In progress</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- Search landmark -->
+      <search role="search" aria-label="Search scans">
+        <form class="card search-form" role="search">
+          <label for="search-input" class="sr-only">Search scan results</label>
+          <input type="search" id="search-input" placeholder="Search scan results..." aria-describedby="search-hint">
+          <button type="submit" class="btn">Search</button>
+        </form>
+        <p id="search-hint" class="form-group hint" style="padding: 0 20px;">Enter a URL, rule ID, or keyword to search past scan results.</p>
+      </search>
+
+      <!-- Form section -->
+      <section class="card" aria-labelledby="scan-heading">
+        <h2 id="scan-heading">Run New Scan</h2>
+        <form aria-label="Accessibility scan configuration">
+          <div class="form-group">
+            <label for="scan-url">URL to scan</label>
+            <input type="url" id="scan-url" placeholder="https://example.com" required aria-describedby="url-hint">
+            <p id="url-hint" class="hint">Enter the full URL including https://</p>
+          </div>
+          <div class="form-group">
+            <label for="scan-level">WCAG Level</label>
+            <select id="scan-level">
+              <option value="A">Level A</option>
+              <option value="AA" selected>Level AA</option>
+              <option value="AAA">Level AAA</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="scan-browser">Browser</label>
+            <select id="scan-browser">
+              <option value="chromium">Chromium</option>
+              <option value="firefox">Firefox</option>
+              <option value="webkit">WebKit</option>
+            </select>
+          </div>
+          <fieldset style="border: 1px solid #cbd5e0; padding: 16px; border-radius: 4px; margin-bottom: 16px;">
+            <legend style="font-weight: 600; padding: 0 8px;">Scan Options</legend>
+            <div>
+              <input type="checkbox" id="opt-keyboard" checked>
+              <label for="opt-keyboard">Include keyboard navigation tests</label>
+            </div>
+            <div>
+              <input type="checkbox" id="opt-tree">
+              <label for="opt-tree">Include accessibility tree analysis</label>
+            </div>
+            <div>
+              <input type="checkbox" id="opt-components" checked>
+              <label for="opt-components">Component attribution (React/Vue)</label>
+            </div>
+          </fieldset>
+          <div class="form-group">
+            <label for="scan-notes">Notes</label>
+            <textarea id="scan-notes" rows="3" placeholder="Optional notes about this scan..."></textarea>
+          </div>
+          <button type="submit" class="btn">Start Scan</button>
+        </form>
+      </section>
+
+      <!-- Section with intentional a11y issues for testing -->
+      <section class="card issues-section" aria-labelledby="issues-heading">
+        <h2 id="issues-heading">Intentional Issues (for testing)</h2>
+        <p>The elements below have intentional accessibility issues that the screen reader navigator should flag.</p>
+
+        <!-- Issue: image without alt -->
+        <h3>Missing Alt Text</h3>
+        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='60'%3E%3Crect fill='%23ddd' width='100' height='60'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%23666'%3Eimg%3C/text%3E%3C/svg%3E" width="100" height="60">
+
+        <!-- Issue: button without accessible name -->
+        <h3>Unnamed Button</h3>
+        <button type="button"><span aria-hidden="true">&#x2716;</span></button>
+
+        <!-- Issue: link with generic text -->
+        <h3>Generic Link Text</h3>
+        <p>For more details, <a href="#">click here</a>.</p>
+
+        <!-- Issue: form input without label -->
+        <h3>Unlabeled Input</h3>
+        <input type="text" placeholder="Enter something...">
+
+        <!-- Issue: heading skip (h2 → h5) -->
+        <h5>Skipped Heading Level</h5>
+        <p>This heading jumped from h3 to h5, skipping h4.</p>
+
+        <!-- Issue: div used as button without role -->
+        <h3>Non-semantic Button</h3>
+        <div style="display:inline-block; padding:8px 16px; background:#e53e3e; color:white; cursor:pointer; border-radius:4px;" onclick="alert('clicked')" tabindex="0">Delete All</div>
+      </section>
+
+    </main>
+
+    <!-- Complementary landmark (sidebar) -->
+    <aside role="complementary" aria-label="Sidebar">
+      <div class="sidebar-card">
+        <h2>Quick Links</h2>
+        <ul>
+          <li><a href="#">WCAG 2.2 Guidelines</a></li>
+          <li><a href="#">axe-core Rules</a></li>
+          <li><a href="#">Keyboard Patterns</a></li>
+          <li><a href="#">Color Contrast Checker</a></li>
+        </ul>
+      </div>
+
+      <div class="sidebar-card">
+        <h2>Recent Scans</h2>
+        <ul>
+          <li><a href="#">example.com - 3 issues</a></li>
+          <li><a href="#">myapp.io - 7 issues</a></li>
+          <li><a href="#">docs.site.com - 1 issue</a></li>
+        </ul>
+      </div>
+
+      <!-- Region landmark with explicit label -->
+      <div class="sidebar-card" role="region" aria-label="Scan progress">
+        <h2>Current Scan</h2>
+        <p>No scan in progress.</p>
+        <div role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="Scan progress">
+          <div style="width: 0%; height: 8px; background: #4299e1; border-radius: 4px;"></div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Contentinfo landmark (footer) -->
+  <footer role="contentinfo">
+    <p>&copy; 2026 Accessibility Toolkit. <a href="#">Privacy Policy</a> | <a href="#">Terms of Service</a></p>
+  </footer>
+
+  <style>
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border-width: 0;
+    }
+  </style>
+</body>
+</html>

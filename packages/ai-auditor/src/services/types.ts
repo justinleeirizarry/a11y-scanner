@@ -10,6 +10,8 @@ import type {
     TreeAnalysisResult,
     WcagAuditOptions,
     WcagAuditResult,
+    ScreenReaderNavigatorConfig,
+    ScreenReaderNavigationResults,
 } from '../types.js';
 import type {
     EffectKeyboardTestInitError,
@@ -21,6 +23,9 @@ import type {
     EffectWcagAuditInitError,
     EffectWcagAuditError,
     EffectWcagAuditNotInitializedError,
+    EffectScreenReaderNavInitError,
+    EffectScreenReaderNavError,
+    EffectScreenReaderNavNotInitializedError,
 } from '../errors.js';
 
 /**
@@ -110,6 +115,39 @@ export interface IWcagAuditService {
      * Get the underlying page instance
      */
     getPage(): Effect.Effect<Page, EffectWcagAuditNotInitializedError>;
+
+    /**
+     * Close the service and clean up resources
+     */
+    close(): Effect.Effect<void>;
+
+    /**
+     * Check if service is initialized
+     */
+    isInitialized(): Effect.Effect<boolean>;
+}
+
+/**
+ * Effect-first Screen Reader Navigation Service interface
+ */
+export interface IScreenReaderNavService {
+    /**
+     * Initialize the screen reader navigation service
+     */
+    init(config?: ScreenReaderNavigatorConfig): Effect.Effect<void, EffectScreenReaderNavInitError>;
+
+    /**
+     * Run screen reader navigation test on a URL
+     */
+    navigate(url: string): Effect.Effect<
+        ScreenReaderNavigationResults,
+        EffectScreenReaderNavNotInitializedError | EffectScreenReaderNavError
+    >;
+
+    /**
+     * Get the underlying page instance
+     */
+    getPage(): Effect.Effect<Page, EffectScreenReaderNavNotInitializedError>;
 
     /**
      * Close the service and clean up resources

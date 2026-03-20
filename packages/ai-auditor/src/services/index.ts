@@ -28,11 +28,18 @@ export {
     createTestGenerationService,
 } from './TestGenerationService.js';
 
+// Screen Reader Navigation Service
+export {
+    ScreenReaderNavService,
+    createScreenReaderNavService,
+} from './ScreenReaderNavService.js';
+
 // Types
 export type {
     IKeyboardTestService,
     ITreeAnalysisService,
     IWcagAuditService,
+    IScreenReaderNavService,
 } from './types.js';
 
 export type {

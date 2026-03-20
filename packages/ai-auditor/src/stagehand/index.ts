@@ -8,6 +8,7 @@ export { StagehandScanner } from './scanner.js';
 export { StagehandKeyboardTester } from './keyboard-tester.js';
 export { StagehandTreeAnalyzer } from './a11y-tree-analyzer.js';
 export { StagehandWcagAuditAgent } from './wcag-audit-agent.js';
+export { ScreenReaderNavigator } from './screen-reader-navigator.js';
 export { TestGenerator } from './test-generator.js';
 
 // Prompt builders

@@ -116,6 +116,31 @@ export class EffectWcagAuditNotInitializedError extends Data.TaggedError('WcagAu
     readonly operation?: string;
 }> {}
 
+// ============================================================================
+// Screen Reader Navigator Errors
+// ============================================================================
+
+/**
+ * Screen reader navigator initialization failed
+ */
+export class EffectScreenReaderNavInitError extends Data.TaggedError('ScreenReaderNavInitError')<{
+    readonly reason: string;
+}> {}
+
+/**
+ * Screen reader navigation operation failed
+ */
+export class EffectScreenReaderNavError extends Data.TaggedError('ScreenReaderNavError')<{
+    readonly reason: string;
+}> {}
+
+/**
+ * Screen reader navigator is not initialized
+ */
+export class EffectScreenReaderNavNotInitializedError extends Data.TaggedError('ScreenReaderNavNotInitializedError')<{
+    readonly operation?: string;
+}> {}
+
 /**
  * Union of all test generation errors
  */
@@ -150,10 +175,19 @@ export type WcagAuditErrors =
     | EffectWcagAuditNotInitializedError;
 
 /**
+ * Union of all screen reader navigator errors
+ */
+export type ScreenReaderNavErrors =
+    | EffectScreenReaderNavInitError
+    | EffectScreenReaderNavError
+    | EffectScreenReaderNavNotInitializedError;
+
+/**
  * Union of all Stagehand-related errors
  */
 export type StagehandErrors =
     | TestGenErrors
     | KeyboardTestErrors
     | TreeAnalysisErrors
-    | WcagAuditErrors;
+    | WcagAuditErrors
+    | ScreenReaderNavErrors;
