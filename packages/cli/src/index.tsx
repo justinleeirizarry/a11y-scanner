@@ -580,6 +580,42 @@ if (!isTTY) {
                                 console.log(`  ${item.description}`);
                             }
                         }
+
+                        // WCAG 2.2 custom check summary
+                        if (results.wcag22 && results.wcag22.summary.totalViolations > 0) {
+                            const w = results.wcag22;
+                            console.log(`\nWCAG 2.2 CHECKS  ${w.summary.totalViolations} violations\n`);
+                            for (const [key, arr] of Object.entries(w)) {
+                                if (key === 'summary') continue;
+                                const items = arr as any[];
+                                if (items && items.length > 0) {
+                                    const label = (items[0] as any).criterion || key;
+                                    console.log(`  ${label}: ${items.length}`);
+                                }
+                            }
+                            console.log('');
+                        }
+
+                        // Supplemental test results
+                        if (results.supplementalResults && results.supplementalResults.length > 0) {
+                            const passed = results.supplementalResults.filter(r => r.status === 'pass').length;
+                            const failed = results.supplementalResults.filter(r => r.status === 'fail');
+                            console.log(`SUPPLEMENTAL TESTS  ${results.supplementalResults.length} criteria  ${passed} passed  ${failed.length} failed\n`);
+                            for (const r of results.supplementalResults) {
+                                const icon = r.status === 'pass' ? 'PASS' : 'FAIL';
+                                const issueCount = r.issues.length > 0 ? ` (${r.issues.length} issues)` : '';
+                                console.log(`  [${icon}] ${r.criterionId}${issueCount}  ${r.source}`);
+                                if (r.status === 'fail') {
+                                    for (const issue of r.issues.slice(0, 3)) {
+                                        console.log(`         [${issue.severity}] ${issue.message}`);
+                                    }
+                                    if (r.issues.length > 3) {
+                                        console.log(`         ...and ${r.issues.length - 3} more`);
+                                    }
+                                }
+                            }
+                            console.log('');
+                        }
                     }
 
                     // Handle AI prompt generation

@@ -20,14 +20,14 @@ import { getComponentBundlePath } from "@accessibility-toolkit/react";
 // Configure logger to use stderr to avoid corrupting JSON-RPC on stdout
 logger.setUseStderr(true);
 
-// Load configuration from environment variables (REACT_A11Y_*)
+// Load configuration from environment variables
 if (hasEnvConfig()) {
     updateConfig(loadEnvConfig());
 }
 
 // Create server instance
 const server = new McpServer({
-    name: "a11y-scan",
+    name: "a11y-toolkit",
     version: "1.0.0",
 });
 
@@ -151,7 +151,7 @@ server.registerTool(
 async function main() {
     const transport = new StdioServerTransport();
     await server.connect(transport);
-    logger.info("a11y.scan MCP Server running on stdio");
+    logger.info("a11y-toolkit MCP Server running on stdio");
 }
 
 main().catch((error) => {

@@ -614,7 +614,24 @@ async function copyAsPrompt() {
 
 async function copyAsJSON() {
     if (!lastResults) return;
-    await navigator.clipboard.writeText(JSON.stringify(lastResults, null, 2));
+    // Export a trimmed version: keep violations, supplemental, wcag22 summary, and summary
+    // Omit passes (huge), accessibilityTree, keyboardTests raw data, and inapplicable
+    const trimmed = {
+        url: lastResults.url,
+        timestamp: lastResults.timestamp,
+        browser: lastResults.browser,
+        summary: lastResults.summary,
+        violations: lastResults.violations,
+        supplementalResults: lastResults.supplementalResults,
+        wcag22: lastResults.wcag22 ? {
+            ...Object.fromEntries(
+                Object.entries(lastResults.wcag22).filter(([k, v]) => Array.isArray(v) && v.length > 0)
+            ),
+            summary: lastResults.wcag22.summary,
+        } : undefined,
+        incomplete: lastResults.incomplete,
+    };
+    await navigator.clipboard.writeText(JSON.stringify(trimmed, null, 2));
     const btn = document.querySelector('[onclick="copyAsJSON()"]');
     btn.textContent = 'Copied!';
     btn.classList.add('copied');

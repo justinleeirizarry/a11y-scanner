@@ -1,11 +1,11 @@
 {
     "name": "@accessibility-toolkit/mcp",
     "version": "0.1.0",
-    "description": "MCP server for Accessibility Toolkit",
+    "description": "MCP server for a11y-toolkit accessibility scanner",
     "main": "dist/server.js",
     "type": "module",
     "bin": {
-        "mcp-server": "./bin/mcp-server.js"
+        "a11y-toolkit-mcp": "./bin/mcp-server.js"
     },
     "files": [
         "dist",
