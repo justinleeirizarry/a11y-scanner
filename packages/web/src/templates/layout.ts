@@ -52,7 +52,10 @@ export function Layout({ children }: { children: HtmlEscapedString | Promise<Htm
   /* Scan options */
   .scan-options { margin-top: -3.5rem; margin-bottom: 3rem; }
   .checkbox-label { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.875rem; color: var(--muted); }
-  .checkbox-label input[type="checkbox"] { width: 1rem; height: 1rem; cursor: pointer; }
+  .checkbox-label input[type="checkbox"] { -webkit-appearance: none; appearance: none; width: 1rem; height: 1rem; border: 2px solid var(--border); border-radius: 0; background: var(--bg); cursor: pointer; display: grid; place-content: center; margin: 0; }
+  .checkbox-label input[type="checkbox"]::after { content: ''; width: 0.5rem; height: 0.5rem; background: var(--fg); transform: scale(0); }
+  .checkbox-label input[type="checkbox"]:checked::after { transform: scale(1); }
+  .checkbox-label input[type="checkbox"]:checked { border-color: var(--fg); }
   .option-hint { font-size: 0.75rem; color: #888; }
 
   /* Status */
