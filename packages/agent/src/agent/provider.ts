@@ -52,7 +52,25 @@ export function createAnthropicProvider(): AgentProvider {
     return {
         async runWithTools(params) {
             const { resilientToolRunner } = await import('./resilient-client.js');
-            const tools = toNativeAnthropicTools(params.tools);
+            const emit = params.onEvent;
+
+            // Wrap each tool's run() to emit tool_call and tool_result events
+            const wrappedTools = params.tools.map((t) => ({
+                ...t,
+                run: async (input: any) => {
+                    emit?.({ type: 'tool_call', message: `Calling ${t.name}...` });
+                    try {
+                        const result = await t.run(input);
+                        emit?.({ type: 'thinking', message: `${t.name} complete` });
+                        return result;
+                    } catch (err) {
+                        emit?.({ type: 'thinking', message: `${t.name} failed: ${err instanceof Error ? err.message : String(err)}` });
+                        throw err;
+                    }
+                },
+            }));
+
+            const tools = toNativeAnthropicTools(wrappedTools);
 
             const finalMessage = await resilientToolRunner({
                 model: params.model,
@@ -61,7 +79,7 @@ export function createAnthropicProvider(): AgentProvider {
                 thinking: { type: 'adaptive' },
                 tools,
                 messages: [{ role: 'user', content: params.prompt }],
-            }, { onEvent: params.onEvent as any });
+            }, { onEvent: emit as any });
 
             const text = finalMessage.content
                 .filter((b: any) => b.type === 'text')

@@ -200,6 +200,38 @@ export function Layout({ children }: { children: HtmlEscapedString | Promise<Htm
   .level-filter-btn { padding: 0.5rem 1rem; font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; cursor: pointer; border: 2px solid var(--border); background: none; font-family: inherit; }
   .level-filter-btn:hover { background: var(--surface); }
   .level-filter-btn.active { background: var(--fg); color: var(--bg); }
+
+  /* Mode tabs (Scan / Agent) */
+  .mode-tabs { display: flex; gap: 0; margin-bottom: 1.5rem; border-bottom: 2px solid var(--border); }
+  .mode-tab { padding: 0.75rem 1.5rem; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer; border: none; border-bottom: 2px solid transparent; background: none; font-family: inherit; margin-bottom: -2px; color: var(--muted); }
+  .mode-tab:hover { color: var(--fg); }
+  .mode-tab.active { color: var(--fg); border-bottom-color: var(--fg); }
+  .mode-content { display: none; }
+  .mode-content.active { display: block; }
+
+  /* Agent options */
+  .agent-options { display: flex; gap: 1.5rem; align-items: center; margin: 0.75rem 0; flex-wrap: wrap; }
+  .option-label { font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; display: flex; align-items: center; gap: 0.5rem; }
+  .input-sm { width: 4rem; padding: 0.35rem 0.5rem; font-size: 0.8rem; font-family: inherit; border: 2px solid var(--border); background: var(--bg); }
+
+  /* Agent log */
+  .agent-log { font-family: 'Satoshi', monospace; font-size: 0.75rem; line-height: 1.6; max-height: 20rem; overflow-y: auto; border: 2px solid var(--border); padding: 1rem; margin: 1rem 0; display: none; }
+  .agent-log.active { display: block; }
+  .agent-log .log-entry { padding: 0.2rem 0; border-bottom: 1px solid var(--surface); }
+  .agent-log .log-time { color: var(--muted); margin-right: 0.5rem; }
+  .agent-log .log-thinking { color: var(--blue); }
+  .agent-log .log-tool { color: var(--accent); font-weight: 600; }
+  .agent-log .log-voter { color: var(--green); }
+  .agent-log .log-error { color: var(--red); }
+
+  /* Remediation plan */
+  .remediation-phase { margin-bottom: 2rem; }
+  .phase-header { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; padding: 0.75rem; border: 2px solid var(--border); margin-bottom: 0.5rem; }
+  .phase-item { padding: 0.5rem 0.75rem; font-size: 0.85rem; border-bottom: 1px solid var(--surface); }
+  .phase-item .effort { font-size: 0.625rem; font-weight: 700; text-transform: uppercase; color: var(--muted); margin-left: 0.5rem; }
+
+  /* Agent summary (markdown-ish) */
+  .agent-summary { padding: 1.5rem; border: 2px solid var(--border); margin-top: 2rem; font-size: 0.85rem; line-height: 1.7; white-space: pre-wrap; }
 </style>
 </head>
 <body>

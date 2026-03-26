@@ -12,6 +12,7 @@
         "@aria51/core": "workspace:*",
         "@aria51/components": "workspace:*",
         "@aria51/ai-auditor": "workspace:*",
+        "@aria51/agent": "workspace:*",
         "@hono/node-server": "^1.13.0",
         "hono": "^4.7.0"
     },
