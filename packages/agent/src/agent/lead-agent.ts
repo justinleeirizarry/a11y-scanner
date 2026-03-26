@@ -11,9 +11,9 @@
  * 5. Merges results via consensus
  */
 import Anthropic from '@anthropic-ai/sdk';
-import { betaZodTool } from '@anthropic-ai/sdk/helpers/beta/zod';
 import { z } from 'zod';
 import { resilientToolRunner } from './resilient-client.js';
+import { toNativeAnthropicTools } from './provider.js';
 import type {
     AgentConfig,
     AgentEvent,
@@ -131,28 +131,27 @@ async function planDelegation(
 
     let delegationPlan: LeadAgentPlan | null = null;
 
-    const delegateTool = betaZodTool({
+    // Define the delegate tool as an AgentToolDef
+    const delegateToolDef: import('./provider.js').AgentToolDef = {
         name: 'delegate',
         description:
             'After analyzing the site, use this tool to delegate work to specialized voter agents. Specify which voters to use and give each voter specific instructions based on what you found during reconnaissance.',
         inputSchema: z.object({
             siteAnalysis: z
                 .string()
-                .describe('Your analysis of the site: what type of site is it, what technologies does it use, what are the main page types, and what accessibility concerns are most likely?'),
+                .describe('Your analysis of the site'),
             selectedVoterIds: z
                 .array(z.enum(['keyboard-navigation', 'visual-content', 'forms-interaction', 'structure-semantics']))
                 .describe('Which specialized voters to spawn.'),
             voterInstructions: z
-                .record(
-                    z.string().describe('Voter lens ID'),
-                    z.string().describe('Specific instructions for this voter')
-                )
-                .describe('Specific instructions for each voter based on your site analysis.'),
+                .record(z.string(), z.string())
+                .describe('Specific instructions for each voter.'),
         }),
-        run: async ({ siteAnalysis, selectedVoterIds, voterInstructions }) => {
+        run: async (input: any) => {
+            const { siteAnalysis, selectedVoterIds, voterInstructions } = input;
             const selectedLenses = selectedVoterIds
-                .map((id) => VOTER_LENSES.find((l) => l.id === id))
-                .filter((l): l is VoterLens => l !== undefined);
+                .map((id: string) => VOTER_LENSES.find((l) => l.id === id))
+                .filter((l: VoterLens | undefined): l is VoterLens => l !== undefined);
 
             delegationPlan = {
                 siteAnalysis,
@@ -162,16 +161,13 @@ async function planDelegation(
                 initialScanSummary: buildScanSummaryForVoters(session),
             };
 
-            return `Delegation plan created. ${selectedLenses.length} voters will be spawned: ${selectedLenses.map((l) => l.name).join(', ')}`;
+            return `Delegation plan created. ${selectedLenses.length} voters will be spawned: ${selectedLenses.map((l: VoterLens) => l.name).join(', ')}`;
         },
-    });
+    };
 
-    const leadTools = [
-        baseTools.plan_crawl,
-        baseTools.scan_page,
-        baseTools.read_state,
-        delegateTool,
-    ];
+    // Convert all tools to Anthropic-native format via zod/v4
+    const allToolDefs = [baseTools.plan_crawl, baseTools.scan_page, baseTools.read_state, delegateToolDef];
+    const leadTools = toNativeAnthropicTools(allToolDefs);
 
     const systemPrompt = buildLeadAgentPrompt(config);
 
@@ -229,7 +225,8 @@ async function runInformedVoter(
         session.status = 'scanning';
     }
 
-    const tools = Object.values(createToolRegistry(session));
+    const rawTools = Object.values(createToolRegistry(session));
+    const tools = toNativeAnthropicTools(rawTools);
 
     const specificInstructions = plan.voterInstructions[lens.id] || '';
     const voterPrompt = buildInformedVoterPrompt(config, lens, plan, specificInstructions);

@@ -26,6 +26,14 @@
 // =============================================================================
 
 export { runAgent, runAgentWithVoting, type RunAgentOptions } from './agent/agent-loop.js';
+export {
+    createProvider,
+    createAnthropicProvider,
+    createAiSdkProvider,
+    type ProviderConfig,
+    type AgentProvider,
+    type AgentToolDef,
+} from './agent/provider.js';
 
 // =============================================================================
 // Types

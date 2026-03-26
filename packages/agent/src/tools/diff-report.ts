@@ -1,96 +1,47 @@
 /**
  * diff_report Tool
- *
- * Compares current findings against a previous snapshot.
  */
-import { betaZodTool } from '@anthropic-ai/sdk/helpers/beta/zod';
 import { z } from 'zod';
+import type { AgentToolDef } from '../agent/provider.js';
 import type { AuditSession, DiffReport, VerifiedFinding } from '../types.js';
 
-export const createDiffReportTool = (session: AuditSession) =>
-    betaZodTool({
+export const createDiffReportTool = (session: AuditSession): AgentToolDef =>
+    ({
         name: 'diff_report',
-        description:
-            'Compare current audit findings against a previous snapshot to see what has improved, regressed, or remains. Useful for tracking remediation progress over time.',
+        description: 'Compare current audit findings against a previous snapshot to track remediation progress.',
         inputSchema: z.object({
-            baselineSessionId: z
-                .string()
-                .optional()
-                .describe(
-                    'Session ID to compare against. If not provided, uses the most recent previous snapshot.'
-                ),
+            baselineSessionId: z.string().optional().describe('Session ID to compare against. Defaults to most recent snapshot.'),
         }),
-        run: async ({ baselineSessionId }) => {
+        run: async ({ baselineSessionId }: any) => {
             const snapshots = session.previousSnapshots;
-            if (snapshots.length === 0) {
-                return 'No previous snapshots available for comparison. Run an audit first, then re-audit later to see a diff.';
-            }
+            if (snapshots.length === 0) return 'No previous snapshots available for comparison.';
 
             const baseline = baselineSessionId
                 ? snapshots.find((s) => s.sessionId === baselineSessionId)
                 : snapshots[snapshots.length - 1];
-
-            if (!baseline) {
-                return `Snapshot not found. Available snapshots: ${snapshots.map((s) => s.sessionId).join(', ')}`;
-            }
+            if (!baseline) return `Snapshot not found. Available: ${snapshots.map((s) => s.sessionId).join(', ')}`;
 
             const diff = computeDiff(baseline.findings, session.findings, baseline.sessionId, session.id);
-
-            const lines: string[] = [
+            const lines = [
                 `## Diff Report`,
-                `- **Baseline**: ${diff.baselineSessionId} (${baseline.timestamp})`,
-                `- **Current**: ${diff.currentSessionId}`,
-                '',
-                `### Summary:`,
-                `- New violations: **${diff.newViolations.length}** (regressions)`,
-                `- Resolved: **${diff.resolvedViolations.length}** (improvements)`,
-                `- Persistent: **${diff.persistentViolations.length}** (still present)`,
-                '',
+                `- New violations: **${diff.regressionCount}**`,
+                `- Resolved: **${diff.improvementCount}**`,
+                `- Persistent: **${diff.persistentViolations.length}**`,
             ];
-
-            if (diff.resolvedViolations.length > 0) {
-                lines.push('### Resolved:');
-                for (const f of diff.resolvedViolations.slice(0, 10)) {
-                    lines.push(`- ${f.criterion.id}: ${f.description}`);
-                }
-                lines.push('');
-            }
-
-            if (diff.newViolations.length > 0) {
-                lines.push('### New Regressions:');
-                for (const f of diff.newViolations.slice(0, 10)) {
-                    lines.push(`- ${f.criterion.id} (${f.impact}): ${f.description}`);
-                }
-                lines.push('');
-            }
-
             return lines.join('\n');
         },
     });
 
-function computeDiff(
-    baselineFindings: VerifiedFinding[],
-    currentFindings: VerifiedFinding[],
-    baselineId: string,
-    currentId: string
-): DiffReport {
-    const findingKey = (f: VerifiedFinding) =>
-        `${f.url}|${f.criterion.id}|${f.selector || ''}`;
-
-    const baselineKeys = new Set(baselineFindings.map(findingKey));
-    const currentKeys = new Set(currentFindings.map(findingKey));
-
-    const newViolations = currentFindings.filter((f) => !baselineKeys.has(findingKey(f)));
-    const resolvedViolations = baselineFindings.filter((f) => !currentKeys.has(findingKey(f)));
-    const persistentViolations = currentFindings.filter((f) => baselineKeys.has(findingKey(f)));
-
+function computeDiff(baselineFindings: VerifiedFinding[], currentFindings: VerifiedFinding[], baselineId: string, currentId: string): DiffReport {
+    const key = (f: VerifiedFinding) => `${f.url}|${f.criterion.id}|${f.selector || ''}`;
+    const baseKeys = new Set(baselineFindings.map(key));
+    const currKeys = new Set(currentFindings.map(key));
     return {
-        baselineSessionId: baselineId,
-        currentSessionId: currentId,
-        newViolations,
-        resolvedViolations,
-        persistentViolations,
-        regressionCount: newViolations.length,
-        improvementCount: resolvedViolations.length,
+        baselineSessionId: baselineId, currentSessionId: currentId,
+        newViolations: currentFindings.filter((f) => !baseKeys.has(key(f))),
+        resolvedViolations: baselineFindings.filter((f) => !currKeys.has(key(f))),
+        persistentViolations: currentFindings.filter((f) => baseKeys.has(key(f))),
+        regressionCount: currentFindings.filter((f) => !baseKeys.has(key(f))).length,
+        improvementCount: baselineFindings.filter((f) => !currKeys.has(key(f))).length,
     };
 }

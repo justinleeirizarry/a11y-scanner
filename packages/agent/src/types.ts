@@ -31,9 +31,25 @@ export interface AgentWcagCriterionInfo {
 // Agent Configuration
 // =============================================================================
 
+/**
+ * Provider configuration.
+ *
+ * - `'anthropic'` (default): Native Anthropic SDK with adaptive thinking, toolRunner, resilient fallback
+ * - `{ type: 'ai-sdk', model: ... }`: Vercel AI SDK — pass any model from @ai-sdk/openai, @ai-sdk/google, etc.
+ *
+ * @example
+ * import { openai } from '@ai-sdk/openai';
+ * { provider: { type: 'ai-sdk', model: openai('gpt-4o') } }
+ */
+export type ProviderConfig =
+    | 'anthropic'
+    | { type: 'ai-sdk'; model: any };
+
 export interface AgentConfig {
     /** Target URL to audit */
     targetUrl: string;
+    /** LLM provider (default: 'anthropic') */
+    provider: ProviderConfig;
     /** WCAG conformance level to check against */
     wcagLevel: 'A' | 'AA' | 'AAA';
     /** Maximum pages to scan (default: 20) */
@@ -42,7 +58,7 @@ export interface AgentConfig {
     maxSteps: number;
     /** Concurrent browser sessions for batch scanning (default: 3) */
     concurrency: number;
-    /** Claude model to use */
+    /** Model ID (used by anthropic provider; ignored by ai-sdk since model is passed directly) */
     model: string;
     /** Browser engine */
     browser: BrowserType;
@@ -61,6 +77,7 @@ export interface AgentConfig {
 }
 
 export const DEFAULT_AGENT_CONFIG: Omit<AgentConfig, 'targetUrl'> = {
+    provider: 'anthropic',
     wcagLevel: 'AA',
     maxPages: 20,
     maxSteps: 50,

@@ -79,6 +79,7 @@ export const AuditSnapshotSchema = z.object({
 
 export const AgentConfigSchema = z.object({
     targetUrl: z.string(),
+    provider: z.union([z.literal('anthropic'), z.object({ type: z.literal('ai-sdk'), model: z.any() })]).default('anthropic'),
     wcagLevel: z.enum(['A', 'AA', 'AAA']),
     maxPages: z.number(),
     maxSteps: z.number(),

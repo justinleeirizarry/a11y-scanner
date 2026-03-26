@@ -4,17 +4,17 @@
  * Wraps @aria51/core's runScanAsPromise for single-page scanning.
  * Returns a compressed summary to the agent; full results go to session state.
  */
-import { betaZodTool } from '@anthropic-ai/sdk/helpers/beta/zod';
 import { z } from 'zod';
 import {
     runScanAsPromise,
     AppLayer,
     type ScanResults,
 } from '@aria51/core';
+import type { AgentToolDef } from '../agent/provider.js';
 import type { AuditSession } from '../types.js';
 
-export const createScanPageTool = (session: AuditSession) =>
-    betaZodTool({
+export const createScanPageTool = (session: AuditSession): AgentToolDef =>
+    ({
         name: 'scan_page',
         description:
             'Scan a single URL for accessibility violations using axe-core, keyboard tests, and WCAG 2.2 checks. Returns a summary of findings. Use this for targeted deep scans of individual pages.',
@@ -31,7 +31,7 @@ export const createScanPageTool = (session: AuditSession) =>
                 .default(false)
                 .describe('Emulate a mobile device viewport'),
         }),
-        run: async ({ url, includeKeyboardTests, mobile }) => {
+        run: async ({ url, includeKeyboardTests, mobile }: any) => {
             try {
                 const result = await runScanAsPromise(
                     {
@@ -49,7 +49,7 @@ export const createScanPageTool = (session: AuditSession) =>
                 if (!session.scannedUrls.includes(url)) {
                     session.scannedUrls.push(url);
                 }
-                session.pendingUrls = session.pendingUrls.filter((u) => u !== url);
+                session.pendingUrls = session.pendingUrls.filter((u: string) => u !== url);
 
                 return summarizeScanResults(url, result.results);
             } catch (error) {

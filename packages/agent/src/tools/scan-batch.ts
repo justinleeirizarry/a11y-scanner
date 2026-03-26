@@ -1,54 +1,36 @@
 /**
  * scan_batch Tool
- *
- * Parallel multi-page scanning with concurrency control.
  */
-import { betaZodTool } from '@anthropic-ai/sdk/helpers/beta/zod';
 import { z } from 'zod';
 import { runScanAsPromise, AppLayer } from '@aria51/core';
+import type { AgentToolDef } from '../agent/provider.js';
 import type { AuditSession } from '../types.js';
 
-export const createScanBatchTool = (session: AuditSession) =>
-    betaZodTool({
+export const createScanBatchTool = (session: AuditSession): AgentToolDef =>
+    ({
         name: 'scan_batch',
         description:
             'Scan multiple URLs in parallel for accessibility violations. More efficient than scanning pages one by one. Returns a summary per page.',
         inputSchema: z.object({
             urls: z.array(z.string()).describe('URLs to scan'),
-            includeKeyboardTests: z
-                .boolean()
-                .optional()
-                .default(true)
-                .describe('Include keyboard navigation tests'),
-            mobile: z
-                .boolean()
-                .optional()
-                .default(false)
-                .describe('Emulate a mobile device viewport'),
+            includeKeyboardTests: z.boolean().optional().default(true).describe('Include keyboard navigation tests'),
+            mobile: z.boolean().optional().default(false).describe('Emulate a mobile device viewport'),
         }),
-        run: async ({ urls, includeKeyboardTests, mobile }) => {
+        run: async ({ urls, includeKeyboardTests, mobile }: any) => {
             const concurrency = session.config.concurrency;
             const results: string[] = [];
 
             for (let i = 0; i < urls.length; i += concurrency) {
                 const batch = urls.slice(i, i + concurrency);
                 const batchResults = await Promise.allSettled(
-                    batch.map((url) =>
+                    batch.map((url: string) =>
                         runScanAsPromise(
-                            {
-                                url,
-                                browser: session.config.browser,
-                                headless: session.config.headless,
-                                includeKeyboardTests,
-                                mobile,
-                            },
+                            { url, browser: session.config.browser, headless: session.config.headless, includeKeyboardTests, mobile },
                             AppLayer
                         ).then((result) => {
                             session.scanResults[url] = result.results;
-                            if (!session.scannedUrls.includes(url)) {
-                                session.scannedUrls.push(url);
-                            }
-                            session.pendingUrls = session.pendingUrls.filter((u) => u !== url);
+                            if (!session.scannedUrls.includes(url)) session.scannedUrls.push(url);
+                            session.pendingUrls = session.pendingUrls.filter((u: string) => u !== url);
                             return { url, results: result.results };
                         })
                     )
@@ -57,9 +39,7 @@ export const createScanBatchTool = (session: AuditSession) =>
                 for (const result of batchResults) {
                     if (result.status === 'fulfilled') {
                         const { url, results: scanResults } = result.value;
-                        results.push(
-                            `**${url}**: ${scanResults.summary.totalViolations} violations, ${scanResults.summary.totalPasses} passes`
-                        );
+                        results.push(`**${url}**: ${scanResults.summary.totalViolations} violations, ${scanResults.summary.totalPasses} passes`);
                     } else {
                         const failedUrl = batch[batchResults.indexOf(result)];
                         results.push(`**${failedUrl}**: FAILED — ${result.reason}`);

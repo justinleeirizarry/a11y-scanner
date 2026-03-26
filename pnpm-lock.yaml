@@ -14,12 +14,15 @@ importers:
       '@vitest/ui':
         specifier: ^4.0.13
         version: 4.0.13(vitest@4.0.13)
+      tsx:
+        specifier: ^4.19.0
+        version: 4.19.0
       typescript:
         specifier: ^5.3.0
         version: 5.3.2
       vitest:
         specifier: ^4.0.13
-        version: 4.0.13(@vitest/ui@4.0.13)
+        version: 4.0.13(@vitest/ui@4.0.13)(tsx@4.19.0)
 
   packages/agent:
     dependencies:
@@ -38,16 +41,22 @@ importers:
       zod:
         specifier: ^3.22.0
         version: 3.25.76
+      zod-to-json-schema:
+        specifier: ^3.22.0
+        version: 3.25.1(zod@3.25.76)
     devDependencies:
       '@types/node':
         specifier: ^20.10.0
         version: 20.10.0
+      ai:
+        specifier: ^5.0.0
+        version: 5.0.124(zod@3.25.76)
       typescript:
         specifier: ^5.3.0
         version: 5.3.2
       vitest:
         specifier: ^4.0.13
-        version: 4.0.13(@types/node@20.10.0)(@vitest/ui@4.0.13)(jsdom@27.2.0)
+        version: 4.0.13(@types/node@20.10.0)(@vitest/ui@4.0.13)(jsdom@27.2.0)(tsx@4.19.0)
 
   packages/ai-auditor:
     dependencies:
@@ -75,7 +84,7 @@ importers:
         version: 5.3.2
       vitest:
         specifier: ^4.0.13
-        version: 4.0.13(@types/node@20.10.0)(@vitest/ui@4.0.13)(jsdom@27.2.0)
+        version: 4.0.13(@types/node@20.10.0)(@vitest/ui@4.0.13)(jsdom@27.2.0)(tsx@4.19.0)
 
   packages/cli:
     dependencies:
@@ -121,7 +130,7 @@ importers:
         version: 5.3.2
       vitest:
         specifier: ^4.0.13
-        version: 4.0.13(@types/node@20.10.0)(@vitest/ui@4.0.13)(jsdom@27.2.0)
+        version: 4.0.13(@types/node@20.10.0)(@vitest/ui@4.0.13)(jsdom@27.2.0)(tsx@4.19.0)
 
   packages/core:
     dependencies:
@@ -171,7 +180,7 @@ importers:
         version: 5.3.2
       vitest:
         specifier: ^4.0.13
-        version: 4.0.13(@types/node@20.10.0)(@vitest/ui@4.0.13)(jsdom@27.2.0)
+        version: 4.0.13(@types/node@20.10.0)(@vitest/ui@4.0.13)(jsdom@27.2.0)(tsx@4.19.0)
 
   packages/mcp:
     dependencies:
@@ -218,7 +227,7 @@ importers:
         version: 5.3.2
       vitest:
         specifier: ^4.0.13
-        version: 4.0.13(@types/node@20.10.0)(@vitest/ui@4.0.13)(jsdom@27.2.0)
+        version: 4.0.13(@types/node@20.10.0)(@vitest/ui@4.0.13)(jsdom@27.2.0)(tsx@4.19.0)
 
   packages/web:
     dependencies:
@@ -318,7 +327,6 @@ packages:
       '@ai-sdk/provider-utils': 3.0.20(zod@3.25.76)
       '@vercel/oidc': 3.1.0
       zod: 3.25.76
-    dev: false
 
   /@ai-sdk/google@2.0.63(zod@3.25.76):
     resolution: {integrity: sha512-U3JpJVLDnt7E+vCcZr0NlEQCyDeQE15lX5XseMGDeojulYOJKtj6c/1r1LcqSRjBKpUTB97ApbUzNMNwmT3iIA==}
@@ -406,7 +414,6 @@ packages:
       '@standard-schema/spec': 1.1.0
       eventsource-parser: 3.0.6
       zod: 3.25.76
-    dev: false
 
   /@ai-sdk/provider-utils@3.0.22(zod@3.25.76):
     resolution: {integrity: sha512-fFT1KfUUKktfAFm5mClJhS1oux9tP2qgzmEZVl5UdwltQ1LO/s8hd7znVrgKzivwv1s1FIPza0s9OpJaNB/vHw==}
@@ -426,7 +433,6 @@ packages:
     engines: {node: '>=18'}
     dependencies:
       json-schema: 0.4.0
-    dev: false
 
   /@ai-sdk/togetherai@1.0.37(zod@3.25.76):
     resolution: {integrity: sha512-RGim/W7PC2MygvjaJV2OACeLbElAanIqrGr2yxbrRh5bMkTp90uyVFP92zH6FtQB3TTY2xW3D3u/2EyQfHfQTw==}
@@ -1463,7 +1469,6 @@ packages:
   /@opentelemetry/api@1.9.0:
     resolution: {integrity: sha512-3giAOQvZiH5F9bMlMiv8+GSPMeqg0dbaeo58/0SlA9sxSqZhnUtxzX9/2FzyhS9sWQf5S0GJE0AKBrFqjpeYcg==}
     engines: {node: '>=8.0.0'}
-    dev: false
 
   /@pinojs/redact@0.4.0:
     resolution: {integrity: sha512-k2ENnmBugE/rzQfEcdWHcCY+/FM3VLzH9cYEsbdsoqrvzAKRhUZeRNhAZvB8OitQJ1TBed3yqWtdjzS6wJKBwg==}
@@ -1841,7 +1846,6 @@ packages:
   /@vercel/oidc@3.1.0:
     resolution: {integrity: sha512-Fw28YZpRnA3cAHHDlkt7xQHiJ0fcL+NRcIqsocZQUSmbzeIKRpwttJjik5ZGanXP+vlA4SbTg+AbA3bP363l+w==}
     engines: {node: '>= 20'}
-    dev: false
 
   /@vitest/coverage-v8@4.0.13(vitest@4.0.13):
     resolution: {integrity: sha512-w77N6bmtJ3CFnL/YHiYotwW/JI3oDlR3K38WEIqegRfdMSScaYxwYKB/0jSNpOTZzUjQkG8HHEz4sdWQMWpQ5g==}
@@ -1863,7 +1867,7 @@ packages:
       magicast: 0.5.1
       std-env: 3.10.0
       tinyrainbow: 3.0.3
-      vitest: 4.0.13(@vitest/ui@4.0.13)
+      vitest: 4.0.13(@vitest/ui@4.0.13)(tsx@4.19.0)
     transitivePeerDependencies:
       - supports-color
     dev: true
@@ -1893,7 +1897,7 @@ packages:
       '@vitest/spy': 4.0.13
       estree-walker: 3.0.3
       magic-string: 0.30.21
-      vite: 7.3.1(@types/node@20.10.0)
+      vite: 7.3.1(@types/node@20.10.0)(tsx@4.19.0)
     dev: true
 
   /@vitest/pretty-format@4.0.13:
@@ -1933,7 +1937,7 @@ packages:
       sirv: 3.0.2
       tinyglobby: 0.2.15
       tinyrainbow: 3.0.3
-      vitest: 4.0.13(@vitest/ui@4.0.13)
+      vitest: 4.0.13(@vitest/ui@4.0.13)(tsx@4.19.0)
     dev: true
 
   /@vitest/utils@4.0.13:
@@ -1980,7 +1984,6 @@ packages:
       '@ai-sdk/provider-utils': 3.0.20(zod@3.25.76)
       '@opentelemetry/api': 1.9.0
       zod: 3.25.76
-    dev: false
 
   /ajv-formats@3.0.1(ajv@8.17.1):
     resolution: {integrity: sha512-8iUql50EUR+uUcdRQ3HDqa6EVyo3docL8g5WJ3FNcWmu62IbkGUue/pEyLBW8VGKKucTPgqeks4fIU1DA4yowQ==}
@@ -2841,7 +2844,6 @@ packages:
   /eventsource-parser@3.0.6:
     resolution: {integrity: sha512-Vo1ab+QXPzZ4tCa8SwIHJFaSzy4R6SHf7BY79rFBDf0idraZWAkYrDjDj8uWaSm3S2TK+hJ7/t1CEmZ7jXw+pg==}
     engines: {node: '>=18.0.0'}
-    dev: false
 
   /eventsource@3.0.7:
     resolution: {integrity: sha512-CRT1WTyuQoD771GW56XEZFQ/ZoSfWid1alKGDYMmkt2yl8UXrVR4pspqWNEcqKvVIzg6PAltWjxcSSPrboA4iA==}
@@ -3576,7 +3578,6 @@ packages:
 
   /json-schema@0.4.0:
     resolution: {integrity: sha512-es94M3nTIfsEPisRafak+HDLfHXnKBhV3vU5eqPcS3flIWqcxJWgXHXiey3YrpaNsanY5ei1VoYEbOzijuq9BA==}
-    dev: false
 
   /jwa@2.0.1:
     resolution: {integrity: sha512-hRF04fqJIP8Abbkq5NKGN0Bbr3JxlQ+qhZufXVr0DvujKy93ZCbXZMHDL4EOtodSbCWxOqR8MS1tXA5hwqCXDg==}
@@ -3838,7 +3839,7 @@ packages:
       zod: ^4.0.16
     dependencies:
       '@ai-sdk/provider': 2.0.1
-      '@ai-sdk/provider-utils': 3.0.20(zod@3.25.76)
+      '@ai-sdk/provider-utils': 3.0.22(zod@3.25.76)
       zod: 3.25.76
     dev: false
     optional: true
@@ -4817,7 +4818,7 @@ packages:
     engines: {node: '>= 0.8'}
     dev: false
 
-  /vite@7.3.1(@types/node@20.10.0):
+  /vite@7.3.1(@types/node@20.10.0)(tsx@4.19.0):
     resolution: {integrity: sha512-w+N7Hifpc3gRjZ63vYBXA56dvvRlNWRczTdmCBBa+CotUzAPf5b7YMdMR/8CQoeYE5LX3W4wj6RYTgonm1b9DA==}
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
@@ -4864,11 +4865,12 @@ packages:
       postcss: 8.5.6
       rollup: 4.57.1
       tinyglobby: 0.2.15
+      tsx: 4.19.0
     optionalDependencies:
       fsevents: 2.3.3
     dev: true
 
-  /vitest@4.0.13(@types/node@20.10.0)(@vitest/ui@4.0.13)(jsdom@27.2.0):
+  /vitest@4.0.13(@types/node@20.10.0)(@vitest/ui@4.0.13)(jsdom@27.2.0)(tsx@4.19.0):
     resolution: {integrity: sha512-QSD4I0fN6uZQfftryIXuqvqgBxTvJ3ZNkF6RWECd82YGAYAfhcppBLFXzXJHQAAhVFyYEuFTrq6h0hQqjB7jIQ==}
     engines: {node: ^20.0.0 || ^22.0.0 || >=24.0.0}
     hasBin: true
@@ -4926,7 +4928,7 @@ packages:
       tinyexec: 0.3.2
       tinyglobby: 0.2.15
       tinyrainbow: 3.0.3
-      vite: 7.3.1(@types/node@20.10.0)
+      vite: 7.3.1(@types/node@20.10.0)(tsx@4.19.0)
       why-is-node-running: 2.3.0
     transitivePeerDependencies:
       - jiti
@@ -4943,7 +4945,7 @@ packages:
       - yaml
     dev: true
 
-  /vitest@4.0.13(@vitest/ui@4.0.13):
+  /vitest@4.0.13(@vitest/ui@4.0.13)(tsx@4.19.0):
     resolution: {integrity: sha512-QSD4I0fN6uZQfftryIXuqvqgBxTvJ3ZNkF6RWECd82YGAYAfhcppBLFXzXJHQAAhVFyYEuFTrq6h0hQqjB7jIQ==}
     engines: {node: ^20.0.0 || ^22.0.0 || >=24.0.0}
     hasBin: true
@@ -4999,7 +5001,7 @@ packages:
       tinyexec: 0.3.2
       tinyglobby: 0.2.15
       tinyrainbow: 3.0.3
-      vite: 7.3.1(@types/node@20.10.0)
+      vite: 7.3.1(@types/node@20.10.0)(tsx@4.19.0)
       why-is-node-running: 2.3.0
     transitivePeerDependencies:
       - jiti
@@ -5195,4 +5197,3 @@ packages:
 
   /zod@3.25.76:
     resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
-    dev: false

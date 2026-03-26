@@ -29,6 +29,7 @@
     "devDependencies": {
         "@vitest/coverage-v8": "^4.0.13",
         "@vitest/ui": "^4.0.13",
+        "tsx": "^4.19.0",
         "typescript": "^5.3.0",
         "vitest": "^4.0.13"
     },
