@@ -4,7 +4,7 @@
  * Core library for accessibility testing. Framework-agnostic accessibility
  * scanning with axe-core, keyboard testing, and WCAG 2.2 checks.
  *
- * For React component attribution, use @aria51/react
+ * For component attribution (React, Vue, Svelte, Solid, Preact), use @aria51/components
  * For AI-powered auditing, use @aria51/ai-auditor
  */
 

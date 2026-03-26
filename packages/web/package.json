@@ -10,7 +10,7 @@
     },
     "dependencies": {
         "@aria51/core": "workspace:*",
-        "@aria51/react": "workspace:*",
+        "@aria51/components": "workspace:*",
         "@aria51/ai-auditor": "workspace:*",
         "@hono/node-server": "^1.13.0",
         "hono": "^4.7.0"

@@ -12,7 +12,7 @@ import { render } from 'ink';
 import meow from 'meow';
 import { Effect } from 'effect';
 import App from './App.js';
-import { getComponentBundlePath } from '@aria51/react';
+import { getComponentBundlePath } from '@aria51/components';
 import type { BrowserType, WcagLevel } from '@aria51/core';
 import {
     validateUrl,

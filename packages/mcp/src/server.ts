@@ -15,7 +15,7 @@ import {
     loadEnvConfig,
     hasEnvConfig,
 } from "@aria51/core";
-import { getComponentBundlePath } from "@aria51/react";
+import { getComponentBundlePath } from "@aria51/components";
 
 // Configure logger to use stderr to avoid corrupting JSON-RPC on stdout
 logger.setUseStderr(true);

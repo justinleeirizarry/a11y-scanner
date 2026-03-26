@@ -20,7 +20,7 @@ import {
     createTreeAnalysisService,
     createWcagAuditService,
 } from '@aria51/ai-auditor';
-import { getComponentBundlePath } from '@aria51/react';
+import { getComponentBundlePath } from '@aria51/components';
 import type {
     ScanResults,
     BrowserType,

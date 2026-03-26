@@ -32,7 +32,7 @@
     "license": "MIT",
     "dependencies": {
         "@aria51/core": "workspace:*",
-        "@aria51/react": "workspace:*",
+        "@aria51/components": "workspace:*",
         "@aria51/ai-auditor": "workspace:*",
         "chalk": "^5.3.0",
         "dotenv": "^17.2.3",

@@ -360,24 +360,28 @@ const attributeWithComponentPlugin = (
             }
         });
 
-        // Verify Aria51ReactPlugin is available (window global name kept for bundle compat)
+        // Check for component plugin (supports both new and legacy global names)
         const hasPlugin = yield* Effect.tryPromise({
-            try: () => page.evaluate(() => typeof (window as any).Aria51ReactPlugin !== 'undefined'),
+            try: () => page.evaluate(() =>
+                typeof (window as any).Aria51ComponentPlugin !== 'undefined' ||
+                typeof (window as any).Aria51ReactPlugin !== 'undefined'
+            ),
             catch: () => new EffectScanDataError({ reason: 'Failed to verify component plugin injection' })
         });
 
         if (!hasPlugin) {
-            logger.warn('Component plugin bundle did not expose Aria51ReactPlugin on window');
+            logger.warn('Component plugin bundle not found (checked Aria51ComponentPlugin and Aria51ReactPlugin)');
             return rawData;
         }
 
         logger.debug('Component plugin injected, attributing violations to components...');
 
-        // Call Aria51ReactPlugin.attributeViolations in browser context
+        // Call attributeViolations in browser context (supports both global names)
         const attributed = yield* Effect.tryPromise({
             try: () => page.evaluate(
                 ({ violations, passes, incomplete }) => {
-                    return (window as any).Aria51ReactPlugin.attributeViolations(
+                    const plugin = (window as any).Aria51ComponentPlugin || (window as any).Aria51ReactPlugin;
+                    return plugin.attributeViolations(
                         violations,
                         passes || [],
                         incomplete || []

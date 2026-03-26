@@ -9,7 +9,7 @@ See the [full introduction](docs/introduction.md) for a detailed walkthrough of 
 | Package | Description |
 | ------- | ----------- |
 | [`@aria51/core`](packages/core) | Scanning engine: axe-core, keyboard tests, WCAG 2.2 checks, fix suggestions |
-| [`@aria51/react`](packages/react) | Component attribution: maps violations to framework components (React; Vue/Svelte/Solid ready) |
+| [`@aria51/components`](packages/components) | Component attribution via element-source (React, Preact, Vue, Svelte, Solid) |
 | [`@aria51/ai-auditor`](packages/ai-auditor) | AI-powered auditing via Stagehand/Browserbase |
 | [`@aria51/agent`](packages/agent) | Autonomous auditing agent: planning, verification, voting, remediation |
 | [`@aria51/cli`](packages/cli) | Terminal UI (Ink). Binary: `aria51` |
