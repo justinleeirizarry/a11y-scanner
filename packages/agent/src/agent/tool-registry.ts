@@ -15,6 +15,9 @@ import { createVerifyFindingsTool } from '../tools/verify-findings.js';
 import { createDiffReportTool } from '../tools/diff-report.js';
 import { createGenerateRemediationTool } from '../tools/generate-remediation.js';
 import { createSaveSnapshotTool } from '../tools/save-snapshot.js';
+import { createTestKeyboardTool } from '../tools/test-keyboard.js';
+import { createAnalyzeStructureTool } from '../tools/analyze-structure.js';
+import { createTestScreenReaderTool } from '../tools/test-screen-reader.js';
 
 /**
  * Create all agent tools bound to the given session.
@@ -30,5 +33,8 @@ export function createToolRegistry(session: AuditSession): Record<string, AgentT
         diff_report: createDiffReportTool(session),
         generate_remediation: createGenerateRemediationTool(session),
         save_snapshot: createSaveSnapshotTool(session),
+        test_keyboard: createTestKeyboardTool(session),
+        analyze_structure: createAnalyzeStructureTool(session),
+        test_screen_reader: createTestScreenReaderTool(session),
     };
 }
