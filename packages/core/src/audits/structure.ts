@@ -10,13 +10,15 @@ export async function auditStructure(
     url: string,
     options: StructureAuditOptions = {}
 ): Promise<StructureAuditResult> {
-    const { headless = true } = options;
-    const browser = await chromium.launch({ headless });
+    const { headless = true, page: externalPage } = options;
+    const browser = externalPage ? null : await chromium.launch({ headless });
 
     try {
-        const page = await browser.newPage();
-        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        const page = externalPage || await browser!.newPage();
+        if (!externalPage) {
+            await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
 
         const tree = await page.accessibility.snapshot();
         const title = await page.title();
@@ -124,6 +126,6 @@ export async function auditStructure(
             issues,
         };
     } finally {
-        await browser.close();
+        if (browser) await browser.close();
     }
 }

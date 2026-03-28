@@ -41,6 +41,17 @@ function formatScreenReaderResult(result: ScreenReaderAuditResult): string {
     return lines.join('\n');
 }
 
+function formatDeepAnalysis(deepAnalysis: any): string {
+    const lines = ['\n\n### Deep Analysis (AI-enhanced)'];
+    if (deepAnalysis.issues?.length > 0) {
+        for (const i of deepAnalysis.issues) {
+            lines.push(`- [${i.severity || i.type || ''}] ${i.description || i.message || ''}`);
+        }
+    }
+    if (deepAnalysis.summary) lines.push(`\n${deepAnalysis.summary}`);
+    return lines.join('\n');
+}
+
 export const createTestScreenReaderTool = (session: AuditSession): AgentToolDef =>
     ({
         name: 'test_screen_reader',
@@ -48,13 +59,24 @@ export const createTestScreenReaderTool = (session: AuditSession): AgentToolDef 
             'Simulate screen reader navigation on a page. Tests how the page would be experienced by a screen reader user: page title announcement, landmark navigation, heading traversal, link/button accessible names, image alt text, and form label associations. Use this for WCAG 1.1.1, 1.3.1, 2.4.1, 2.4.4, 3.3.2, 4.1.2 manual checks.',
         inputSchema: z.object({
             url: z.string().url().describe('The URL to test screen reader navigation on'),
+            deep: z.boolean().optional().default(false).describe('Enable AI-enhanced deep analysis (requires OPENAI_API_KEY)'),
         }),
-        run: async ({ url }: any) => {
+        run: async ({ url, deep }: any) => {
             try {
-                const result = await auditScreenReader(url, {
-                    headless: session.config.headless,
-                });
-                return formatScreenReaderResult(result);
+                let result: any;
+                if (deep) {
+                    const { deepAuditScreenReader } = await import('@aria51/ai-auditor');
+                    result = await deepAuditScreenReader(url);
+                } else {
+                    result = await auditScreenReader(url, {
+                        headless: session.config.headless,
+                    });
+                }
+                let output = formatScreenReaderResult(result);
+                if (result.deep && result.deepAnalysis) {
+                    output += formatDeepAnalysis(result.deepAnalysis);
+                }
+                return output;
             } catch (error) {
                 return `Screen reader test failed for ${url}: ${error instanceof Error ? error.message : String(error)}`;
             }

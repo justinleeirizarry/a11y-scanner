@@ -44,6 +44,18 @@ function formatKeyboardResult(result: KeyboardAuditResult): string {
     return lines.join('\n');
 }
 
+function formatDeepAnalysis(deepAnalysis: any): string {
+    const lines = ['\n\n### Deep Analysis (AI-enhanced)'];
+    if (deepAnalysis.issues?.length > 0) {
+        for (const i of deepAnalysis.issues) {
+            lines.push(`- [${i.severity || i.impact || ''}] ${i.description || i.message || i.element || ''}`);
+        }
+    }
+    if (deepAnalysis.summary) lines.push(`\n${deepAnalysis.summary}`);
+    if (deepAnalysis.coverage?.percentage !== undefined) lines.push(`Coverage: ${deepAnalysis.coverage.percentage}%`);
+    return lines.join('\n');
+}
+
 export const createTestKeyboardTool = (session: AuditSession): AgentToolDef =>
     ({
         name: 'test_keyboard',
@@ -52,14 +64,25 @@ export const createTestKeyboardTool = (session: AuditSession): AgentToolDef =>
         inputSchema: z.object({
             url: z.string().url().describe('The URL to test keyboard navigation on'),
             maxTabs: z.number().optional().default(50).describe('Maximum Tab presses before stopping (default: 50)'),
+            deep: z.boolean().optional().default(false).describe('Enable AI-enhanced deep analysis (requires OPENAI_API_KEY)'),
         }),
-        run: async ({ url, maxTabs }: any) => {
+        run: async ({ url, maxTabs, deep }: any) => {
             try {
-                const result = await auditKeyboard(url, {
-                    maxTabs,
-                    headless: session.config.headless,
-                });
-                return formatKeyboardResult(result);
+                let result: any;
+                if (deep) {
+                    const { deepAuditKeyboard } = await import('@aria51/ai-auditor');
+                    result = await deepAuditKeyboard(url, { maxTabs });
+                } else {
+                    result = await auditKeyboard(url, {
+                        maxTabs,
+                        headless: session.config.headless,
+                    });
+                }
+                let output = formatKeyboardResult(result);
+                if (result.deep && result.deepAnalysis) {
+                    output += formatDeepAnalysis(result.deepAnalysis);
+                }
+                return output;
             } catch (error) {
                 return `Keyboard test failed for ${url}: ${error instanceof Error ? error.message : String(error)}`;
             }

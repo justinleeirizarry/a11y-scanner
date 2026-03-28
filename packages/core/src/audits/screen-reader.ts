@@ -10,13 +10,15 @@ export async function auditScreenReader(
     url: string,
     options: ScreenReaderAuditOptions = {}
 ): Promise<ScreenReaderAuditResult> {
-    const { headless = true } = options;
-    const browser = await chromium.launch({ headless });
+    const { headless = true, page: externalPage } = options;
+    const browser = externalPage ? null : await chromium.launch({ headless });
 
     try {
-        const page = await browser.newPage();
-        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        const page = externalPage || await browser!.newPage();
+        if (!externalPage) {
+            await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
 
         const issues: AuditIssue[] = [];
 
@@ -118,6 +120,6 @@ export async function auditScreenReader(
             issues,
         };
     } finally {
-        await browser.close();
+        if (browser) await browser.close();
     }
 }

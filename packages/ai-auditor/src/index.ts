@@ -153,6 +153,23 @@ export {
 } from './errors.js';
 
 // =============================================================================
+// Deep Audits (tier 1 core + tier 2 Stagehand composition)
+// =============================================================================
+
+export {
+    deepAuditKeyboard,
+    deepAuditStructure,
+    deepAuditScreenReader,
+} from './deep/index.js';
+
+export type {
+    DeepKeyboardAuditResult,
+    DeepStructureAuditResult,
+    DeepScreenReaderAuditResult,
+    DeepAuditOptions,
+} from './deep/index.js';
+
+// =============================================================================
 // Adapters (convert service results → supplemental test results)
 // =============================================================================
 

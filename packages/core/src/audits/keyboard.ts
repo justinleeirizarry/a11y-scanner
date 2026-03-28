@@ -11,13 +11,15 @@ export async function auditKeyboard(
     url: string,
     options: KeyboardAuditOptions = {}
 ): Promise<KeyboardAuditResult> {
-    const { maxTabs = 50, headless = true } = options;
-    const browser = await chromium.launch({ headless });
+    const { maxTabs = 50, headless = true, page: externalPage } = options;
+    const browser = externalPage ? null : await chromium.launch({ headless });
 
     try {
-        const page = await browser.newPage();
-        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        const page = externalPage || await browser!.newPage();
+        if (!externalPage) {
+            await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
 
         const tabOrder: TabOrderEntry[] = [];
         const issues: AuditIssue[] = [];
@@ -123,6 +125,6 @@ export async function auditKeyboard(
             issues,
         };
     } finally {
-        await browser.close();
+        if (browser) await browser.close();
     }
 }

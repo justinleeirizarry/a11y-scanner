@@ -78,6 +78,17 @@ function formatStructureResult(result: StructureAuditResult): string {
     return lines.join('\n');
 }
 
+function formatDeepAnalysis(deepAnalysis: any): string {
+    const lines = ['\n\n### Deep Analysis (AI-enhanced)'];
+    if (deepAnalysis.issues?.length > 0) {
+        for (const i of deepAnalysis.issues) {
+            lines.push(`- [${i.severity || i.type || ''}] ${i.description || i.message || ''}`);
+        }
+    }
+    if (deepAnalysis.summary) lines.push(`\n${deepAnalysis.summary}`);
+    return lines.join('\n');
+}
+
 export const createAnalyzeStructureTool = (session: AuditSession): AgentToolDef =>
     ({
         name: 'analyze_structure',
@@ -85,13 +96,24 @@ export const createAnalyzeStructureTool = (session: AuditSession): AgentToolDef 
             'Analyze a page\'s accessibility structure: landmarks, heading hierarchy, ARIA roles, form labels, and interactive elements. Returns the accessibility tree with structural validation. Use this for WCAG 1.3.1 (Info and Relationships), 2.4.2 (Page Titled), 2.4.6 (Headings and Labels), 4.1.2 (Name, Role, Value) manual checks.',
         inputSchema: z.object({
             url: z.string().url().describe('The URL to analyze'),
+            deep: z.boolean().optional().default(false).describe('Enable AI-enhanced deep analysis (requires OPENAI_API_KEY)'),
         }),
-        run: async ({ url }: any) => {
+        run: async ({ url, deep }: any) => {
             try {
-                const result = await auditStructure(url, {
-                    headless: session.config.headless,
-                });
-                return formatStructureResult(result);
+                let result: any;
+                if (deep) {
+                    const { deepAuditStructure } = await import('@aria51/ai-auditor');
+                    result = await deepAuditStructure(url);
+                } else {
+                    result = await auditStructure(url, {
+                        headless: session.config.headless,
+                    });
+                }
+                let output = formatStructureResult(result);
+                if (result.deep && result.deepAnalysis) {
+                    output += formatDeepAnalysis(result.deepAnalysis);
+                }
+                return output;
             } catch (error) {
                 return `Structure analysis failed for ${url}: ${error instanceof Error ? error.message : String(error)}`;
             }

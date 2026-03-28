@@ -277,16 +277,23 @@ server.registerTool(
 server.registerTool(
     "test_keyboard",
     {
-        description: "Test keyboard navigation on a page by pressing Tab and analyzing focus behavior. Returns tab order, focus trap detection, focus indicator presence, and skip link status. Use for WCAG 2.1.1, 2.1.2, 2.4.1, 2.4.3, 2.4.7 checks. No API keys required.",
+        description: "Test keyboard navigation on a page by pressing Tab and analyzing focus behavior. Returns tab order, focus trap detection, focus indicator presence, and skip link status. Use for WCAG 2.1.1, 2.1.2, 2.4.1, 2.4.3, 2.4.7 checks. Set deep=true for AI-enhanced analysis (requires OPENAI_API_KEY).",
         inputSchema: {
             url: z.string().url().describe("The URL to test"),
             max_tabs: z.number().optional().default(50).describe("Maximum Tab presses (default: 50)"),
+            deep: z.boolean().optional().default(false).describe("Enable AI-enhanced deep analysis (requires OPENAI_API_KEY)"),
         },
     },
-    async ({ url, max_tabs }) => {
+    async ({ url, max_tabs, deep }) => {
         try {
-            const { auditKeyboard } = await import("@aria51/core");
-            const result = await auditKeyboard(url, { maxTabs: max_tabs });
+            let result: any;
+            if (deep) {
+                const { deepAuditKeyboard } = await import("@aria51/ai-auditor");
+                result = await deepAuditKeyboard(url, { maxTabs: max_tabs });
+            } else {
+                const { auditKeyboard } = await import("@aria51/core");
+                result = await auditKeyboard(url, { maxTabs: max_tabs });
+            }
             const lines = [
                 `## Keyboard Navigation: ${url}\n`,
                 `- Tab stops: ${result.tabStops} / ${result.totalInteractive} interactive elements`,
@@ -304,6 +311,14 @@ server.registerTool(
                 lines.push(`${e.index}. ${e.hasFocusStyle ? '✓' : '✗'} ${e.role} "${e.name.slice(0, 40)}" — ${e.selector}`);
             }
             if (result.tabOrder.length > 25) lines.push(`... ${result.tabOrder.length - 25} more`);
+            if (result.deep && result.deepAnalysis) {
+                lines.push('\n### Deep Analysis (AI-enhanced)');
+                const da = result.deepAnalysis;
+                if (da.issues?.length > 0) {
+                    for (const i of da.issues) lines.push(`- **[${i.severity || i.impact || ''}]** ${i.description || i.message || i.element || ''}`);
+                }
+                if (da.summary) lines.push(`\n${da.summary}`);
+            }
             return { content: [{ type: "text", text: lines.join("\n") }] };
         } catch (error) {
             return { content: [{ type: "text", text: `Keyboard test failed: ${error instanceof Error ? error.message : String(error)}` }], isError: true };
@@ -315,21 +330,28 @@ server.registerTool(
 server.registerTool(
     "analyze_structure",
     {
-        description: "Analyze a page's accessibility structure: landmarks, heading hierarchy, ARIA roles, form labels, and the accessibility tree. Use for WCAG 1.3.1, 2.4.2, 2.4.6, 4.1.2 checks. No API keys required.",
+        description: "Analyze a page's accessibility structure: landmarks, heading hierarchy, ARIA roles, form labels, and the accessibility tree. Use for WCAG 1.3.1, 2.4.2, 2.4.6, 4.1.2 checks. Set deep=true for AI-enhanced analysis (requires OPENAI_API_KEY).",
         inputSchema: {
             url: z.string().url().describe("The URL to analyze"),
+            deep: z.boolean().optional().default(false).describe("Enable AI-enhanced deep analysis (requires OPENAI_API_KEY)"),
         },
     },
-    async ({ url }) => {
+    async ({ url, deep }) => {
         try {
-            const { auditStructure } = await import("@aria51/core");
-            const result = await auditStructure(url);
+            let result: any;
+            if (deep) {
+                const { deepAuditStructure } = await import("@aria51/ai-auditor");
+                result = await deepAuditStructure(url);
+            } else {
+                const { auditStructure } = await import("@aria51/core");
+                result = await auditStructure(url);
+            }
             const lines = [
                 `## Structure Analysis: ${url}\n`,
                 `- Title: ${result.title || '(empty)'}`,
                 `- Landmarks: ${result.landmarks.length}`,
-                `- Headings: ${result.headings.length} (h1: ${result.headings.filter(h => h.level === 1).length})`,
-                `- Form inputs: ${result.formInputs.length} (${result.formInputs.filter(f => !f.hasLabel).length} unlabeled)\n`,
+                `- Headings: ${result.headings.length} (h1: ${result.headings.filter((h: any) => h.level === 1).length})`,
+                `- Form inputs: ${result.formInputs.length} (${result.formInputs.filter((f: any) => !f.hasLabel).length} unlabeled)\n`,
             ];
             if (result.issues.length > 0) {
                 lines.push('### Issues');
@@ -346,6 +368,14 @@ server.registerTool(
                     lines.push(`- ${f.hasLabel ? '✓' : '✗'} ${f.type}${f.name ? ` "${f.name}"` : ''} — ${f.hasLabel ? f.labelText : 'NO LABEL'}`);
                 }
             }
+            if (result.deep && result.deepAnalysis) {
+                lines.push('\n### Deep Analysis (AI-enhanced)');
+                const da = result.deepAnalysis;
+                if (da.issues?.length > 0) {
+                    for (const i of da.issues) lines.push(`- **[${i.severity || i.type || ''}]** ${i.description || i.message || ''}`);
+                }
+                if (da.summary) lines.push(`\n${da.summary}`);
+            }
             return { content: [{ type: "text", text: lines.join("\n") }] };
         } catch (error) {
             return { content: [{ type: "text", text: `Structure analysis failed: ${error instanceof Error ? error.message : String(error)}` }], isError: true };
@@ -357,15 +387,22 @@ server.registerTool(
 server.registerTool(
     "test_screen_reader",
     {
-        description: "Simulate screen reader navigation on a page. Tests page title, language, image alt text, link/button accessible names, form labels, and ARIA live regions. Use for WCAG 1.1.1, 1.3.1, 2.4.1, 2.4.4, 3.3.2, 4.1.2 checks. No API keys required.",
+        description: "Simulate screen reader navigation on a page. Tests page title, language, image alt text, link/button accessible names, form labels, and ARIA live regions. Use for WCAG 1.1.1, 1.3.1, 2.4.1, 2.4.4, 3.3.2, 4.1.2 checks. Set deep=true for AI-enhanced analysis (requires OPENAI_API_KEY).",
         inputSchema: {
             url: z.string().url().describe("The URL to test"),
+            deep: z.boolean().optional().default(false).describe("Enable AI-enhanced deep analysis (requires OPENAI_API_KEY)"),
         },
     },
-    async ({ url }) => {
+    async ({ url, deep }) => {
         try {
-            const { auditScreenReader } = await import("@aria51/core");
-            const result = await auditScreenReader(url);
+            let result: any;
+            if (deep) {
+                const { deepAuditScreenReader } = await import("@aria51/ai-auditor");
+                result = await deepAuditScreenReader(url);
+            } else {
+                const { auditScreenReader } = await import("@aria51/core");
+                result = await auditScreenReader(url);
+            }
             const lines = [
                 `## Screen Reader Test: ${url}\n`,
                 `- Title: ${result.title ? `"${result.title}"` : '(none)'}`,
@@ -381,6 +418,14 @@ server.registerTool(
                 for (const i of result.issues) lines.push(`- **[${i.severity}] WCAG ${i.wcag}:** ${i.message}`);
             } else {
                 lines.push('No critical screen reader issues detected.');
+            }
+            if (result.deep && result.deepAnalysis) {
+                lines.push('\n### Deep Analysis (AI-enhanced)');
+                const da = result.deepAnalysis;
+                if (da.issues?.length > 0) {
+                    for (const i of da.issues) lines.push(`- **[${i.severity || i.type || ''}]** ${i.description || i.message || ''}`);
+                }
+                if (da.summary) lines.push(`\n${da.summary}`);
             }
             return { content: [{ type: "text", text: lines.join("\n") }] };
         } catch (error) {

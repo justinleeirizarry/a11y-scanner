@@ -73,6 +73,7 @@ const cli = meow(
     --audit-keyboard       Test keyboard navigation (tab order, focus traps, skip links)
     --audit-structure      Analyze page structure (landmarks, headings, form labels)
     --audit-screen-reader  Simulate screen reader navigation (alt text, ARIA, labels)
+    --deep                 Enable AI-enhanced deep analysis (requires OPENAI_API_KEY)
 
   Autonomous Agent Mode (mutually exclusive with scan/test-gen)
     --agent               Run autonomous accessibility audit with AI agent
@@ -86,12 +87,12 @@ const cli = meow(
     --stagehand-model <model> AI model for test generation [default: openai/gpt-4o-mini]
     --stagehand-verbose       Enable verbose Stagehand logging
 
-  Stagehand Advanced Testing (mutually exclusive with scan/test-gen)
-    --stagehand-keyboard      Test keyboard navigation using AI
+  Stagehand Advanced Testing (deprecated — use --audit-* --deep instead)
+    --stagehand-keyboard      Test keyboard navigation using AI (use --audit-keyboard --deep)
     --max-tab-presses         Max Tab presses for keyboard test [default: 100]
-    --stagehand-tree          Analyze accessibility tree using AI
+    --stagehand-tree          Analyze accessibility tree using AI (use --audit-structure --deep)
     --include-full-tree       Include full tree structure in output
-    --wcag-audit              Run AI-powered WCAG compliance audit
+    --wcag-audit              Run AI-powered WCAG compliance audit (use --audit-* --deep)
     --audit-level             Target WCAG level (A, AA, AAA) [default: AA]
     --max-steps               Max agent steps for audit [default: 30]
 
@@ -143,6 +144,7 @@ const cli = meow(
             auditKeyboard: { type: 'boolean', default: false },
             auditStructure: { type: 'boolean', default: false },
             auditScreenReader: { type: 'boolean', default: false },
+            deep: { type: 'boolean', default: false },
             // Agent mode
             agent: { type: 'boolean', default: false },
             agentModel: { type: 'string' },
@@ -275,9 +277,9 @@ const getFilenameFromUrl = (urlStr: string): string => {
 if (isFocusedAuditMode) {
     // Focused audit modes — work the same in TTY and non-TTY
     (async () => {
-        if (cli.flags.auditKeyboard) await runAuditKeyboard(url, { maxTabs: cli.flags.maxTabPresses, quiet: cli.flags.quiet });
-        if (cli.flags.auditStructure) await runAuditStructure(url, { quiet: cli.flags.quiet });
-        if (cli.flags.auditScreenReader) await runAuditScreenReader(url, { quiet: cli.flags.quiet });
+        if (cli.flags.auditKeyboard) await runAuditKeyboard(url, { maxTabs: cli.flags.maxTabPresses, quiet: cli.flags.quiet, deep: cli.flags.deep, model: cli.flags.stagehandModel, verbose: cli.flags.stagehandVerbose });
+        if (cli.flags.auditStructure) await runAuditStructure(url, { quiet: cli.flags.quiet, deep: cli.flags.deep, model: cli.flags.stagehandModel, verbose: cli.flags.stagehandVerbose });
+        if (cli.flags.auditScreenReader) await runAuditScreenReader(url, { quiet: cli.flags.quiet, deep: cli.flags.deep, model: cli.flags.stagehandModel, verbose: cli.flags.stagehandVerbose });
     })();
 } else if (isAgentMode) {
     // Agent mode works the same in TTY and non-TTY (handled internally)

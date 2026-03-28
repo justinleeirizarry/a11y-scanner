@@ -39,6 +39,8 @@ export interface KeyboardAuditResult {
 export interface KeyboardAuditOptions {
     maxTabs?: number;
     headless?: boolean;
+    /** Pre-existing Playwright page — skips browser launch and navigation when provided */
+    page?: import('playwright').Page;
 }
 
 // =============================================================================
@@ -77,6 +79,8 @@ export interface StructureAuditResult {
 
 export interface StructureAuditOptions {
     headless?: boolean;
+    /** Pre-existing Playwright page — skips browser launch and navigation when provided */
+    page?: import('playwright').Page;
 }
 
 // =============================================================================
@@ -98,4 +102,6 @@ export interface ScreenReaderAuditResult {
 
 export interface ScreenReaderAuditOptions {
     headless?: boolean;
+    /** Pre-existing Playwright page — skips browser launch and navigation when provided */
+    page?: import('playwright').Page;
 }
