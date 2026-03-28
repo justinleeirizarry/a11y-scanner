@@ -14,6 +14,7 @@ import { createCrawlPlannerTool } from '../tools/crawl-planner.js';
 import { createVerifyFindingsTool } from '../tools/verify-findings.js';
 import { createDiffReportTool } from '../tools/diff-report.js';
 import { createGenerateRemediationTool } from '../tools/generate-remediation.js';
+import { createSaveSnapshotTool } from '../tools/save-snapshot.js';
 
 /**
  * Create all agent tools bound to the given session.
@@ -28,5 +29,6 @@ export function createToolRegistry(session: AuditSession): Record<string, AgentT
         verify_findings: createVerifyFindingsTool(session),
         diff_report: createDiffReportTool(session),
         generate_remediation: createGenerateRemediationTool(session),
+        save_snapshot: createSaveSnapshotTool(session),
     };
 }

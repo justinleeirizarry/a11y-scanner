@@ -145,7 +145,7 @@ async function planDelegation(
                 .string()
                 .describe('Your analysis of the site'),
             selectedSpecialistIds: z
-                .array(z.enum(['keyboard-navigation', 'visual-content', 'forms-interaction', 'structure-semantics']))
+                .array(z.enum(SPECIALIST_LENSES.map(l => l.id) as [string, ...string[]]))
                 .describe('Which specialists to spawn.'),
             specialistInstructions: z
                 .record(z.string(), z.string())
