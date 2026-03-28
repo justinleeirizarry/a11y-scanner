@@ -261,3 +261,24 @@ export {
     type AxeWcagMapping,
 } from './data/index.js';
 
+// =============================================================================
+// Audits - Pure audit functions (keyboard, structure, screen reader)
+// =============================================================================
+
+export {
+    auditKeyboard,
+    auditStructure,
+    auditScreenReader,
+    type AuditIssue,
+    type KeyboardAuditResult,
+    type KeyboardAuditOptions,
+    type StructureAuditResult,
+    type StructureAuditOptions,
+    type ScreenReaderAuditResult,
+    type ScreenReaderAuditOptions,
+    type TabOrderEntry,
+    type LandmarkInfo,
+    type HeadingInfo,
+    type FormInputInfo,
+} from './audits/index.js';
+

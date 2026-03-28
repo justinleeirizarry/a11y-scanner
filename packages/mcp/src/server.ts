@@ -273,6 +273,122 @@ server.registerTool(
     }
 );
 
+// Register keyboard audit tool
+server.registerTool(
+    "test_keyboard",
+    {
+        description: "Test keyboard navigation on a page by pressing Tab and analyzing focus behavior. Returns tab order, focus trap detection, focus indicator presence, and skip link status. Use for WCAG 2.1.1, 2.1.2, 2.4.1, 2.4.3, 2.4.7 checks. No API keys required.",
+        inputSchema: {
+            url: z.string().url().describe("The URL to test"),
+            max_tabs: z.number().optional().default(50).describe("Maximum Tab presses (default: 50)"),
+        },
+    },
+    async ({ url, max_tabs }) => {
+        try {
+            const { auditKeyboard } = await import("@aria51/core");
+            const result = await auditKeyboard(url, { maxTabs: max_tabs });
+            const lines = [
+                `## Keyboard Navigation: ${url}\n`,
+                `- Tab stops: ${result.tabStops} / ${result.totalInteractive} interactive elements`,
+                `- Focus trap: ${result.focusTrapDetected ? '**YES**' : 'no'}`,
+                `- Skip link: ${result.hasSkipLink ? 'yes' : '**NO**'}`,
+                `- Missing focus indicators: ${result.elementsWithoutFocusIndicator}\n`,
+            ];
+            if (result.issues.length > 0) {
+                lines.push('### Issues');
+                for (const i of result.issues) lines.push(`- **[${i.severity}] WCAG ${i.wcag}:** ${i.message}`);
+                lines.push('');
+            }
+            lines.push('### Tab Order');
+            for (const e of result.tabOrder.slice(0, 25)) {
+                lines.push(`${e.index}. ${e.hasFocusStyle ? '✓' : '✗'} ${e.role} "${e.name.slice(0, 40)}" — ${e.selector}`);
+            }
+            if (result.tabOrder.length > 25) lines.push(`... ${result.tabOrder.length - 25} more`);
+            return { content: [{ type: "text", text: lines.join("\n") }] };
+        } catch (error) {
+            return { content: [{ type: "text", text: `Keyboard test failed: ${error instanceof Error ? error.message : String(error)}` }], isError: true };
+        }
+    }
+);
+
+// Register structure audit tool
+server.registerTool(
+    "analyze_structure",
+    {
+        description: "Analyze a page's accessibility structure: landmarks, heading hierarchy, ARIA roles, form labels, and the accessibility tree. Use for WCAG 1.3.1, 2.4.2, 2.4.6, 4.1.2 checks. No API keys required.",
+        inputSchema: {
+            url: z.string().url().describe("The URL to analyze"),
+        },
+    },
+    async ({ url }) => {
+        try {
+            const { auditStructure } = await import("@aria51/core");
+            const result = await auditStructure(url);
+            const lines = [
+                `## Structure Analysis: ${url}\n`,
+                `- Title: ${result.title || '(empty)'}`,
+                `- Landmarks: ${result.landmarks.length}`,
+                `- Headings: ${result.headings.length} (h1: ${result.headings.filter(h => h.level === 1).length})`,
+                `- Form inputs: ${result.formInputs.length} (${result.formInputs.filter(f => !f.hasLabel).length} unlabeled)\n`,
+            ];
+            if (result.issues.length > 0) {
+                lines.push('### Issues');
+                for (const i of result.issues) lines.push(`- **[${i.severity}] WCAG ${i.wcag}:** ${i.message}`);
+                lines.push('');
+            }
+            lines.push('### Headings');
+            for (const h of result.headings.slice(0, 20)) lines.push(`${'  '.repeat(h.level - 1)}h${h.level}: ${h.text || '(empty)'}`);
+            lines.push('\n### Landmarks');
+            for (const l of result.landmarks) lines.push(`- ${l.role}${l.label ? ` "${l.label}"` : ''} (${l.tag})`);
+            if (result.formInputs.length > 0) {
+                lines.push('\n### Form Inputs');
+                for (const f of result.formInputs.slice(0, 10)) {
+                    lines.push(`- ${f.hasLabel ? '✓' : '✗'} ${f.type}${f.name ? ` "${f.name}"` : ''} — ${f.hasLabel ? f.labelText : 'NO LABEL'}`);
+                }
+            }
+            return { content: [{ type: "text", text: lines.join("\n") }] };
+        } catch (error) {
+            return { content: [{ type: "text", text: `Structure analysis failed: ${error instanceof Error ? error.message : String(error)}` }], isError: true };
+        }
+    }
+);
+
+// Register screen reader audit tool
+server.registerTool(
+    "test_screen_reader",
+    {
+        description: "Simulate screen reader navigation on a page. Tests page title, language, image alt text, link/button accessible names, form labels, and ARIA live regions. Use for WCAG 1.1.1, 1.3.1, 2.4.1, 2.4.4, 3.3.2, 4.1.2 checks. No API keys required.",
+        inputSchema: {
+            url: z.string().url().describe("The URL to test"),
+        },
+    },
+    async ({ url }) => {
+        try {
+            const { auditScreenReader } = await import("@aria51/core");
+            const result = await auditScreenReader(url);
+            const lines = [
+                `## Screen Reader Test: ${url}\n`,
+                `- Title: ${result.title ? `"${result.title}"` : '(none)'}`,
+                `- Language: ${result.lang || '(not set)'}`,
+                `- Images: ${result.images.total} total, ${result.images.missingAlt} missing alt`,
+                `- Links: ${result.links.total} total, ${result.links.noName} no name, ${result.links.vague} vague`,
+                `- Buttons: ${result.buttons.total} total, ${result.buttons.noName} no name`,
+                `- Form inputs: ${result.formInputs.total} total, ${result.formInputs.unlabeled} unlabeled`,
+                `- Live regions: ${result.liveRegions}\n`,
+            ];
+            if (result.issues.length > 0) {
+                lines.push('### Issues');
+                for (const i of result.issues) lines.push(`- **[${i.severity}] WCAG ${i.wcag}:** ${i.message}`);
+            } else {
+                lines.push('No critical screen reader issues detected.');
+            }
+            return { content: [{ type: "text", text: lines.join("\n") }] };
+        } catch (error) {
+            return { content: [{ type: "text", text: `Screen reader test failed: ${error instanceof Error ? error.message : String(error)}` }], isError: true };
+        }
+    }
+);
+
 // Register agent audit tool
 server.registerTool(
     "run_agent",

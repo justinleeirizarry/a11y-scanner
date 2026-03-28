@@ -33,6 +33,9 @@ import {
     runWcagAuditMode,
     runTestGenMode,
     runScanMode,
+    runAuditKeyboard,
+    runAuditStructure,
+    runAuditScreenReader,
 } from './modes/index.js';
 
 // Load configuration: config file first, then env vars override
@@ -65,6 +68,11 @@ const cli = meow(
     --keyboard-nav     Run keyboard navigation tests [default: true]
     --tree             Show component hierarchy view
     --quiet, -q        Minimal output - show only summary line
+
+  Focused Audits (no API keys required, uses Playwright directly)
+    --audit-keyboard       Test keyboard navigation (tab order, focus traps, skip links)
+    --audit-structure      Analyze page structure (landmarks, headings, form labels)
+    --audit-screen-reader  Simulate screen reader navigation (alt text, ARIA, labels)
 
   Autonomous Agent Mode (mutually exclusive with scan/test-gen)
     --agent               Run autonomous accessibility audit with AI agent
@@ -131,6 +139,10 @@ const cli = meow(
             keyboardNav: { type: 'boolean', default: true },
             tree: { type: 'boolean', default: false },
             quiet: { type: 'boolean', shortFlag: 'q', default: false },
+            // Focused audit flags
+            auditKeyboard: { type: 'boolean', default: false },
+            auditStructure: { type: 'boolean', default: false },
+            auditScreenReader: { type: 'boolean', default: false },
             // Agent mode
             agent: { type: 'boolean', default: false },
             agentModel: { type: 'string' },
@@ -202,13 +214,14 @@ const auditLevel = cli.flags.auditLevel.toUpperCase() as WcagLevel;
 
 // Determine mode
 const isAgentMode = cli.flags.agent;
+const isFocusedAuditMode = cli.flags.auditKeyboard || cli.flags.auditStructure || cli.flags.auditScreenReader;
 const isTestGenerationMode = cli.flags.generateTest;
 const isStagehandKeyboardMode = cli.flags.stagehandKeyboard;
 const isStagehandTreeMode = cli.flags.stagehandTree;
 const isWcagAuditMode = cli.flags.wcagAudit;
 const isStagehandMode = isStagehandKeyboardMode || isStagehandTreeMode || isWcagAuditMode;
 
-const modeCount = [isAgentMode, isTestGenerationMode, isStagehandKeyboardMode, isStagehandTreeMode, isWcagAuditMode].filter(Boolean).length;
+const modeCount = [isAgentMode, isFocusedAuditMode, isTestGenerationMode, isStagehandKeyboardMode, isStagehandTreeMode, isWcagAuditMode].filter(Boolean).length;
 if (modeCount > 1) {
     console.error('Error: Only one mode can be active at a time.\n');
     console.error('Modes: --agent, --generate-test, --stagehand-keyboard, --stagehand-tree, --wcag-audit\n');
@@ -259,7 +272,14 @@ const getFilenameFromUrl = (urlStr: string): string => {
     }
 };
 
-if (isAgentMode) {
+if (isFocusedAuditMode) {
+    // Focused audit modes — work the same in TTY and non-TTY
+    (async () => {
+        if (cli.flags.auditKeyboard) await runAuditKeyboard(url, { maxTabs: cli.flags.maxTabPresses, quiet: cli.flags.quiet });
+        if (cli.flags.auditStructure) await runAuditStructure(url, { quiet: cli.flags.quiet });
+        if (cli.flags.auditScreenReader) await runAuditScreenReader(url, { quiet: cli.flags.quiet });
+    })();
+} else if (isAgentMode) {
     // Agent mode works the same in TTY and non-TTY (handled internally)
     if (!isTTY) logger.setUseStderr(true);
     runAgentMode({
