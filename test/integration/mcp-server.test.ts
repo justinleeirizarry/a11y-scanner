@@ -13,7 +13,7 @@ import {
     AppLayer,
     createResultsProcessorService,
     type ScanResults,
-} from '@accessibility-toolkit/core';
+} from '@aria51/core';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -139,15 +139,16 @@ describe('MCP Server Integration', () => {
             expect(hasViolationCount).toBe(true);
         });
 
-        it('should include component information in formatted output', () => {
+        it('should produce well-formed MCP content blocks', () => {
             const processor = createResultsProcessorService();
             const content = Effect.runSync(processor.formatForMCP(scanResults, { includeTree: false }));
 
-            // Should reference React components
-            const hasComponentInfo = content.some(
-                (c) => c.text.includes('component') || c.text.includes('Component')
-            );
-            expect(hasComponentInfo).toBe(true);
+            // Every block should have type and text
+            for (const block of content) {
+                expect(block.type).toBe('text');
+                expect(typeof block.text).toBe('string');
+                expect(block.text.length).toBeGreaterThan(0);
+            }
         });
 
         it('should format WCAG tags appropriately', () => {

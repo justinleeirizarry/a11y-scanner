@@ -11,7 +11,7 @@ import {
     runScanAsPromise,
     AppLayer,
     type ScanResults,
-} from '@accessibility-toolkit/core';
+} from '@aria51/core';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

@@ -209,7 +209,7 @@ export function formatViolations(violations: AttributedViolation[]): string {
                 const nodePath = filterComponentPath(
                     node.userComponentPath?.length ? node.userComponentPath : node.componentPath || []
                 );
-                const component = nodePath.length > 0 ? nodePath[nodePath.length - 1] : node.component || 'Unknown';
+                const component = nodePath.length > 0 ? nodePath[nodePath.length - 1] : node.component || node.cssSelector || node.target?.[0] || 'element';
                 const src = formatSource((node as any)?.source);
                 const loc = src ? ` (${src})` : '';
                 output += `${i + 1}. \`${component}\`${loc} - ${node.cssSelector || node.target[0]}\n`;

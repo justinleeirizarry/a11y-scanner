@@ -4,9 +4,9 @@ import { resolve } from 'path';
 export default defineConfig({
     resolve: {
         alias: {
-            '@accessibility-toolkit/core': resolve(__dirname, 'packages/core/src/index.ts'),
-            '@accessibility-toolkit/cli': resolve(__dirname, 'packages/cli/src/index.tsx'),
-            '@accessibility-toolkit/mcp': resolve(__dirname, 'packages/mcp/src/server.ts'),
+            '@aria51/core': resolve(__dirname, 'packages/core/src/index.ts'),
+            '@aria51/cli': resolve(__dirname, 'packages/cli/src/index.tsx'),
+            '@aria51/mcp': resolve(__dirname, 'packages/mcp/src/server.ts'),
         },
     },
     test: {

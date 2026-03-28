@@ -12,11 +12,13 @@ export const createScanBatchTool = (session: AuditSession): AgentToolDef =>
         description:
             'Scan multiple URLs in parallel for accessibility violations. More efficient than scanning pages one by one. Returns a summary per page.',
         inputSchema: z.object({
-            urls: z.array(z.string()).describe('URLs to scan'),
+            urls: z.array(z.string().url()).describe('URLs to scan'),
             includeKeyboardTests: z.boolean().optional().default(true).describe('Include keyboard navigation tests'),
             mobile: z.boolean().optional().default(false).describe('Emulate a mobile device viewport'),
+            disableRules: z.array(z.string()).optional().describe("Axe rule IDs to disable (e.g. ['color-contrast'])"),
+            exclude: z.array(z.string()).optional().describe('CSS selectors to exclude from scanning'),
         }),
-        run: async ({ urls, includeKeyboardTests, mobile }: any) => {
+        run: async ({ urls, includeKeyboardTests, mobile, disableRules, exclude }: any) => {
             const concurrency = session.config.concurrency;
             const results: string[] = [];
 
@@ -25,7 +27,7 @@ export const createScanBatchTool = (session: AuditSession): AgentToolDef =>
                 const batchResults = await Promise.allSettled(
                     batch.map((url: string) =>
                         runScanAsPromise(
-                            { url, browser: session.config.browser, headless: session.config.headless, includeKeyboardTests, mobile },
+                            { url, browser: session.config.browser, headless: session.config.headless, includeKeyboardTests, mobile, disableRules, exclude },
                             AppLayer
                         ).then((result) => {
                             session.scanResults[url] = result.results;

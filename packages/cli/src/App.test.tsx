@@ -189,7 +189,7 @@ describe('App Component', () => {
 
             expect(mockRunScanAsPromise).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    componentBundlePath: expect.stringContaining('react-bundle.js'),
+                    componentBundlePath: expect.stringContaining('component-bundle.js'),
                 }),
                 expect.anything()
             );

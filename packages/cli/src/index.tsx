@@ -504,10 +504,10 @@ if (!isTTY) {
                         for (const violation of violations) {
                             console.log(`[${violation.impact}] ${violation.id}: ${violation.description}`);
                             for (const node of violation.nodes) {
-                                const componentName = node.userComponentPath?.length
+                                const label = node.userComponentPath?.length
                                     ? node.userComponentPath[node.userComponentPath.length - 1]
-                                    : node.component || 'Unknown';
-                                console.log(`  - ${componentName}${node.cssSelector ? ` (${node.cssSelector})` : ''}`);
+                                    : node.component || node.cssSelector || node.target?.[0] || node.html?.slice(0, 80) || 'element';
+                                console.log(`  - ${label}`);
                             }
                             if (violation.helpUrl) console.log(`  Docs: ${violation.helpUrl}`);
                         }
@@ -523,7 +523,8 @@ if (!isTTY) {
                         if (sev.serious > 0) sevParts.push(`${sev.serious} serious`);
                         if (sev.moderate > 0) sevParts.push(`${sev.moderate} moderate`);
                         if (sev.minor > 0) sevParts.push(`${sev.minor} minor`);
-                        console.log(`${summary.totalViolations} violations  ${summary.totalPasses} passes  ${summary.totalComponents} components`);
+                        const componentsPart = summary.totalComponents > 0 ? `  ${summary.totalComponents} components` : '';
+                        console.log(`${summary.totalViolations} violations  ${summary.totalPasses} passes${componentsPart}`);
                         if (sevParts.length > 0) console.log(sevParts.join('  '));
                         if (summary.keyboardIssues) console.log(`${summary.keyboardIssues} keyboard issues`);
                         console.log(`\n${sep}\n`);

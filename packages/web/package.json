@@ -2,10 +2,19 @@
     "name": "@aria51/web",
     "version": "0.1.0",
     "description": "Web UI for accessibility scanning",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/justinirizarry/aria-51.git",
+        "directory": "packages/web"
+    },
+    "publishConfig": {
+        "access": "public"
+    },
     "type": "module",
     "scripts": {
         "dev": "tsx src/server.ts",
-        "build": "tsc && cp -r src/public dist/public",
+        "build": "rm -rf dist && tsc && cp -r src/public dist/public",
         "start": "node dist/server.js"
     },
     "dependencies": {

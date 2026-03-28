@@ -16,7 +16,7 @@
         "bin"
     ],
     "scripts": {
-        "build": "tsc",
+        "build": "rm -rf dist && tsc",
         "dev": "tsc --watch",
         "start": "node ./bin/cli.js",
         "test": "vitest run",
@@ -30,6 +30,14 @@
         "axe"
     ],
     "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/justinirizarry/aria-51.git",
+        "directory": "packages/cli"
+    },
+    "publishConfig": {
+        "access": "public"
+    },
     "dependencies": {
         "@aria51/core": "workspace:*",
         "@aria51/components": "workspace:*",

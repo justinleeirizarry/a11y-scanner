@@ -15,7 +15,7 @@
         "dist"
     ],
     "scripts": {
-        "build": "tsc && npm run build:bundle",
+        "build": "rm -rf dist && tsc && npm run build:bundle",
         "build:bundle": "esbuild src/browser-bundle.ts --bundle --platform=browser --format=iife --global-name=Aria51ComponentPlugin --outfile=dist/component-bundle.js",
         "dev": "tsc --watch",
         "test": "vitest run",
@@ -33,6 +33,14 @@
         "preact"
     ],
     "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/justinirizarry/aria-51.git",
+        "directory": "packages/components"
+    },
+    "publishConfig": {
+        "access": "public"
+    },
     "dependencies": {
         "@aria51/core": "workspace:*",
         "element-source": "^0.0.4"

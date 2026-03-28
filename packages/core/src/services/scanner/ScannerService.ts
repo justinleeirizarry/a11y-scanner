@@ -62,9 +62,11 @@ export class ScannerService implements IScannerService {
                 try: () => page.addScriptTag({ path: this.bundlePath }),
                 catch: (error) => {
                     const errorMsg = error instanceof Error ? error.message : String(error);
-                    return new EffectScannerInjectionError({
-                        reason: `Failed to inject scanner bundle: ${errorMsg}. The dist/scanner-bundle.js file may be missing or corrupted. Try running "npm run build" to regenerate it.`
-                    });
+                    const isCSP = errorMsg.includes('Content Security Policy') || errorMsg.includes('script-src');
+                    const reason = isCSP
+                        ? `This site's Content Security Policy (CSP) blocks inline script injection, which prevents accessibility scanning. To scan this site, try: (1) a staging/development environment without strict CSP, (2) a local development server, or (3) disabling CSP in browser launch flags.`
+                        : `Failed to inject scanner bundle: ${errorMsg}. The dist/scanner-bundle.js file may be missing or corrupted. Try running "npm run build" to regenerate it.`;
+                    return new EffectScannerInjectionError({ reason });
                 }
             });
 

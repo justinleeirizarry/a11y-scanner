@@ -15,7 +15,7 @@
         "dist"
     ],
     "scripts": {
-        "build": "tsc",
+        "build": "rm -rf dist && tsc",
         "dev": "tsc --watch",
         "test": "vitest run",
         "test:watch": "vitest"
@@ -29,6 +29,14 @@
         "wcag"
     ],
     "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/justinirizarry/aria-51.git",
+        "directory": "packages/ai-auditor"
+    },
+    "publishConfig": {
+        "access": "public"
+    },
     "dependencies": {
         "@aria51/core": "workspace:*",
         "@browserbasehq/stagehand": "^3.0.3",

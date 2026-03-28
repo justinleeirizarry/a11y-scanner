@@ -19,7 +19,7 @@ export const createScanPageTool = (session: AuditSession): AgentToolDef =>
         description:
             'Scan a single URL for accessibility violations using axe-core, keyboard tests, and WCAG 2.2 checks. Returns a summary of findings. Use this for targeted deep scans of individual pages.',
         inputSchema: z.object({
-            url: z.string().describe('The URL to scan'),
+            url: z.string().url().describe('The URL to scan'),
             includeKeyboardTests: z
                 .boolean()
                 .optional()
@@ -30,8 +30,16 @@ export const createScanPageTool = (session: AuditSession): AgentToolDef =>
                 .optional()
                 .default(false)
                 .describe('Emulate a mobile device viewport'),
+            disableRules: z
+                .array(z.string())
+                .optional()
+                .describe("Axe rule IDs to disable (e.g. ['color-contrast'])"),
+            exclude: z
+                .array(z.string())
+                .optional()
+                .describe('CSS selectors to exclude from scanning'),
         }),
-        run: async ({ url, includeKeyboardTests, mobile }: any) => {
+        run: async ({ url, includeKeyboardTests, mobile, disableRules, exclude }: any) => {
             try {
                 const result = await runScanAsPromise(
                     {
@@ -40,6 +48,8 @@ export const createScanPageTool = (session: AuditSession): AgentToolDef =>
                         headless: session.config.headless,
                         includeKeyboardTests,
                         mobile,
+                        disableRules,
+                        exclude,
                         stagehand: session.config.enableStagehand,
                     },
                     AppLayer

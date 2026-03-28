@@ -5,7 +5,7 @@
     "description": "Monorepo for aria51 - Generic accessibility testing with optional React support and AI-powered auditing",
     "type": "module",
     "scripts": {
-        "build": "pnpm -r build",
+        "build": "pnpm -r --workspace-concurrency=1 build",
         "dev": "pnpm -r --parallel dev",
         "test": "vitest run",
         "test:watch": "vitest",
@@ -24,7 +24,7 @@
         "react",
         "ai-auditor"
     ],
-    "author": "",
+    "author": "Justin Irizarry",
     "license": "MIT",
     "devDependencies": {
         "@vitest/coverage-v8": "^4.0.13",
@@ -37,5 +37,10 @@
         "node": ">=18.0.0",
         "pnpm": ">=8.0.0"
     },
-    "packageManager": "pnpm@8.15.0"
+    "packageManager": "pnpm@8.15.0",
+    "pnpm": {
+        "overrides": {
+            "@anthropic-ai/sdk": "^0.80.0"
+        }
+    }
 }

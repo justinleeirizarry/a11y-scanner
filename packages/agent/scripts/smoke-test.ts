@@ -20,7 +20,7 @@ const TARGET = 'https://www.w3.org/WAI/demos/bad/before/home.html';
 console.log('='.repeat(60));
 console.log(`@aria51/agent Smoke Test`);
 console.log(`Target: ${TARGET}`);
-console.log(`Provider: anthropic (claude-opus-4-6)`);
+console.log(`Provider: anthropic (claude-sonnet-4-6)`);
 console.log(`Mode: single pass, 1 page max, 10 steps max`);
 console.log('='.repeat(60));
 console.log('');

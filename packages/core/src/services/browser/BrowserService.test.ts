@@ -155,7 +155,7 @@ describe('BrowserService', () => {
             await Effect.runPromise(service.navigate('http://localhost:3000'));
 
             expect(mockPage.goto).toHaveBeenCalledWith('http://localhost:3000', {
-                waitUntil: 'networkidle',
+                waitUntil: 'domcontentloaded',
                 timeout: mockConfig.browser.timeout,
             });
         });

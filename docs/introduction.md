@@ -133,7 +133,7 @@ The agent:
 
 For comprehensive audits, the agent supports **multi-specialist mode** — four specialist auditors (keyboard, visual, forms, structure) audit independently through different lenses and their findings are merged and deduplicated. Confidence comes from cross-referencing with axe-core, not vote counting.
 
-The agent defaults to Claude (Opus 4.6) via the native Anthropic SDK, with automatic model fallback on overload. It also supports any LLM via the Vercel AI SDK — OpenAI, Google, Ollama, or anything else with tool calling support.
+The agent defaults to Claude (Sonnet 4.6) via the native Anthropic SDK, with automatic model fallback on overload. It also supports any LLM via the Vercel AI SDK — OpenAI, Google, Ollama, or anything else with tool calling support.
 
 See the [agent introduction](../packages/agent/docs/introduction.md) for the full breakdown.
 

@@ -15,7 +15,7 @@
         "dist"
     ],
     "scripts": {
-        "build": "tsc && npm run build:scanner",
+        "build": "rm -rf dist && tsc && npm run build:scanner",
         "build:scanner": "esbuild src/scanner/browser-bundle.ts --bundle --platform=browser --format=iife --global-name=Aria51Scanner --outfile=dist/scanner-bundle.js",
         "dev": "tsc --watch",
         "dev:scanner": "esbuild src/scanner/browser-bundle.ts --bundle --platform=browser --format=iife --global-name=Aria51Scanner --outfile=dist/scanner-bundle.js --watch",
@@ -31,6 +31,14 @@
         "keyboard"
     ],
     "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/justinirizarry/aria-51.git",
+        "directory": "packages/core"
+    },
+    "publishConfig": {
+        "access": "public"
+    },
     "optionalDependencies": {
         "@aria51/ai-auditor": "workspace:*"
     },
