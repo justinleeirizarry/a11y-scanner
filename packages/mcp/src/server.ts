@@ -148,6 +148,164 @@ server.registerTool(
     }
 );
 
+// Register accessibility tree tool
+server.registerTool(
+    "get_accessibility_tree",
+    {
+        description: "Get the accessibility tree for a URL. Returns the page's semantic structure including headings, landmarks, ARIA roles, and interactive elements. Lightweight — does not run a full accessibility scan. Works on CSP-restricted sites.",
+        inputSchema: {
+            url: z.string().url().describe("The URL to analyze"),
+            browser: z.enum(["chromium", "firefox", "webkit"]).optional().default("chromium").describe("Browser to use"),
+        },
+    },
+    async ({ url, browser }) => {
+        try {
+            logger.info(`Getting accessibility tree for ${url}`);
+            const { chromium, firefox, webkit } = await import("playwright");
+            const browsers = { chromium, firefox, webkit };
+            const browserInstance = await browsers[browser as keyof typeof browsers].launch({ headless: true });
+            const page = await browserInstance.newPage();
+            await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 });
+            const snapshot = await page.accessibility.snapshot();
+            await browserInstance.close();
+
+            return {
+                content: [{
+                    type: "text",
+                    text: `## Accessibility Tree for ${url}\n\n\`\`\`json\n${JSON.stringify(snapshot, null, 2)}\n\`\`\``,
+                }],
+            };
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            return {
+                content: [{ type: "text", text: `Failed to get accessibility tree: ${errorMessage}` }],
+                isError: true,
+            };
+        }
+    }
+);
+
+// Register explain violation tool
+server.registerTool(
+    "explain_violation",
+    {
+        description: "Explain an axe-core accessibility rule — what WCAG criteria it maps to, what it means, and how to fix it. Use this to understand a specific violation without running a scan.",
+        inputSchema: {
+            rule_id: z.string().describe("The axe-core rule ID (e.g., 'color-contrast', 'image-alt', 'link-name')"),
+        },
+    },
+    async ({ rule_id }) => {
+        const {
+            getWcagCriteriaForViolation,
+            AXE_WCAG_MAP,
+        } = await import("@aria51/core");
+
+        const mapping = AXE_WCAG_MAP[rule_id];
+        if (!mapping) {
+            return {
+                content: [{ type: "text", text: `Unknown rule ID: "${rule_id}". This is not a recognized axe-core rule.` }],
+                isError: true,
+            };
+        }
+
+        const criteria = getWcagCriteriaForViolation(rule_id);
+        const lines: string[] = [
+            `## ${rule_id}`,
+            ``,
+            `**Axe Rule:** https://dequeuniversity.com/rules/axe/4.8/${rule_id}`,
+            `**WCAG Criteria:** ${mapping.criteria.join(", ")}`,
+            mapping.techniques ? `**Techniques:** ${mapping.techniques.join(", ")}` : '',
+            ``,
+            `### Mapped WCAG Criteria`,
+        ].filter(Boolean);
+
+        for (const c of criteria) {
+            lines.push(`- **${c.id} ${c.title}** (Level ${c.level}, ${c.principle})`);
+            lines.push(`  ${c.description}`);
+            lines.push(`  [W3C Understanding](${c.w3cUrl})`);
+        }
+
+        return {
+            content: [{ type: "text", text: lines.join("\n") }],
+        };
+    }
+);
+
+// Register agent audit tool
+server.registerTool(
+    "run_agent",
+    {
+        description: "Run an autonomous AI accessibility audit on a website. The agent crawls pages, scans for violations, verifies findings against axe-core, and generates a prioritized remediation plan. More thorough than scan_url but takes longer (1-3 minutes). Requires ANTHROPIC_API_KEY.",
+        inputSchema: {
+            url: z.string().url().describe("The target URL to audit"),
+            max_pages: z.number().optional().default(5).describe("Maximum pages to scan (default: 5)"),
+            max_steps: z.number().optional().default(10).describe("Maximum agent steps (default: 10)"),
+            specialists: z.boolean().optional().default(false).describe("Use multi-specialist mode — 4 parallel auditors for deeper coverage"),
+            wcag_level: z.enum(["A", "AA", "AAA"]).optional().default("AA").describe("Target WCAG conformance level"),
+            model: z.string().optional().describe("LLM model to use (default: claude-sonnet-4-6)"),
+        },
+    },
+    async ({ url, max_pages, max_steps, specialists, wcag_level, model }) => {
+        try {
+            logger.info(`Starting agent audit for ${url} (max ${max_pages} pages, ${max_steps} steps${specialists ? ', multi-specialist' : ''})`);
+            const { runAgent } = await import("@aria51/agent");
+
+            const report = await runAgent({
+                targetUrl: url,
+                maxPages: max_pages,
+                maxSteps: max_steps,
+                specialists,
+                wcagLevel: wcag_level as "A" | "AA" | "AAA",
+                model: model || "claude-sonnet-4-6",
+            });
+
+            const lines: string[] = [
+                `## Agent Audit Report: ${url}`,
+                ``,
+                `- **Pages scanned:** ${report.pagesScanned}`,
+                `- **Total findings:** ${report.totalFindings}`,
+                `- **Duration:** ${(report.scanDurationMs / 1000).toFixed(1)}s`,
+                `- **WCAG Level:** ${report.wcagLevel}`,
+                ``,
+            ];
+
+            if (report.totalFindings > 0) {
+                const c = report.findingsByConfidence;
+                const s = report.findingsBySeverity;
+                lines.push(`### Confidence: ${c.confirmed} confirmed, ${c.corroborated} corroborated, ${c['ai-only']} ai-only`);
+                lines.push(`### Severity: ${s.critical} critical, ${s.serious} serious, ${s.moderate} moderate, ${s.minor} minor`);
+                lines.push(``);
+                lines.push(`### Findings`);
+                for (const f of report.findings) {
+                    lines.push(`- **[${f.confidence}] ${f.criterion?.id || '?'} (${f.impact}):** ${f.description}`);
+                }
+            }
+
+            if (report.remediationPlan) {
+                lines.push(``, `### Remediation Plan (${report.remediationPlan.totalIssues} issues, ${report.remediationPlan.estimatedEffort})`);
+                for (const phase of report.remediationPlan.phases) {
+                    lines.push(`- **Phase ${phase.priority}: ${phase.title}** (${phase.items.length} items)`);
+                }
+            }
+
+            if (report.agentSummary) {
+                lines.push(``, `### Agent Summary`, ``, report.agentSummary.slice(0, 2000));
+            }
+
+            return {
+                content: [{ type: "text", text: lines.join("\n") }],
+            };
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            logger.error(`Agent audit failed: ${errorMessage}`);
+            return {
+                content: [{ type: "text", text: `Agent audit failed: ${errorMessage}` }],
+                isError: true,
+            };
+        }
+    }
+);
+
 async function main() {
     const transport = new StdioServerTransport();
     await server.connect(transport);

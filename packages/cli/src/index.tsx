@@ -569,6 +569,23 @@ if (!isTTY) {
                             }
                             if (violation.helpUrl) console.log(`  Docs: ${violation.helpUrl}`);
                         }
+
+                        // WCAG 2.2 summary
+                        if (results.wcag22 && results.wcag22.summary.totalViolations > 0) {
+                            console.log(`WCAG 2.2: ${results.wcag22.summary.totalViolations} violations`);
+                        }
+
+                        // Supplemental test summary
+                        if (results.supplementalResults && results.supplementalResults.length > 0) {
+                            const passed = results.supplementalResults.filter(r => r.status === 'pass').length;
+                            const failed = results.supplementalResults.filter(r => r.status === 'fail').length;
+                            console.log(`Supplemental: ${results.supplementalResults.length} tests, ${passed} passed, ${failed} failed`);
+                        }
+
+                        // Keyboard issues
+                        if (summary.keyboardIssues && summary.keyboardIssues > 0) {
+                            console.log(`Keyboard: ${summary.keyboardIssues} issues`);
+                        }
                     } else {
                         // Minimal formatted output
                         const { summary, violations, incomplete } = results;

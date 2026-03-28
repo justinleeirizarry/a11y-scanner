@@ -36,6 +36,7 @@
         "@aria51/core": "workspace:*",
         "@aria51/components": "workspace:*",
         "@aria51/ai-auditor": "workspace:*",
+        "@aria51/agent": "workspace:*",
         "@modelcontextprotocol/sdk": "^1.22.0",
         "zod": "^3.25.76"
     },
