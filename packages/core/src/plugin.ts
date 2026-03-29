@@ -48,6 +48,10 @@ export interface AttributedNode {
     failureSummary: string;
     /** Whether this is a framework internal component */
     isFrameworkComponent: boolean;
+    /** Source file location from element-source */
+    source?: { filePath: string; lineNumber: number | null; columnNumber: number | null; componentName?: string | null };
+    /** Full component source stack */
+    sourceStack?: { filePath: string; lineNumber: number | null; columnNumber: number | null; componentName?: string | null }[];
 }
 
 /**

@@ -13,8 +13,8 @@ import {
     setExitCode,
     generateAndExport,
     ScanError,
+    getComponentBundlePath,
 } from '@aria51/core';
-import { getComponentBundlePath } from '@aria51/components';
 
 export interface ScanModeOptions {
     urls: string[];

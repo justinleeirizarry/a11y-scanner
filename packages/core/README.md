@@ -1,6 +1,6 @@
 # @aria51/core
 
-Core accessibility scanning engine. Combines [axe-core](https://github.com/dequelabs/axe-core) with keyboard navigation testing, 34 WCAG 2.2 checks, screen reader simulation, and page structure analysis.
+Core accessibility scanning engine. Combines [axe-core](https://github.com/dequelabs/axe-core) with keyboard navigation testing, 34 WCAG 2.2 checks, screen reader simulation, page structure analysis, and framework component attribution (React, Vue, Svelte, Solid, Preact).
 
 ## Install
 
@@ -86,6 +86,8 @@ Environment variables: `ARIA51_BROWSER`, `ARIA51_HEADLESS`, `ARIA51_MOBILE`, and
 **Validation:** `validateUrl`, `validateBrowser`, `validateTags`, `validateThreshold`
 
 **Utilities:** `logger`, `EXIT_CODES`, `setExitCode`, `exitWithCode`, `ScanError`
+
+**Component attribution:** `ComponentPlugin`, `getComponentBundlePath`, `getDetectionScript`, `resolveComponent`, `buildAttributedNode`
 
 **Effect services:** `BrowserServiceTag`, `ScannerServiceTag`, `ResultsProcessorServiceTag`, `AppLayer`
 

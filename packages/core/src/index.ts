@@ -4,7 +4,7 @@
  * Core library for accessibility testing. Framework-agnostic accessibility
  * scanning with axe-core, keyboard testing, and WCAG 2.2 checks.
  *
- * For component attribution (React, Vue, Svelte, Solid, Preact), use @aria51/components
+ * Includes component attribution (React, Vue, Svelte, Solid, Preact) via element-source.
  * For AI-powered auditing, use @aria51/ai-auditor
  */
 
@@ -281,3 +281,21 @@ export {
     type FormInputInfo,
 } from './audits/index.js';
 
+// =============================================================================
+// Component Attribution
+// =============================================================================
+
+export {
+    ComponentPlugin,
+    getComponentBundlePath,
+    getDetectionScript,
+    resolveComponent,
+    buildAttributedNode,
+    generateCssSelector,
+    extractHtmlSnippet,
+    cleanFilePath,
+    isFrameworkComponent,
+    filterUserComponents,
+    type SourceLocation,
+    type ResolvedComponent,
+} from './components/index.js';

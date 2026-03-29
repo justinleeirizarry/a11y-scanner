@@ -1,11 +1,10 @@
 /**
  * Component Attribution Plugin
  *
- * Implements the FrameworkPlugin interface from @aria51/core.
+ * Implements the FrameworkPlugin interface.
  * Uses element-source for on-demand component resolution —
  * no framework-specific tree traversal needed.
  */
-import { readFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import type { Page } from 'playwright';
@@ -15,8 +14,8 @@ import type {
     AttributedViolation,
     AttributedPass,
     AttributedIncomplete,
-} from '@aria51/core';
-import type { AxeViolation, AxeResult } from '@aria51/core';
+} from '../plugin.js';
+import type { AxeViolation, AxeResult } from '../schemas/axe.js';
 import { getDetectionScript } from './detection.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -25,7 +24,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
  * Get the path to the compiled browser bundle.
  */
 export function getComponentBundlePath(): string {
-    return resolve(__dirname, '../dist/component-bundle.js');
+    return resolve(__dirname, '../component-bundle.js');
 }
 
 /**

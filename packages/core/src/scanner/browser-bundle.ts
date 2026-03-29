@@ -4,8 +4,8 @@
  * This file gets bundled and injected into the browser page.
  * It runs in the browser context and uses only axe-core - no framework dependencies.
  *
- * For component attribution (React, Vue, Svelte, Solid, Preact), use
- * @aria51/components.
+ * Component attribution (React, Vue, Svelte, Solid, Preact) is handled
+ * separately by the component-bundle (see ../components/browser-bundle.ts).
  */
 
 // @ts-ignore - axe-core is bundled as IIFE by esbuild and TypeScript cannot resolve the runtime import

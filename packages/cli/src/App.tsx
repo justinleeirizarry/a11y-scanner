@@ -13,6 +13,7 @@ import {
     EXIT_CODES,
     setExitCode,
     generateAndExport,
+    getComponentBundlePath,
 } from '@aria51/core';
 import {
     createTestGenerationService,
@@ -20,7 +21,6 @@ import {
     createTreeAnalysisService,
     createWcagAuditService,
 } from '@aria51/ai-auditor';
-import { getComponentBundlePath } from '@aria51/components';
 import type {
     ScanResults,
     BrowserType,

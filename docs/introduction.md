@@ -148,19 +148,16 @@ This is built on a generic `FrameworkPlugin` interface that supports any UI fram
 
 | Package | What it does | Depends on |
 |---|---|---|
-| [`@aria51/core`](../packages/core) | Scanning engine: axe-core, keyboard tests, WCAG 2.2 checks, fix suggestions | — |
-| [`@aria51/components`](../packages/components) | Component attribution via element-source (React, Preact, Vue, Svelte, Solid) | core |
+| [`@aria51/core`](../packages/core) | Scanning engine: axe-core, keyboard tests, WCAG 2.2 checks, fix suggestions, component attribution | — |
 | [`@aria51/ai-auditor`](../packages/ai-auditor) | Stagehand/Browserbase AI testing: keyboard nav, tree analysis, screen reader, WCAG audit | core |
 | [`@aria51/agent`](../packages/agent) | Autonomous auditing agent: planning, scanning, verification, multi-specialist coordination, remediation | core, ai-auditor |
-| [`@aria51/cli`](../packages/cli) | Terminal UI (Ink). Binary: `aria51` | core, components, ai-auditor |
-| [`@aria51/mcp`](../packages/mcp) | MCP server. Tools: `scan_url`, `scan_urls`, `run_agent`, etc. | core, components, ai-auditor |
+| [`@aria51/cli`](../packages/cli) | Terminal UI (Ink). Binary: `aria51` | core, ai-auditor |
+| [`@aria51/mcp`](../packages/mcp) | MCP server. Tools: `scan_url`, `scan_urls`, `run_agent`, etc. | core, ai-auditor |
 
 ### Dependency diagram
 
 ```
-@aria51/core ─────────────────────────────────────────────┐
-    │                                                      │
-    ├── @aria51/components                                 │
+@aria51/core (scanning, component attribution) ───────────┐
     │                                                      │
     ├── @aria51/ai-auditor                                 │
     │       │                                              │
@@ -168,8 +165,6 @@ This is built on a generic `FrameworkPlugin` interface that supports any UI fram
     │       │                                              │
     │       ├── @aria51/cli   (terminal UI)      ──────────┤
     │       └── @aria51/mcp   (MCP server)       ──────────┘
-    │
-    └── (all interface packages also depend on core + components)
 ```
 
 ## Quick start

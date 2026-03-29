@@ -2,7 +2,6 @@
     "files": [],
     "references": [
         { "path": "packages/core" },
-        { "path": "packages/components" },
         { "path": "packages/ai-auditor" },
         { "path": "packages/agent" },
         { "path": "packages/cli" },

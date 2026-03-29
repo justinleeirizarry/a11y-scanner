@@ -35,8 +35,7 @@ pnpm start https://your-site.com -- --ci --threshold 0
 
 | Package | Description |
 | ------- | ----------- |
-| [`@aria51/core`](packages/core) | Scanning engine: axe-core, keyboard tests, 34 WCAG 2.2 checks, focused audits |
-| [`@aria51/components`](packages/components) | Auto-detected component attribution (React, Vue, Svelte, Solid, Preact) |
+| [`@aria51/core`](packages/core) | Scanning engine: axe-core, keyboard tests, 34 WCAG 2.2 checks, focused audits, component attribution |
 | [`@aria51/ai-auditor`](packages/ai-auditor) | AI-enhanced deep analysis via Stagehand |
 | [`@aria51/agent`](packages/agent) | Autonomous auditing agent with verification, multi-specialist mode, and remediation plans |
 | [`@aria51/cli`](packages/cli) | Terminal interface. Binary: `aria51` |

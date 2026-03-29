@@ -16,8 +16,9 @@
         "README.md"
     ],
     "scripts": {
-        "build": "rm -rf dist && tsc && npm run build:scanner",
+        "build": "rm -rf dist && tsc && npm run build:scanner && npm run build:components",
         "build:scanner": "esbuild src/scanner/browser-bundle.ts --bundle --platform=browser --format=iife --global-name=Aria51Scanner --outfile=dist/scanner-bundle.js",
+        "build:components": "esbuild src/components/browser-bundle.ts --bundle --platform=browser --format=iife --global-name=Aria51ComponentPlugin --outfile=dist/component-bundle.js",
         "dev": "tsc --watch",
         "dev:scanner": "esbuild src/scanner/browser-bundle.ts --bundle --platform=browser --format=iife --global-name=Aria51Scanner --outfile=dist/scanner-bundle.js --watch",
         "test": "vitest run",
@@ -45,6 +46,7 @@
     },
     "dependencies": {
         "axe-core": "^4.8.3",
+        "element-source": "^0.0.4",
         "cosmiconfig": "^9.0.0",
         "dotenv": "^17.2.3",
         "effect": "^3.19.15",

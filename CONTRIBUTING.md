@@ -22,14 +22,13 @@ pnpm test
 
 | Package | Purpose |
 |---------|---------|
-| `@aria51/core` | Scanning engine — axe-core, WCAG 2.2 checks, keyboard tests |
-| `@aria51/components` | Component attribution (React, Vue, Svelte, Solid) |
+| `@aria51/core` | Scanning engine — axe-core, WCAG 2.2 checks, keyboard tests, component attribution |
 | `@aria51/ai-auditor` | AI-powered testing via Stagehand/Browserbase |
 | `@aria51/agent` | Autonomous auditing agent powered by Claude |
 | `@aria51/cli` | Terminal interface (`aria51` command) |
 | `@aria51/mcp` | MCP server for AI assistants |
 
-Dependencies flow: `core` -> `components`, `ai-auditor` -> `agent` -> `cli`, `mcp`
+Dependencies flow: `core` -> `ai-auditor` -> `agent` -> `cli`, `mcp`
 
 ## Development Workflow
 

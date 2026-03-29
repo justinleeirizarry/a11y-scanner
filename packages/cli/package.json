@@ -41,7 +41,6 @@
     },
     "dependencies": {
         "@aria51/core": "workspace:*",
-        "@aria51/components": "workspace:*",
         "@aria51/ai-auditor": "workspace:*",
         "@aria51/agent": "workspace:*",
         "chalk": "^5.3.0",
