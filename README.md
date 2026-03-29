@@ -128,3 +128,11 @@ pnpm --filter @aria51/core test
 - [Agent](packages/agent/docs/introduction.md) — The autonomous auditing agent
 - [WCAG 2.2 Reference](docs/WCAG-2.2.md) — All 86 success criteria
 - [Effect Architecture](docs/effect-service-breakdown.md) — Core scanning engine internals
+
+## Built With
+
+- [axe-core](https://github.com/dequelabs/axe-core) — Automated WCAG violation detection
+- [Playwright](https://playwright.dev) — Browser automation for keyboard and screen reader testing
+- [Stagehand](https://github.com/browserbase/stagehand) — AI-powered browser interaction for `--deep` mode
+- [Effect](https://effect.website) — Composable error handling and resource management
+- [element-source](https://github.com/nicolo-ribaudo/element-source) — Maps DOM nodes to framework component source locations
