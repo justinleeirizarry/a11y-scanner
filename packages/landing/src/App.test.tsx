@@ -87,4 +87,25 @@ describe('Landing page accessibility', () => {
       expect(header).toHaveAttribute('aria-hidden', 'true');
     });
   });
+
+  it('MCP workflow step numbers are decorative', () => {
+    const { container } = render(<App />);
+    const stepNums = container.querySelectorAll('.mcp-step-num');
+
+    stepNums.forEach((num) => {
+      expect(num).toHaveAttribute('aria-hidden', 'true');
+    });
+  });
+
+  it('confidence grid and MCP tools have accessible list roles', () => {
+    const { container } = render(<App />);
+
+    const confidenceGrid = container.querySelector('[aria-label="Confidence levels"]');
+    expect(confidenceGrid).toBeInTheDocument();
+    expect(confidenceGrid).toHaveAttribute('role', 'list');
+
+    const mcpToolsList = container.querySelector('[aria-label="Available MCP tools"]');
+    expect(mcpToolsList).toBeInTheDocument();
+    expect(mcpToolsList).toHaveAttribute('role', 'list');
+  });
 });

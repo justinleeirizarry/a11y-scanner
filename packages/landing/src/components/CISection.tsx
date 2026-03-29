@@ -12,8 +12,8 @@ export function CISection() {
           <span className="flag">--threshold</span> <span className="num">5</span>
         </TerminalBlock>
         <p className="ci-desc">
-          Gate deploys on accessibility. Exit code 1 when violations exceed your
-          threshold.
+          Gate deploys on accessibility. Fails your CI build with exit code 1
+          when violations exceed the threshold you set.
         </p>
       </div>
     </section>

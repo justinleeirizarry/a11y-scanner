@@ -260,39 +260,114 @@
 .comparison-stat.moderate .num { color: var(--yellow); }
 .comparison-stat.pass .num { color: var(--green); }
 
-/* Three modes */
-.modes-grid {
+/* Tiers (replaces three modes) */
+.tiers {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 0;
 }
-.mode-card {
+.tier-card {
   border: 2px solid var(--border);
   padding: 2rem;
   border-right: none;
 }
-.mode-card:last-child {
+.tier-card:last-child {
   border-right: 2px solid var(--border);
 }
-.mode-card-label {
-  font-size: 0.625rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
+.tier-heading {
+  font-size: 1.125rem;
+  font-weight: 800;
   margin-bottom: 1.25rem;
 }
-.mode-card-desc {
+.tier-desc {
   font-size: 1rem;
   color: var(--muted);
   line-height: 1.6;
   margin-top: 1.25rem;
 }
-.mode-card code {
+.tier-card code {
   font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
   font-size: 0.75rem;
   background: var(--surface);
   padding: 0.2rem 0.5rem;
   border: 1px solid var(--border-light);
+}
+
+/* MCP workflow */
+.mcp-workflow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  margin: 2rem 0;
+}
+.mcp-step {
+  border: 2px solid var(--border);
+  border-right: none;
+  padding: 1.5rem;
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+.mcp-step:last-child {
+  border-right: 2px solid var(--border);
+}
+.mcp-step-num {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--border-light);
+  line-height: 1;
+  flex-shrink: 0;
+}
+.mcp-step strong {
+  font-size: 0.8125rem;
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  display: block;
+  margin-bottom: 0.375rem;
+}
+.mcp-step p {
+  font-size: 0.875rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+/* Confidence / verification */
+.confidence-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0;
+}
+.confidence-item {
+  border: 2px solid var(--border);
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.confidence-item:nth-child(odd) {
+  border-right: none;
+}
+.confidence-item:nth-child(1),
+.confidence-item:nth-child(2) {
+  border-bottom: none;
+}
+.confidence-badge {
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.375rem 0.625rem;
+  border: 2px solid var(--border);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.confidence-badge.pass { color: var(--green); border-color: var(--green); }
+.confidence-badge.moderate { color: var(--yellow); border-color: var(--yellow); }
+.confidence-badge.serious { color: var(--orange); border-color: var(--orange); }
+.confidence-badge.critical { color: var(--red); border-color: var(--red); }
+.confidence-desc {
+  font-size: 0.9375rem;
+  color: var(--muted);
+  line-height: 1.4;
 }
 
 /* MCP section */
@@ -407,9 +482,18 @@
   .comparison { grid-template-columns: 1fr; }
   .comparison-card:first-child { border-right: 2px solid var(--border); border-bottom: none; }
 
-  .modes-grid { grid-template-columns: 1fr; }
-  .mode-card { border-right: 2px solid var(--border); border-bottom: none; }
-  .mode-card:last-child { border-bottom: 2px solid var(--border); }
+  .tiers { grid-template-columns: 1fr; }
+  .tier-card { border-right: 2px solid var(--border); border-bottom: none; }
+  .tier-card:last-child { border-bottom: 2px solid var(--border); }
+
+  .mcp-workflow { grid-template-columns: 1fr 1fr; }
+  .mcp-step:nth-child(2) { border-right: 2px solid var(--border); }
+  .mcp-step:nth-child(1),
+  .mcp-step:nth-child(2) { border-bottom: none; }
+
+  .confidence-grid { grid-template-columns: 1fr; }
+  .confidence-item { border-right: 2px solid var(--border) !important; border-bottom: none; }
+  .confidence-item:last-child { border-bottom: 2px solid var(--border); }
 
   .results-grid { grid-template-columns: 1fr; }
   .result-card { border-right: 2px solid var(--border); border-bottom: none; }
@@ -443,5 +527,8 @@
   .mcp-tools { gap: 0.375rem; }
   .mcp-tool { font-size: 0.625rem; padding: 0.25rem 0.5rem; }
   .terminal-body { font-size: 0.6875rem; white-space: pre-wrap; word-break: break-all; }
-  .mode-card code { font-size: 0.6875rem; word-break: break-all; }
+  .tier-card code { font-size: 0.6875rem; word-break: break-all; }
+  .mcp-workflow { grid-template-columns: 1fr; }
+  .mcp-step { border-right: 2px solid var(--border) !important; border-bottom: none; }
+  .mcp-step:last-child { border-bottom: 2px solid var(--border); }
 }

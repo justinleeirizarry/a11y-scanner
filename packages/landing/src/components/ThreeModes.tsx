@@ -4,36 +4,38 @@ export function ThreeModes() {
   return (
     <section className="section" aria-labelledby="modes-heading">
       <div className="container">
-        <SectionHeading id="modes-heading">Three ways to test</SectionHeading>
-        <div className="modes-grid">
-          <div className="mode-card">
-            <div className="mode-card-label">Scan</div>
+        <SectionHeading id="modes-heading">No keys required</SectionHeading>
+        <p className="hero-sub" style={{ marginBottom: '2rem' }}>
+          The core scanner and every focused audit run locally with Playwright.
+          Add an API key when you want AI.
+        </p>
+        <div className="tiers">
+          <div className="tier-card">
+            <div className="tier-heading">Scan</div>
             <code>npx aria51 https://site.com</code>
-            <p className="mode-card-desc">
-              axe-core plus WCAG 2.2 supplemental checks and keyboard
-              navigation — all in one pass. Traces each violation back to the
-              React, Vue, Svelte, or Solid component that owns it.
+            <p className="tier-desc">
+              axe-core + 34 WCAG 2.2 checks + keyboard navigation testing.
+              Traces violations back to your React, Vue, Svelte, or Solid
+              components.
             </p>
           </div>
-          <div className="mode-card">
-            <div className="mode-card-label">Focused Audits</div>
+          <div className="tier-card">
+            <div className="tier-heading">Focused Audits</div>
             <code>--audit-keyboard</code><br />
             <code>--audit-structure</code><br />
             <code>--audit-screen-reader</code>
-            <p className="mode-card-desc">
+            <p className="tier-desc">
               Tab order, focus traps, skip links. Landmarks, headings, form
-              labels. Alt text, ARIA roles, live regions. Add{' '}
-              <code>--deep</code> for AI-enhanced analysis on any audit.
+              labels. Alt text, ARIA roles, live regions.
             </p>
           </div>
-          <div className="mode-card">
-            <div className="mode-card-label">AI Agent</div>
-            <code>--agent</code>
-            <p className="mode-card-desc">
-              Autonomous multi-page audit. Crawls your site, runs every check,
-              and generates a phased remediation plan.{' '}
-              <code>--specialists</code> runs four parallel auditors.
-              Requires an API key.
+          <div className="tier-card tier-ai">
+            <div className="tier-heading">Deep + Agent</div>
+            <code>--deep</code>{' / '}<code>--agent</code>
+            <p className="tier-desc">
+              <code>--deep</code> adds AI interaction testing to any
+              audit. <code>--agent</code> crawls your site, cross-verifies
+              findings, and builds a remediation plan.
             </p>
           </div>
         </div>
