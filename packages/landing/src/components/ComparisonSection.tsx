@@ -4,10 +4,10 @@ export function ComparisonSection() {
   return (
     <section className="section" aria-labelledby="comparison-heading">
       <div className="container">
-        <SectionHeading>What others miss</SectionHeading>
+        <SectionHeading>Hidden in plain sight</SectionHeading>
         <p className="hero-sub" style={{ marginBottom: '2rem' }}>
-          Same site. Same scan. Different results. Here's what happened when we
-          tested GitHub.com.
+          Same site. Same scan. Different results. We ran both tools on
+          GitHub.com.
         </p>
         <div className="comparison">
           <div className="comparison-card">

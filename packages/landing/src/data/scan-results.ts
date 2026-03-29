@@ -8,11 +8,11 @@ export const scanResults = [
     ],
   },
   {
-    site: 'Craigslist',
+    site: 'Reddit',
     findings: [
-      { text: 'No lang attribute on <html>', highlight: true },
-      { text: 'Unlabeled form inputs', highlight: true },
-      { text: 'No landmark regions', highlight: true },
+      { text: 'Missing <title> and lang attribute', highlight: true },
+      { text: 'Images without alt text', highlight: true },
+      { text: 'No skip link, no main landmark', keyboard: true },
     ],
   },
   {

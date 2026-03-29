@@ -6,10 +6,12 @@ export function Hero() {
   return (
     <header className="hero">
       <div className="container">
-        <h1>Find the accessibility violations your tools miss</h1>
+        <p className="hero-eyebrow">aria-51</p>
+        <h1>Uncover the accessibility violations hiding in your site</h1>
         <p className="hero-sub">
-          Keyboard audits, screen reader simulation, and 34 WCAG 2.2 checks
-          that go beyond what axe-core and Lighthouse catch. No API key needed.
+          Keyboard traps, broken focus order, missing screen reader
+          support — the stuff axe-core and Lighthouse weren't built to find.
+          One command to start.
         </p>
         <div className="hero-cta">
           <div className="hero-command">

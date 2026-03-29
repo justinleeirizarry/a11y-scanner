@@ -10,9 +10,9 @@ export function ThreeModes() {
             <div className="mode-card-label">Scan</div>
             <code>npx aria51 https://site.com</code>
             <p className="mode-card-desc">
-              axe-core engine plus 34 custom WCAG 2.2 checks. Framework
-              component attribution for React, Vue, Svelte, and Solid.
-              No API key required.
+              axe-core plus WCAG 2.2 supplemental checks and keyboard
+              navigation — all in one pass. Traces each violation back to the
+              React, Vue, Svelte, or Solid component that owns it.
             </p>
           </div>
           <div className="mode-card">
@@ -22,8 +22,8 @@ export function ThreeModes() {
             <code>--audit-screen-reader</code>
             <p className="mode-card-desc">
               Tab order, focus traps, skip links. Landmarks, headings, form
-              labels. Alt text, ARIA roles, live regions. The things rule
-              engines can't test.
+              labels. Alt text, ARIA roles, live regions. Add{' '}
+              <code>--deep</code> for AI-enhanced analysis on any audit.
             </p>
           </div>
           <div className="mode-card">
@@ -31,8 +31,9 @@ export function ThreeModes() {
             <code>--agent</code>
             <p className="mode-card-desc">
               Autonomous multi-page audit. Crawls your site, runs every check,
-              and generates a phased remediation plan. Uses gpt-4o-mini by
-              default, Claude for best results.
+              and generates a phased remediation plan.{' '}
+              <code>--specialists</code> runs four parallel auditors.
+              Requires an API key.
             </p>
           </div>
         </div>

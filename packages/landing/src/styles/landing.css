@@ -34,7 +34,7 @@
 }
 
 .section-heading {
-  font-size: 0.6875rem;
+  font-size: 0.8125rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.12em;
@@ -154,18 +154,26 @@
   padding: 6rem 0 5rem;
   border-bottom: 2px solid var(--border-light);
 }
+.hero-eyebrow {
+  font-size: 4.5rem;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  margin-bottom: 1.5rem;
+}
 .hero h1 {
-  font-size: 2.5rem;
-  font-weight: 800;
-  line-height: 1.15;
+  font-size: 2.75rem;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
   max-width: 700px;
   margin-bottom: 1.5rem;
 }
 .hero-sub {
-  font-size: 1rem;
+  font-size: 1.25rem;
   color: var(--muted);
-  line-height: 1.6;
-  max-width: 560px;
+  line-height: 1.5;
+  max-width: 580px;
   margin-bottom: 3rem;
 }
 .hero-cta {
@@ -223,12 +231,12 @@
   margin-bottom: 0.75rem;
 }
 .comparison-stat .num {
-  font-size: 1.75rem;
-  font-weight: 700;
+  font-size: 2rem;
+  font-weight: 800;
   line-height: 1;
 }
 .comparison-stat .desc {
-  font-size: 0.875rem;
+  font-size: 1rem;
   color: var(--muted);
 }
 .comparison-stat.muted .num {
@@ -261,7 +269,7 @@
   margin-bottom: 1.25rem;
 }
 .mode-card-desc {
-  font-size: 0.875rem;
+  font-size: 1rem;
   color: var(--muted);
   line-height: 1.6;
   margin-top: 1.25rem;
@@ -331,7 +339,7 @@
   color: var(--muted);
 }
 .result-card-finding {
-  font-size: 0.875rem;
+  font-size: 1rem;
   line-height: 1.6;
   margin-bottom: 0.5rem;
   color: var(--fg);
@@ -379,7 +387,8 @@
 @media (max-width: 768px) {
   .container { padding: 0 1.5rem; }
   .hero { padding: 3rem 0; }
-  .hero h1 { font-size: 1.75rem; }
+  .hero-eyebrow { font-size: 3rem; }
+  .hero h1 { font-size: 2rem; }
   .section { padding: 3rem 0; }
 
   .comparison { grid-template-columns: 1fr; }

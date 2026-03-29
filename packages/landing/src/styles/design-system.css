@@ -27,7 +27,7 @@ body {
   background: var(--bg);
   color: var(--fg);
   min-height: 100vh;
-  font-size: 14px;
+  font-size: 17px;
   -webkit-font-smoothing: antialiased;
 }
 
