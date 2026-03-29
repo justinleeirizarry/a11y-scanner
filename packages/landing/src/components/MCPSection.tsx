@@ -1,5 +1,11 @@
 import { SectionHeading } from './SectionHeading';
+import { CopyButton } from './CopyButton';
 import { mcpTools } from '../data/mcp-tools';
+
+const MCP_CONFIG = `"aria51": {
+  "command": "npx",
+  "args": ["-y", "aria51-mcp"]
+}`;
 
 export function MCPSection() {
   return (
@@ -40,6 +46,13 @@ export function MCPSection() {
               <p>Re-scan to verify the fix worked</p>
             </div>
           </div>
+        </div>
+        <div className="mcp-config">
+          <div className="mcp-config-header">
+            <span className="mcp-config-label">Add to your MCP config</span>
+            <CopyButton text={MCP_CONFIG} />
+          </div>
+          <pre className="mcp-config-body"><code>{MCP_CONFIG}</code></pre>
         </div>
         <div className="mcp-tools" role="list" aria-label="Available MCP tools">
           {mcpTools.map((tool) => (

@@ -18,6 +18,14 @@ export function Footer() {
           >
             npm<span className="sr-only"> (opens in new tab)</span>
           </a>
+          <span className="footer-sep" aria-hidden="true">/</span>
+          <a
+            href="https://github.com/justinirizarry/aria-51/tree/main/docs"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Docs<span className="sr-only"> (opens in new tab)</span>
+          </a>
         </nav>
         <span className="footer-sep" aria-hidden="true">/</span>
         <span>MIT License</span>
