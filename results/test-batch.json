@@ -1,0 +1,207 @@
+[
+  {
+    "site": {
+      "url": "https://news.ycombinator.com",
+      "name": "Hacker News",
+      "category": "tech"
+    },
+    "timestamp": "2026-03-28T23:41:39.214Z",
+    "success": true,
+    "violations": 275,
+    "passes": 19,
+    "severity": {
+      "critical": 4,
+      "serious": 268,
+      "moderate": 3,
+      "minor": 0
+    },
+    "topViolations": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "count": 238,
+        "description": "Ensures the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds"
+      },
+      {
+        "id": "target-size",
+        "impact": "serious",
+        "count": 29,
+        "description": "Ensure touch target have sufficient size and space"
+      },
+      {
+        "id": "image-alt",
+        "impact": "critical",
+        "count": 3,
+        "description": "Ensures <img> elements have alternate text or a role of none or presentation"
+      },
+      {
+        "id": "label",
+        "impact": "critical",
+        "count": 1,
+        "description": "Ensures every form element has a label"
+      },
+      {
+        "id": "landmark-one-main",
+        "impact": "moderate",
+        "count": 1,
+        "description": "Ensures the document has a main landmark"
+      }
+    ],
+    "wcag22Violations": 307,
+    "keyboardBreakdown": {
+      "tabOrder": 0,
+      "focusIndicator": 0,
+      "widget": 0
+    },
+    "supplemental": {
+      "total": 12,
+      "passed": 4,
+      "failed": 8
+    }
+  },
+  {
+    "site": {
+      "url": "https://stackoverflow.com",
+      "name": "Stack Overflow",
+      "category": "tech"
+    },
+    "timestamp": "2026-03-28T23:41:49.334Z",
+    "success": true,
+    "violations": 1,
+    "passes": 25,
+    "severity": {
+      "critical": 1,
+      "serious": 0,
+      "moderate": 0,
+      "minor": 0
+    },
+    "topViolations": [
+      {
+        "id": "meta-refresh",
+        "impact": "critical",
+        "count": 1,
+        "description": "Ensures <meta http-equiv=\"refresh\"> is not used for delayed refresh"
+      }
+    ],
+    "wcag22Violations": 14,
+    "keyboardBreakdown": {
+      "tabOrder": 1,
+      "focusIndicator": 3,
+      "widget": 0
+    },
+    "supplemental": {
+      "total": 12,
+      "passed": 10,
+      "failed": 2
+    }
+  },
+  {
+    "site": {
+      "url": "https://github.com",
+      "name": "GitHub",
+      "category": "tech"
+    },
+    "timestamp": "2026-03-28T23:42:02.714Z",
+    "success": false,
+    "error": "spawnSync /bin/sh ETIMEDOUT",
+    "violations": 0,
+    "passes": 0,
+    "severity": {
+      "critical": 0,
+      "serious": 0,
+      "moderate": 0,
+      "minor": 0
+    },
+    "topViolations": []
+  },
+  {
+    "site": {
+      "url": "https://npmjs.com",
+      "name": "npm",
+      "category": "tech"
+    },
+    "timestamp": "2026-03-28T23:44:02.718Z",
+    "success": true,
+    "violations": 1,
+    "passes": 25,
+    "severity": {
+      "critical": 1,
+      "serious": 0,
+      "moderate": 0,
+      "minor": 0
+    },
+    "topViolations": [
+      {
+        "id": "meta-refresh",
+        "impact": "critical",
+        "count": 1,
+        "description": "Ensures <meta http-equiv=\"refresh\"> is not used for delayed refresh"
+      }
+    ],
+    "wcag22Violations": 9,
+    "keyboardBreakdown": {
+      "tabOrder": 1,
+      "focusIndicator": 3,
+      "widget": 0
+    },
+    "supplemental": {
+      "total": 12,
+      "passed": 10,
+      "failed": 2
+    }
+  },
+  {
+    "site": {
+      "url": "https://developer.mozilla.org",
+      "name": "MDN",
+      "category": "tech"
+    },
+    "timestamp": "2026-03-28T23:44:16.448Z",
+    "success": true,
+    "violations": 23,
+    "passes": 44,
+    "severity": {
+      "critical": 0,
+      "serious": 15,
+      "moderate": 8,
+      "minor": 0
+    },
+    "topViolations": [
+      {
+        "id": "target-size",
+        "impact": "serious",
+        "count": 15,
+        "description": "Ensure touch target have sufficient size and space"
+      },
+      {
+        "id": "region",
+        "impact": "moderate",
+        "count": 6,
+        "description": "Ensures all page content is contained by landmarks"
+      },
+      {
+        "id": "landmark-one-main",
+        "impact": "moderate",
+        "count": 1,
+        "description": "Ensures the document has a main landmark"
+      },
+      {
+        "id": "landmark-unique",
+        "impact": "moderate",
+        "count": 1,
+        "description": "Landmarks should have a unique role or role/label/title (i.e. accessible name) combination"
+      }
+    ],
+    "wcag22Violations": 127,
+    "keyboardBreakdown": {
+      "tabOrder": 2,
+      "focusIndicator": 88,
+      "widget": 0
+    },
+    "supplemental": {
+      "total": 12,
+      "passed": 8,
+      "failed": 4
+    }
+  }
+]
