@@ -1,7 +1,7 @@
 {
     "name": "@aria51/cli",
     "version": "0.1.0",
-    "description": "CLI tool for accessibility testing with optional React and AI auditor support",
+    "description": "CLI for accessibility testing — axe-core, keyboard navigation, WCAG 2.2 checks, and AI-powered auditing",
     "main": "dist/index.js",
     "type": "module",
     "exports": {
@@ -13,7 +13,8 @@
     },
     "files": [
         "dist",
-        "bin"
+        "bin",
+        "README.md"
     ],
     "scripts": {
         "build": "rm -rf dist && tsc",

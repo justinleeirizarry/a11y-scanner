@@ -9,7 +9,8 @@
     },
     "files": [
         "dist",
-        "bin"
+        "bin",
+        "README.md"
     ],
     "scripts": {
         "build": "rm -rf dist && tsc",

@@ -284,7 +284,10 @@ if (isFocusedAuditMode) {
         if (cli.flags.auditKeyboard) await runAuditKeyboard(url, { maxTabs: cli.flags.maxTabPresses, quiet: cli.flags.quiet, deep: cli.flags.deep, model: cli.flags.stagehandModel, verbose: cli.flags.stagehandVerbose });
         if (cli.flags.auditStructure) await runAuditStructure(url, { quiet: cli.flags.quiet, deep: cli.flags.deep, model: cli.flags.stagehandModel, verbose: cli.flags.stagehandVerbose });
         if (cli.flags.auditScreenReader) await runAuditScreenReader(url, { quiet: cli.flags.quiet, deep: cli.flags.deep, model: cli.flags.stagehandModel, verbose: cli.flags.stagehandVerbose });
-    })();
+    })().catch((err) => {
+        console.error(err instanceof Error ? err.message : err);
+        exitWithCode(EXIT_CODES.RUNTIME_ERROR);
+    });
 } else if (isAgentMode) {
     // Agent mode works the same in TTY and non-TTY (handled internally)
     if (!isTTY) logger.setUseStderr(true);
@@ -297,6 +300,9 @@ if (isFocusedAuditMode) {
         wcagLevel: auditLevel,
         output: cli.flags.output,
         isTTY,
+    }).catch((err: unknown) => {
+        console.error(err instanceof Error ? err.message : err);
+        exitWithCode(EXIT_CODES.RUNTIME_ERROR);
     });
 } else if (!isTTY) {
     // Non-TTY: JSON output for all modes
@@ -328,7 +334,10 @@ if (isFocusedAuditMode) {
                 ai: cli.flags.ai,
             });
         }
-    })();
+    })().catch((err) => {
+        console.error(err instanceof Error ? err.message : err);
+        exitWithCode(EXIT_CODES.RUNTIME_ERROR);
+    });
 } else {
     // TTY mode: render the Ink UI (single URL only)
     if (urls.length > 1) {

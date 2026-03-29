@@ -97,6 +97,6 @@ pnpm start https://some-site.com --agent
 ## Pull Requests
 
 - Ensure `pnpm build` passes
-- Ensure `pnpm test` passes (632+ tests)
+- Ensure `pnpm test` passes
 - Keep changes focused — one feature or fix per PR
 - Include a description of what changed and why

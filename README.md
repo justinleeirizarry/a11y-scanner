@@ -95,8 +95,8 @@ The MCP server exposes 9 tools for integration with AI coding assistants (Claude
 | `run_agent` | Run autonomous AI audit with remediation plan |
 
 ```bash
-# Start the MCP server
-node packages/mcp/bin/mcp-server.js
+# Start the MCP server (after npm install -g @aria51/mcp)
+aria51-mcp
 ```
 
 ## Development
