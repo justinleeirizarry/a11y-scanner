@@ -4,7 +4,7 @@ export function ThreeModes() {
   return (
     <section className="section" aria-labelledby="modes-heading">
       <div className="container">
-        <SectionHeading>Three ways to test</SectionHeading>
+        <SectionHeading id="modes-heading">Three ways to test</SectionHeading>
         <div className="modes-grid">
           <div className="mode-card">
             <div className="mode-card-label">Scan</div>

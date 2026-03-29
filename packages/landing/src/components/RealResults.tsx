@@ -5,7 +5,7 @@ export function RealResults() {
   return (
     <section className="section" aria-labelledby="results-heading">
       <div className="container">
-        <SectionHeading>Field reports</SectionHeading>
+        <SectionHeading id="results-heading">Field reports</SectionHeading>
         <div className="results-grid">
           {scanResults.map((result) => (
             <div key={result.site} className="result-card">

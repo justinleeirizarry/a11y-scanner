@@ -8,7 +8,7 @@ interface TerminalBlockProps {
 export function TerminalBlock({ children, label }: TerminalBlockProps) {
   return (
     <div className="terminal" role="figure" aria-label={label}>
-      <div className="terminal-header">
+      <div className="terminal-header" aria-hidden="true">
         <span className="terminal-dot" />
         <span className="terminal-dot" />
         <span className="terminal-dot" />

@@ -5,7 +5,7 @@ export function CISection() {
   return (
     <section className="section" aria-labelledby="ci-heading">
       <div className="container">
-        <SectionHeading>CI Integration</SectionHeading>
+        <SectionHeading id="ci-heading">CI Integration</SectionHeading>
         <TerminalBlock label="CI mode command example">
           <span className="prompt">$ </span>
           npx aria51 https://your-site.com <span className="flag">--ci</span>{' '}

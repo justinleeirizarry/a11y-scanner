@@ -4,7 +4,7 @@ export function ComparisonSection() {
   return (
     <section className="section" aria-labelledby="comparison-heading">
       <div className="container">
-        <SectionHeading>Hidden in plain sight</SectionHeading>
+        <SectionHeading id="comparison-heading">Hidden in plain sight</SectionHeading>
         <p className="hero-sub" style={{ marginBottom: '2rem' }}>
           Same site. Same scan. Different results. We ran both tools on
           GitHub.com.

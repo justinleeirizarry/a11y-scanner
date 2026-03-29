@@ -5,7 +5,7 @@ export function MCPSection() {
   return (
     <section className="section" aria-labelledby="mcp-heading">
       <div className="container">
-        <SectionHeading>Built for AI</SectionHeading>
+        <SectionHeading id="mcp-heading">Built for AI</SectionHeading>
         <p className="hero-sub" style={{ marginBottom: 0 }}>
           aria-51 was designed as a tool for AI. Nine tools available over
           MCP or the CLI — scan, interpret, fix, and re-scan without breaking

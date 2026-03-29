@@ -24,7 +24,7 @@ export function Hero() {
             target="_blank"
             rel="noopener noreferrer"
           >
-            View on GitHub
+            View on GitHub<span className="sr-only"> (opens in new tab)</span>
           </a>
         </div>
       </div>
