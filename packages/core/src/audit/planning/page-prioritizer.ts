@@ -1,8 +1,5 @@
 /**
  * Page Deduplication & Normalization
- *
- * Deduplicates and normalizes discovered URLs. Prioritization is handled
- * by the LLM agent, which has richer context about the site.
  */
 import type { DiscoveredPage, SitemapEntry } from '../types.js';
 

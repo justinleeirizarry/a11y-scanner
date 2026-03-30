@@ -299,3 +299,39 @@ export {
     type SourceLocation,
     type ResolvedComponent,
 } from './components/index.js';
+
+// =============================================================================
+// Audit Pipeline (page discovery, compliance reports, remediation)
+// =============================================================================
+
+export {
+    // Planning
+    parseSitemap,
+    discoverLinks,
+    deduplicatePages,
+    // Verification
+    scoreFinding,
+    sortByScore,
+    filterHighConfidence,
+    // Remediation
+    generateRemediationPlan,
+    // Pipeline
+    runFullAudit,
+} from './audit/index.js';
+
+export type {
+    FullAuditOptions,
+    FullAuditResult,
+    LinkDiscoveryOptions,
+    SitemapEntry,
+    DiscoveredPage,
+    VerifiedFinding,
+    FindingSource,
+    ConfidenceLevel as AuditConfidenceLevel,
+    ImpactLevel as AuditImpactLevel,
+    AgentWcagCriterionInfo,
+    RemediationPlan,
+    RemediationPhase,
+    RemediationItem,
+    AuditSessionMinimal,
+} from './audit/index.js';

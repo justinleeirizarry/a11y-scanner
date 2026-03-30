@@ -434,85 +434,117 @@ server.registerTool(
     }
 );
 
-// Register agent audit tool
-server.registerTool(
-    "run_agent",
-    {
-        description: "Run an autonomous AI accessibility audit on a website. The agent crawls pages, scans for violations, verifies findings against axe-core, and generates a prioritized remediation plan. More thorough than scan_url but takes longer (1-3 minutes). Defaults to gpt-4o-mini (requires OPENAI_API_KEY). Use model='claude-sonnet-4-6' for best results (requires ANTHROPIC_API_KEY).",
-        inputSchema: {
-            url: z.string().url().describe("The target URL to audit"),
-            max_pages: z.number().optional().default(5).describe("Maximum pages to scan (default: 5)"),
-            max_steps: z.number().optional().default(10).describe("Maximum agent steps (default: 10)"),
-            specialists: z.boolean().optional().default(false).describe("Use multi-specialist mode — 4 parallel auditors for deeper coverage"),
-            wcag_level: z.enum(["A", "AA", "AAA"]).optional().default("AA").describe("Target WCAG conformance level"),
-            model: z.string().optional().describe("LLM model to use (default: gpt-4o-mini, use claude-sonnet-4-6 for best results)"),
-        },
-    },
-    async ({ url, max_pages, max_steps, specialists, wcag_level, model }) => {
-        try {
-            const agentModel = model || "gpt-4o-mini";
-            logger.info(`Starting agent audit for ${url} (max ${max_pages} pages, ${max_steps} steps${specialists ? ', multi-specialist' : ''})`);
-            const { runAgent } = await import("@aria51/agent");
+// ─────────────────────────────────────────────────────────────
+// discover_pages — Find all pages on a site via sitemap + crawl
+// ─────────────────────────────────────────────────────────────
 
-            // Auto-detect provider from model name
-            let provider: any = 'anthropic';
-            if (/^(gpt-|o1|o3|o4)/.test(agentModel)) {
-                const { createOpenAI } = await import("@ai-sdk/openai");
-                const openai = createOpenAI({});
-                provider = { type: 'ai-sdk', model: openai(agentModel) };
+server.tool(
+    "discover_pages",
+    "Discover all pages on a website via sitemap parsing and/or link crawling. Returns a prioritized list of URLs for scanning. No API key needed.",
+    {
+        url: z.string().url().describe("The base URL to discover pages for"),
+        max_pages: z.number().optional().default(20).describe("Maximum pages to return (default: 20)"),
+        strategy: z.enum(["sitemap", "crawl", "both"]).optional().default("both")
+            .describe("Discovery strategy: sitemap parsing, Playwright link crawling, or both"),
+    },
+    async ({ url, max_pages, strategy }) => {
+        try {
+            logger.info(`Discovering pages for ${url} (strategy: ${strategy}, max: ${max_pages})`);
+
+            const { parseSitemap, discoverLinks, deduplicatePages } = await import("@aria51/core");
+
+            let sitemapEntries: Array<{ url: string; lastmod?: string; priority?: number }> = [];
+            let crawledUrls: string[] = [];
+
+            if (strategy === "sitemap" || strategy === "both") {
+                try {
+                    sitemapEntries = await parseSitemap(url);
+                    logger.info(`Sitemap: found ${sitemapEntries.length} entries`);
+                } catch (err) {
+                    logger.info(`Sitemap parsing failed (non-fatal): ${err}`);
+                }
             }
 
-            const report = await runAgent({
-                targetUrl: url,
-                maxPages: max_pages,
-                maxSteps: max_steps,
-                specialists,
-                wcagLevel: wcag_level as "A" | "AA" | "AAA",
-                model: agentModel,
-                provider,
-            });
+            if (strategy === "crawl" || strategy === "both") {
+                try {
+                    crawledUrls = await discoverLinks(url, { browser: 'chromium', headless: true });
+                    logger.info(`Crawl: found ${crawledUrls.length} links`);
+                } catch (err) {
+                    logger.info(`Link crawling failed (non-fatal): ${err}`);
+                }
+            }
 
-            const lines: string[] = [
-                `## Agent Audit Report: ${url}`,
-                ``,
-                `- **Pages scanned:** ${report.pagesScanned}`,
-                `- **Total findings:** ${report.totalFindings}`,
-                `- **Duration:** ${(report.scanDurationMs / 1000).toFixed(1)}s`,
-                `- **WCAG Level:** ${report.wcagLevel}`,
-                ``,
+            const allUrls = [
+                url,
+                ...sitemapEntries.map((e) => e.url),
+                ...crawledUrls,
             ];
 
-            if (report.totalFindings > 0) {
-                const c = report.findingsByConfidence;
-                const s = report.findingsBySeverity;
-                lines.push(`### Confidence: ${c.confirmed} confirmed, ${c.corroborated} corroborated, ${c['ai-only']} ai-only`);
-                lines.push(`### Severity: ${s.critical} critical, ${s.serious} serious, ${s.moderate} moderate, ${s.minor} minor`);
-                lines.push(``);
-                lines.push(`### Findings`);
-                for (const f of report.findings) {
-                    lines.push(`- **[${f.confidence}] ${f.criterion?.id || '?'} (${f.impact}):** ${f.description}`);
-                }
-            }
+            const pages = deduplicatePages(allUrls, sitemapEntries, max_pages);
 
-            if (report.remediationPlan) {
-                lines.push(``, `### Remediation Plan (${report.remediationPlan.totalIssues} issues, ${report.remediationPlan.estimatedEffort})`);
-                for (const phase of report.remediationPlan.phases) {
-                    lines.push(`- **Phase ${phase.priority}: ${phase.title}** (${phase.items.length} items)`);
-                }
-            }
+            const lines: string[] = [
+                `# Discovered Pages for ${url}`,
+                '',
+                `Found **${pages.length}** pages (from ${sitemapEntries.length} sitemap entries + ${crawledUrls.length} crawled links).`,
+                '',
+                '| # | URL | Sitemap Priority | Last Modified |',
+                '|---|-----|-----------------|---------------|',
+            ];
 
-            if (report.agentSummary) {
-                lines.push(``, `### Agent Summary`, ``, report.agentSummary.slice(0, 2000));
+            for (let i = 0; i < pages.length; i++) {
+                const p = pages[i];
+                const shortUrl = p.url.replace(/^https?:\/\//, '');
+                lines.push(`| ${i + 1} | ${shortUrl} | ${p.sitemapPriority ?? '—'} | ${p.lastmod ?? '—'} |`);
             }
 
             return {
                 content: [{ type: "text", text: lines.join("\n") }],
             };
         } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : String(error);
-            logger.error(`Agent audit failed: ${errorMessage}`);
+            const msg = error instanceof Error ? error.message : String(error);
+            logger.error(`Page discovery failed: ${msg}`);
             return {
-                content: [{ type: "text", text: `Agent audit failed: ${errorMessage}` }],
+                content: [{ type: "text", text: `Page discovery failed: ${msg}` }],
+                isError: true,
+            };
+        }
+    }
+);
+
+// ─────────────────────────────────────────────────────────────
+// run_full_audit — Complete WCAG compliance audit, no API key
+// ─────────────────────────────────────────────────────────────
+
+server.tool(
+    "run_full_audit",
+    "Run a complete WCAG compliance audit on a website. Discovers pages, scans with axe-core, runs keyboard/structure/screen-reader audits, and generates a prioritized remediation plan. No API key needed — all checks are deterministic.",
+    {
+        url: z.string().url().describe("The URL to audit"),
+        max_pages: z.number().optional().default(10).describe("Maximum pages to scan (default: 10)"),
+        include_audits: z.boolean().optional().default(true)
+            .describe("Run keyboard, structure, and screen reader focused audits on key pages (default: true)"),
+        wcag_level: z.enum(["A", "AA", "AAA"]).optional().default("AA")
+            .describe("Target WCAG conformance level (default: AA)"),
+    },
+    async ({ url, max_pages, include_audits, wcag_level }) => {
+        try {
+            const { runFullAudit } = await import("@aria51/core");
+            const { formatFullAuditReport } = await import("./formatters/audit-report-formatter.js");
+
+            const result = await runFullAudit({
+                url,
+                maxPages: max_pages,
+                includeAudits: include_audits,
+                wcagLevel: wcag_level,
+            });
+
+            const content = formatFullAuditReport(result);
+            return { content };
+        } catch (error) {
+            const msg = error instanceof Error ? error.message : String(error);
+            logger.error(`Full audit failed: ${msg}`);
+            return {
+                content: [{ type: "text", text: `Full audit failed: ${msg}` }],
                 isError: true,
             };
         }

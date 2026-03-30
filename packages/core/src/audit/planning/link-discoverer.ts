@@ -4,11 +4,9 @@
  * Uses Playwright to load a page and extract all internal links.
  * Falls back to this when no sitemap is available.
  */
-import { runScanAsPromise, AppLayer } from '@aria51/core';
-import type { BrowserType } from '@aria51/core';
 
 export interface LinkDiscoveryOptions {
-    browser: BrowserType;
+    browser: 'chromium' | 'firefox' | 'webkit';
     headless: boolean;
     maxDepth?: number;
 }
@@ -24,8 +22,6 @@ export async function discoverLinks(
     const origin = new URL(baseUrl).origin;
 
     try {
-        // We use a lightweight approach: import playwright dynamically
-        // and just extract links, rather than running a full scan
         const { chromium, firefox, webkit } = await import('playwright');
         const browsers = { chromium, firefox, webkit };
         const browserType = browsers[options.browser] || chromium;
@@ -36,13 +32,11 @@ export async function discoverLinks(
         try {
             await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
 
-            // Extract all anchor hrefs
             const hrefs = await page.evaluate(() => {
                 const anchors = document.querySelectorAll('a[href]');
                 return Array.from(anchors).map((a) => (a as HTMLAnchorElement).href);
             });
 
-            // Filter to same-origin internal links
             const internalLinks = hrefs
                 .filter((href) => {
                     try {
@@ -53,19 +47,16 @@ export async function discoverLinks(
                     }
                 })
                 .map((href) => {
-                    // Normalize: strip hash and trailing slash
                     const url = new URL(href);
                     url.hash = '';
                     return url.toString().replace(/\/$/, '');
                 });
 
-            // Deduplicate
             return [...new Set(internalLinks)];
         } finally {
             await browser.close();
         }
-    } catch (error) {
-        // If browser-based discovery fails, return just the base URL
+    } catch {
         return [baseUrl];
     }
 }

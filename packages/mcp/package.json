@@ -36,7 +36,6 @@
     "dependencies": {
         "@aria51/core": "workspace:*",
         "@aria51/ai-auditor": "workspace:*",
-        "@aria51/agent": "workspace:*",
         "@modelcontextprotocol/sdk": "^1.22.0",
         "@ai-sdk/openai": "^1.0.0",
         "ai": "^5.0.0",

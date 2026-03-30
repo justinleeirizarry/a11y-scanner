@@ -27,7 +27,6 @@ import {
     LogLevel,
 } from '@aria51/core';
 import {
-    runAgentMode,
     runKeyboardMode,
     runTreeMode,
     runWcagAuditMode,
@@ -75,11 +74,9 @@ const cli = meow(
     --audit-screen-reader  Simulate screen reader navigation (alt text, ARIA, labels)
     --deep                 Enable AI-enhanced deep analysis (requires OPENAI_API_KEY)
 
-  Autonomous Agent Mode (mutually exclusive with scan/test-gen)
-    --agent               Run autonomous accessibility audit with AI agent
-    --agent-model         Model for agent (default: gpt-4o-mini, use claude-sonnet-4-6 for best results)
-    --specialists         Use multi-specialist mode (4 parallel auditors)
-    --max-pages           Max pages to scan in agent mode [default: 10]
+  Full Audit (no API keys needed)
+    --full-audit          Run complete WCAG compliance audit (discover pages, scan, focused audits, remediation plan)
+    --max-pages           Max pages to scan [default: 10]
 
   Test Generation (mutually exclusive with scan options)
     --generate-test    Enable test generation mode (skips accessibility scan)
@@ -109,10 +106,9 @@ const cli = meow(
     $ aria51 https://my-app.com --no-components
     $ aria51 https://my-app.com --ai --tree
 
-    # Autonomous Agent Audit
-    $ aria51 https://example.com --agent
-    $ aria51 https://example.com --agent --specialists
-    $ aria51 https://example.com --agent --max-pages 5
+    # Full WCAG Compliance Audit (no API keys needed)
+    $ aria51 https://example.com --full-audit
+    $ aria51 https://example.com --full-audit --max-pages 20
 
     # Test Generation
     $ aria51 https://example.com --generate-test
@@ -149,10 +145,8 @@ const cli = meow(
             auditStructure: { type: 'boolean', default: false },
             auditScreenReader: { type: 'boolean', default: false },
             deep: { type: 'boolean', default: false },
-            // Agent mode
-            agent: { type: 'boolean', default: false },
-            agentModel: { type: 'string' },
-            specialists: { type: 'boolean', default: false },
+            // Full audit mode
+            fullAudit: { type: 'boolean', default: false },
             maxPages: { type: 'number', default: 10 },
             // Stagehand
             stagehandModel: { type: 'string' },
@@ -219,7 +213,7 @@ if (!validLevels.includes(cli.flags.auditLevel.toUpperCase())) {
 const auditLevel = cli.flags.auditLevel.toUpperCase() as WcagLevel;
 
 // Determine mode
-const isAgentMode = cli.flags.agent;
+const isFullAuditMode = cli.flags.fullAudit;
 const isFocusedAuditMode = cli.flags.auditKeyboard || cli.flags.auditStructure || cli.flags.auditScreenReader;
 const isTestGenerationMode = cli.flags.generateTest;
 const isStagehandKeyboardMode = cli.flags.stagehandKeyboard;
@@ -227,7 +221,7 @@ const isStagehandTreeMode = cli.flags.stagehandTree;
 const isWcagAuditMode = cli.flags.wcagAudit;
 const isStagehandMode = isStagehandKeyboardMode || isStagehandTreeMode || isWcagAuditMode;
 
-const modeCount = [isAgentMode, isFocusedAuditMode, isTestGenerationMode, isStagehandKeyboardMode, isStagehandTreeMode, isWcagAuditMode].filter(Boolean).length;
+const modeCount = [isFullAuditMode, isFocusedAuditMode, isTestGenerationMode, isStagehandKeyboardMode, isStagehandTreeMode, isWcagAuditMode].filter(Boolean).length;
 if (modeCount > 1) {
     console.error('Error: Only one mode can be active at a time.\n');
     console.error('Modes: --agent, --generate-test, --stagehand-keyboard, --stagehand-tree, --wcag-audit\n');
@@ -288,19 +282,54 @@ if (isFocusedAuditMode) {
         console.error(err instanceof Error ? err.message : err);
         exitWithCode(EXIT_CODES.RUNTIME_ERROR);
     });
-} else if (isAgentMode) {
-    // Agent mode works the same in TTY and non-TTY (handled internally)
+} else if (isFullAuditMode) {
+    // Full audit mode — deterministic, no API key needed
     if (!isTTY) logger.setUseStderr(true);
-    runAgentMode({
-        url,
-        maxPages: cli.flags.maxPages,
-        maxSteps: cli.flags.maxSteps,
-        specialists: cli.flags.specialists,
-        model: cli.flags.agentModel,
-        wcagLevel: auditLevel,
-        output: cli.flags.output,
-        isTTY,
-    }).catch((err: unknown) => {
+    (async () => {
+        const { runFullAudit } = await import('@aria51/core');
+        const result = await runFullAudit({
+            url,
+            maxPages: cli.flags.maxPages,
+            wcagLevel: auditLevel,
+            onProgress: (msg) => {
+                if (!cli.flags.quiet) console.error(msg);
+            },
+        });
+
+        // Output JSON to stdout if --output or non-TTY
+        if (cli.flags.output) {
+            const { writeFileSync } = await import('fs');
+            writeFileSync(cli.flags.output, JSON.stringify(result, null, 2));
+            console.error(`Report written to ${cli.flags.output}`);
+        } else {
+            // Print summary to stdout
+            const totalViolations = result.scanResults.reduce(
+                (sum, r) => sum + (r.results.violations?.length || 0), 0,
+            );
+            const totalKbIssues = result.keyboardResults?.reduce(
+                (sum, r) => sum + r.result.issues.length, 0,
+            ) || 0;
+
+            console.log(`\n${'─'.repeat(60)}`);
+            console.log(`WCAG ${result.wcagLevel} Compliance Audit: ${url}`);
+            console.log(`${'─'.repeat(60)}`);
+            console.log(`Pages scanned:    ${result.scanResults.length}`);
+            console.log(`Pages discovered: ${result.discoveredPages.length}`);
+            console.log(`Violations:       ${totalViolations}`);
+            console.log(`Findings:         ${result.findings.length}`);
+            console.log(`Keyboard issues:  ${totalKbIssues}`);
+            console.log(`Duration:         ${(result.durationMs / 1000).toFixed(1)}s`);
+
+            if (result.remediationPlan) {
+                console.log(`\nRemediation: ${result.remediationPlan.summary}`);
+                for (const phase of result.remediationPlan.phases) {
+                    console.log(`  Phase ${phase.priority}: ${phase.title} (${phase.items.length} items)`);
+                }
+            }
+
+            console.log(`\nUse --output report.json for the full report.`);
+        }
+    })().catch((err) => {
         console.error(err instanceof Error ? err.message : err);
         exitWithCode(EXIT_CODES.RUNTIME_ERROR);
     });

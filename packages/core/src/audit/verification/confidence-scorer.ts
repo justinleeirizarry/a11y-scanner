@@ -20,26 +20,16 @@ const IMPACT_WEIGHTS: Record<string, number> = {
     minor: 0.25,
 };
 
-/**
- * Compute a numeric score (0-1) for a finding based on
- * confidence level and impact severity.
- */
 export function scoreFinding(finding: VerifiedFinding): number {
     const confidenceWeight = CONFIDENCE_WEIGHTS[finding.confidence] || 0.5;
     const impactWeight = IMPACT_WEIGHTS[finding.impact] || 0.5;
     return confidenceWeight * 0.6 + impactWeight * 0.4;
 }
 
-/**
- * Sort findings by composite score (highest first)
- */
 export function sortByScore(findings: VerifiedFinding[]): VerifiedFinding[] {
     return [...findings].sort((a, b) => scoreFinding(b) - scoreFinding(a));
 }
 
-/**
- * Filter out contradicted and low-confidence findings
- */
 export function filterHighConfidence(
     findings: VerifiedFinding[],
     minConfidence: ConfidenceLevel = 'ai-only'

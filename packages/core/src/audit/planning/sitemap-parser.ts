@@ -59,7 +59,6 @@ async function fetchSitemap(url: string): Promise<SitemapEntry[]> {
         if (!resp.ok) return [];
         const xml = await resp.text();
 
-        // Check if it's a sitemap index
         if (xml.includes('<sitemapindex')) {
             return parseSitemapIndex(xml);
         }
@@ -72,7 +71,6 @@ async function fetchSitemap(url: string): Promise<SitemapEntry[]> {
 
 function parseSitemapXml(xml: string): SitemapEntry[] {
     const entries: SitemapEntry[] = [];
-    // Simple regex-based XML parsing (avoids heavy XML dependency)
     const urlRegex = /<url>([\s\S]*?)<\/url>/gi;
     let match;
     while ((match = urlRegex.exec(xml)) !== null) {
@@ -97,7 +95,6 @@ async function parseSitemapIndex(xml: string): Promise<SitemapEntry[]> {
     while ((match = locRegex.exec(xml)) !== null) {
         childUrls.push(match[1].trim());
     }
-    // Fetch child sitemaps (limit to 5 to avoid overload)
     for (const childUrl of childUrls.slice(0, 5)) {
         const childEntries = await fetchSitemap(childUrl);
         entries.push(...childEntries);

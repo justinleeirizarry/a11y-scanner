@@ -5,7 +5,7 @@
     "description": "Accessibility testing platform — axe-core, keyboard navigation, WCAG 2.2 checks, screen reader simulation, and AI-powered auditing",
     "type": "module",
     "scripts": {
-        "build": "pnpm --filter @aria51/core build && pnpm --filter @aria51/ai-auditor build && pnpm --filter @aria51/agent build && pnpm --filter @aria51/cli --filter @aria51/mcp build",
+        "build": "pnpm --filter @aria51/core build && pnpm --filter @aria51/ai-auditor build && pnpm --filter @aria51/cli --filter @aria51/mcp build",
         "dev": "pnpm -r --parallel dev",
         "test": "vitest run",
         "test:watch": "vitest",
