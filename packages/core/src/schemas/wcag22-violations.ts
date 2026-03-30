@@ -60,6 +60,8 @@ export const WCAG22ViolationId = Schema.Literal(
     'help',
     'error-prevention-all',
     'accessible-auth-enhanced',
+    'images-of-text-aa',
+    'non-text-contrast',
 );
 export type WCAG22ViolationId = typeof WCAG22ViolationId.Type;
 
@@ -240,6 +242,8 @@ export const WCAG22Results = Schema.Struct({
     help: Schema.Array(WCAG22ViolationSummary),
     errorPreventionAll: Schema.Array(WCAG22ViolationSummary),
     accessibleAuthEnhanced: Schema.Array(WCAG22ViolationSummary),
+    imagesOfTextAA: Schema.Array(WCAG22ViolationSummary),
+    nonTextContrast: Schema.Array(WCAG22ViolationSummary),
     summary: Schema.Struct({
         totalViolations: Schema.Number,
         byLevel: Schema.Struct({

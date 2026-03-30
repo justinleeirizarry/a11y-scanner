@@ -27,7 +27,7 @@
     "license": "MIT",
     "repository": {
         "type": "git",
-        "url": "https://github.com/justinirizarry/aria-51.git",
+        "url": "https://github.com/justinleeirizarry/aria-51.git",
         "directory": "packages/mcp"
     },
     "publishConfig": {

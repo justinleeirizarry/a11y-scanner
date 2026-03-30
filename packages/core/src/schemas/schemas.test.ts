@@ -428,6 +428,8 @@ describe('WCAG 2.2 Schemas', () => {
             help: [],
             errorPreventionAll: [],
             accessibleAuthEnhanced: [],
+            imagesOfTextAA: [],
+            nonTextContrast: [],
             summary: {
                 totalViolations: 0,
                 byLevel: { A: 0, AA: 0, AAA: 0 },

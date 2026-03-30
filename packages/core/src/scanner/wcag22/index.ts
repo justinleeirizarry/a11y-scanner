@@ -27,6 +27,7 @@ export { checkRedundantEntry, getRedundantEntryInfo } from './redundant-entry.js
 export { checkMediaAccessibility, getMediaAccessibilityInfo } from './media-checks.js';
 export { checkTimingAndInteraction, getTimingAndInteractionInfo } from './timing-interaction-checks.js';
 export { checkLanguageAndErrorPrevention, getLanguageAndErrorPreventionInfo } from './language-error-prevention.js';
+export { checkNonTextContrast, getNonTextContrastInfo } from './non-text-contrast.js';
 
 import type { WCAG22CheckResults, WCAG22Violation } from './types.js';
 import { checkTargetSize } from './target-size.js';
@@ -50,6 +51,7 @@ import { checkRedundantEntry } from './redundant-entry.js';
 import { checkMediaAccessibility } from './media-checks.js';
 import { checkTimingAndInteraction } from './timing-interaction-checks.js';
 import { checkLanguageAndErrorPrevention } from './language-error-prevention.js';
+import { checkNonTextContrast } from './non-text-contrast.js';
 
 /**
  * Run all WCAG 2.2 checks
@@ -135,7 +137,11 @@ export function runWCAG22Checks(): WCAG22CheckResults {
     const mediaLiveAudioViolations = mediaViolations.filter(v => v.id === 'media-live-audio');
     const mediaBackgroundAudioViolations = mediaViolations.filter(v => v.id === 'media-background-audio');
     const imagesOfTextViolations = mediaViolations.filter(v => v.id === 'images-of-text');
+    const imagesOfTextAAViolations = mediaViolations.filter(v => v.id === 'images-of-text-aa');
     console.log(`  ✓ Media checks: ${mediaViolations.length} violations`);
+
+    const nonTextContrastViolations = checkNonTextContrast();
+    console.log(`  ✓ Non-text Contrast (1.4.11): ${nonTextContrastViolations.length} violations`);
 
     const timingViolations = checkTimingAndInteraction();
     const keyboardNoExceptionViolations = timingViolations.filter(v => v.id === 'keyboard-no-exception');
@@ -182,6 +188,7 @@ export function runWCAG22Checks(): WCAG22CheckResults {
         ...focusInputViolations,
         ...redundantEntryViolations,
         ...mediaViolations,
+        ...nonTextContrastViolations,
         ...timingViolations,
         ...langErrorViolations,
     ];
@@ -233,6 +240,8 @@ export function runWCAG22Checks(): WCAG22CheckResults {
         mediaLiveAudio: mediaLiveAudioViolations,
         mediaBackgroundAudio: mediaBackgroundAudioViolations,
         imagesOfText: imagesOfTextViolations,
+        imagesOfTextAA: imagesOfTextAAViolations,
+        nonTextContrast: nonTextContrastViolations,
         keyboardNoException: keyboardNoExceptionViolations,
         noTiming: noTimingViolations,
         interruptions: interruptionViolations,

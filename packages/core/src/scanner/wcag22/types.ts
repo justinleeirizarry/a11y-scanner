@@ -99,6 +99,8 @@ export interface WCAG22CheckResults {
     help: WCAG22Violation[];
     errorPreventionAll: WCAG22Violation[];
     accessibleAuthEnhanced: WCAG22Violation[];
+    imagesOfTextAA: WCAG22Violation[];
+    nonTextContrast: WCAG22Violation[];
     summary: {
         totalViolations: number;
         byLevel: {

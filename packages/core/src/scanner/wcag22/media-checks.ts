@@ -12,6 +12,7 @@
  * - 1.2.8 Media Alternative (AAA)
  * - 1.2.9 Audio-only (Live) (AAA)
  * - 1.4.7 Low or No Background Audio (AAA)
+ * - 1.4.5 Images of Text (AA)
  * - 1.4.9 Images of Text (No Exception) (AAA)
  */
 
@@ -222,13 +223,28 @@ export function checkMediaAccessibility(): WCAG22Violation[] {
             src.includes('.svg') && alt.length > 20; // SVG with long alt text likely has text
 
         if (isLikelyTextImage) {
+            const imgSelector = getSelector(img);
+            const imgHtml = getHtmlSnippet(img);
+            // 1.4.5 (AA): Images of Text — allows exceptions for essential/customizable
+            violations.push({
+                id: 'images-of-text-aa',
+                criterion: '1.4.5 Images of Text',
+                level: 'AA',
+                element: 'img',
+                selector: imgSelector,
+                html: imgHtml,
+                impact: 'serious',
+                description: `Image may contain text (src: "${src.slice(0, 60)}"). Use actual text instead of images of text, except where essential or customizable`,
+                details: { type: 'possible-image-of-text', src: src.slice(0, 80), alt: alt.slice(0, 80) },
+            });
+            // 1.4.9 (AAA): Images of Text (No Exception) — stricter, no exceptions
             violations.push({
                 id: 'images-of-text',
                 criterion: '1.4.9 Images of Text (No Exception)',
                 level: 'AAA',
                 element: 'img',
-                selector: getSelector(img),
-                html: getHtmlSnippet(img),
+                selector: imgSelector,
+                html: imgHtml,
                 impact: 'moderate',
                 description: `Image may contain text (src: "${src.slice(0, 60)}"). Use actual text instead of images of text`,
                 details: { type: 'possible-image-of-text', src: src.slice(0, 80), alt: alt.slice(0, 80) },
@@ -243,20 +259,36 @@ export function checkMediaAccessibility(): WCAG22Violation[] {
         const rect = canvas.getBoundingClientRect();
         // Only flag canvases that are likely content (not tiny icons)
         if (rect.width > 100 && rect.height > 30) {
+            const canvasSelector = getSelector(canvas);
+            const canvasHtml = getHtmlSnippet(canvas);
+            const canvasDetails = {
+                type: 'canvas-text-risk',
+                width: Math.round(rect.width),
+                height: Math.round(rect.height),
+            };
+            // 1.4.5 (AA)
+            violations.push({
+                id: 'images-of-text-aa',
+                criterion: '1.4.5 Images of Text',
+                level: 'AA',
+                element: 'canvas',
+                selector: canvasSelector,
+                html: canvasHtml,
+                impact: 'serious',
+                description: 'Canvas element found — if rendering text, use actual HTML text instead',
+                details: canvasDetails,
+            });
+            // 1.4.9 (AAA)
             violations.push({
                 id: 'images-of-text',
                 criterion: '1.4.9 Images of Text (No Exception)',
                 level: 'AAA',
                 element: 'canvas',
-                selector: getSelector(canvas),
-                html: getHtmlSnippet(canvas),
+                selector: canvasSelector,
+                html: canvasHtml,
                 impact: 'moderate',
                 description: 'Canvas element found — if rendering text, use actual HTML text instead',
-                details: {
-                    type: 'canvas-text-risk',
-                    width: Math.round(rect.width),
-                    height: Math.round(rect.height),
-                },
+                details: canvasDetails,
             });
         }
     }

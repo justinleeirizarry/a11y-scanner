@@ -885,7 +885,7 @@ export const WCAG_CRITERIA: Record<string, WcagCriterion> = {
         guideline: '3.2 Predictable',
         description: 'Changes of context are initiated only by user request.',
         w3cUrl: 'https://www.w3.org/WAI/WCAG22/Understanding/change-on-request.html',
-        testability: 'automated',
+        testability: 'semi-automated',
         successCriterionText: 'Changes of context are initiated only by user request or a mechanism is available to turn off such changes.'
     },
     '3.2.6': {
