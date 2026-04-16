@@ -29,6 +29,14 @@ npx aria51 https://your-site.com --audit-structure
 npx aria51 https://your-site.com --audit-screen-reader
 ```
 
+<p align="center">
+  <img src="assets/keyboard.gif" alt="aria-51 keyboard audit output" width="700">
+</p>
+
+<p align="center">
+  <img src="assets/screen-reader.gif" alt="aria-51 screen reader audit output" width="700">
+</p>
+
 ### Full WCAG Compliance Audit
 
 Run a complete multi-page audit with one command — no API key needed:
