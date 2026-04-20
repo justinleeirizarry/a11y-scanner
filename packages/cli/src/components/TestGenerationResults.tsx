@@ -1,7 +1,6 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 import type { TestGenerationResults as TestGenResults } from '@aria51/ai-auditor';
-import { Banner } from './Banner.js';
 
 interface TestGenerationResultsProps {
     results: TestGenResults;
@@ -23,10 +22,7 @@ const TestGenerationResults: React.FC<TestGenerationResultsProps> = ({ results }
 
     return (
         <Box flexDirection="column" padding={1}>
-            <Banner />
-
-            {/* Success Banner */}
-            <Box marginTop={1} marginBottom={1} paddingX={1}>
+            <Box marginBottom={1} paddingX={1}>
                 <Text color="green" bold>✅ Test Generation Complete!</Text>
             </Box>
 

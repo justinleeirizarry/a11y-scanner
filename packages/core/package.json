@@ -16,7 +16,7 @@
         "README.md"
     ],
     "scripts": {
-        "build": "rm -rf dist && tsc && npm run build:scanner && npm run build:components",
+        "build": "rm -rf dist && tsc && pnpm run build:scanner && pnpm run build:components",
         "build:scanner": "esbuild src/scanner/browser-bundle.ts --bundle --platform=browser --format=iife --global-name=Aria51Scanner --outfile=dist/scanner-bundle.js",
         "build:components": "esbuild src/components/browser-bundle.ts --bundle --platform=browser --format=iife --global-name=Aria51ComponentPlugin --outfile=dist/component-bundle.js",
         "dev": "tsc --watch",

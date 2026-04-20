@@ -3,6 +3,7 @@ import { Box, Text } from 'ink';
 import Spinner from 'ink-spinner';
 import type { ScanResults } from '@aria51/core';
 import { colors, impactColors } from '../colors.js';
+import { Banner } from './Banner.js';
 
 interface ResultsProps {
     results: ScanResults | null;
@@ -34,11 +35,7 @@ const Results: React.FC<ResultsProps> = ({ results, url: scanUrl, outputFile, ai
     if (!results) {
         return (
             <Box flexDirection="column">
-                <Text color="gray">{'━'.repeat(60)}</Text>
-                <Text>{' '}</Text>
-                <Text bold>{'  a11y.scan'}</Text>
-                <Text>{' '}</Text>
-                <Text color="gray">{'━'.repeat(60)}</Text>
+                <Banner />
                 {scanUrl && (
                     <Box marginTop={1}>
                         <Text color="gray">target  </Text>
@@ -76,12 +73,7 @@ const Results: React.FC<ResultsProps> = ({ results, url: scanUrl, outputFile, ai
 
     return (
         <Box flexDirection="column">
-            {/* Header */}
-            <Text color="gray">{'━'.repeat(60)}</Text>
-            <Text>{' '}</Text>
-            <Text bold>{'  a11y.scan'}</Text>
-            <Text>{' '}</Text>
-            <Text color="gray">{'━'.repeat(60)}</Text>
+            <Banner />
 
             <Box marginTop={1}>
                 <Text color="gray">target  </Text>
