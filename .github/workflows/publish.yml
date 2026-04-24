@@ -32,8 +32,14 @@ jobs:
             pnpm --dir "$pkg" pack --pack-destination /tmp/packs
           done
 
-      - name: Publish tarballs via npm (OIDC)
-        run: |
-          for tgz in /tmp/packs/*.tgz; do
-            npm publish "$tgz" --access public
-          done
+      - name: Publish @aria51/core
+        run: npm publish /tmp/packs/aria51-core-*.tgz --access public
+
+      - name: Publish @aria51/ai-auditor
+        run: npm publish /tmp/packs/aria51-ai-auditor-*.tgz --access public
+
+      - name: Publish aria51
+        run: npm publish /tmp/packs/aria51-0.*.tgz --access public
+
+      - name: Publish @aria51/mcp
+        run: npm publish /tmp/packs/aria51-mcp-*.tgz --access public
