@@ -9,6 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v4
 
@@ -17,7 +18,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          registry-url: https://registry.npmjs.org
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -25,7 +25,15 @@ jobs:
       - name: Build
         run: pnpm build
 
-      - name: Publish packages
-        run: pnpm -r publish --no-git-checks
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Pack packages
+        run: |
+          mkdir -p /tmp/packs
+          for pkg in packages/core packages/ai-auditor packages/cli packages/mcp; do
+            pnpm --dir "$pkg" pack --pack-destination /tmp/packs
+          done
+
+      - name: Publish tarballs via npm (OIDC)
+        run: |
+          for tgz in /tmp/packs/*.tgz; do
+            npm publish "$tgz" --access public
+          done
