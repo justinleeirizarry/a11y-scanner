@@ -5,7 +5,7 @@ export default defineConfig({
     resolve: {
         alias: {
             '@aria51/core': resolve(__dirname, 'packages/core/src/index.ts'),
-            '@aria51/cli': resolve(__dirname, 'packages/cli/src/index.tsx'),
+            aria51: resolve(__dirname, 'packages/cli/src/index.tsx'),
             '@aria51/mcp': resolve(__dirname, 'packages/mcp/src/server.ts'),
         },
     },

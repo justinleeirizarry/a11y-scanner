@@ -1,9 +1,9 @@
-# aria-51
+# aria51
 
 Accessibility testing that catches what axe-core misses — keyboard navigation, focus management, screen reader compatibility, and WCAG 2.2 checks that require real browser interaction.
 
 <p align="center">
-  <img src="assets/hero.gif" alt="aria-51 scanning Hacker News and finding accessibility violations" width="700">
+  <img src="assets/hero.gif" alt="aria51 scanning Hacker News and finding accessibility violations" width="700">
 </p>
 
 ## Quick Start
@@ -30,11 +30,11 @@ npx aria51 https://your-site.com --audit-screen-reader
 ```
 
 <p align="center">
-  <img src="assets/keyboard.gif" alt="aria-51 keyboard audit output" width="700">
+  <img src="assets/keyboard.gif" alt="aria51 keyboard audit output" width="700">
 </p>
 
 <p align="center">
-  <img src="assets/screen-reader.gif" alt="aria-51 screen reader audit output" width="700">
+  <img src="assets/screen-reader.gif" alt="aria51 screen reader audit output" width="700">
 </p>
 
 ### Full WCAG Compliance Audit
@@ -50,7 +50,7 @@ Discovers pages via sitemap and link crawling, scans every page with axe-core, r
 
 ### What It Finds That Other Tools Miss
 
-| Site | axe-core alone | + aria-51 focused audits |
+| Site | axe-core alone | + aria51 focused audits |
 |------|---------------|------------------------|
 | Hacker News | 4 violations | + only 3 of 229 interactive elements reachable via keyboard |
 | GitHub | 4 violations | + 72 tab-order, 104 focus-indicator, 15 widget keyboard issues |
@@ -59,7 +59,7 @@ Discovers pages via sitemap and link crawling, scans every page with axe-core, r
 
 ## MCP Server
 
-aria-51 ships as an MCP server so AI coding assistants can test accessibility directly. The workflow becomes: **scan a URL, see violations, fix the code, re-scan to verify** — all within the assistant's loop.
+aria51 ships as an MCP server so AI coding assistants can test accessibility directly. The workflow becomes: **scan a URL, see violations, fix the code, re-scan to verify** — all within the assistant's loop.
 
 ### Claude Code
 
@@ -144,7 +144,7 @@ npx aria51 https://your-site.com --audit-keyboard --deep
 |---------|-------------|
 | [`@aria51/core`](packages/core) | Scanning engine, focused audits, full audit pipeline, WCAG 2.2 checks, component attribution |
 | [`@aria51/ai-auditor`](packages/ai-auditor) | AI-enhanced deep analysis via Stagehand |
-| [`@aria51/cli`](packages/cli) | Terminal interface. Binary: `aria51` |
+| [`aria51`](packages/cli) | Terminal interface. Binary: `aria51` |
 | [`@aria51/mcp`](packages/mcp) | MCP server with 10 tools for AI assistant integration |
 
 ## Documentation

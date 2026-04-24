@@ -1,11 +1,17 @@
-# @aria51/cli
+# aria51
 
-Terminal interface for aria-51 accessibility testing. Supports single and multi-URL scanning, focused audits, full WCAG compliance audits, AI-enhanced deep analysis, and Playwright test generation.
+Terminal interface for aria51 accessibility testing. Supports single and multi-URL scanning, focused audits, full WCAG compliance audits, AI-enhanced deep analysis, and Playwright test generation.
 
 ## Install
 
 ```bash
-npm install -g @aria51/cli
+npm install -g aria51
+```
+
+Or run directly:
+
+```bash
+npx aria51 https://example.com
 ```
 
 Requires Playwright browsers:

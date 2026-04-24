@@ -1,6 +1,6 @@
 # CI/CD Integration
 
-aria-51 supports CI mode with threshold-based exit codes, making it easy to integrate into your CI/CD pipeline.
+aria51 supports CI mode with threshold-based exit codes, making it easy to integrate into your CI/CD pipeline.
 
 ## GitHub Actions
 

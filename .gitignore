@@ -8,5 +8,6 @@ coverage/
 .env.local
 test-results/
 generated-tests/
+results/
 a11y-prompt.md
 .next

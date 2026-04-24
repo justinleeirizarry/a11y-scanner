@@ -1,6 +1,6 @@
-# aria-51
+# aria51
 
-aria-51 is an accessibility testing platform. It scans websites for WCAG violations using axe-core, keyboard tests, and 34 custom WCAG 2.2 checks — with a full audit pipeline that discovers pages, runs focused audits, and generates prioritized remediation plans. No API keys needed.
+aria51 is an accessibility testing platform. It scans websites for WCAG violations using axe-core, keyboard tests, and 34 custom WCAG 2.2 checks — with a full audit pipeline that discovers pages, runs focused audits, and generates prioritized remediation plans. No API keys needed.
 
 The platform is a monorepo with four packages:
 
@@ -81,7 +81,7 @@ An MCP server that exposes `scan_url` and `scan_urls` tools for MCP. Claude can 
 
 ## AI-powered features
 
-aria-51 has two layers of AI integration, each solving a different problem.
+aria51 has two layers of AI integration, each solving a different problem.
 
 ### AI Auditor
 
@@ -143,7 +143,7 @@ This is built on a generic `FrameworkPlugin` interface that supports any UI fram
 |---|---|---|
 | [`@aria51/core`](../packages/core) | Scanning engine, focused audits, full audit pipeline, WCAG 2.2 checks, component attribution | — |
 | [`@aria51/ai-auditor`](../packages/ai-auditor) | AI-enhanced deep analysis via Stagehand (optional) | core |
-| [`@aria51/cli`](../packages/cli) | Terminal UI (Ink). Binary: `aria51` | core, ai-auditor |
+| [`aria51`](../packages/cli) | Terminal UI (Ink). Binary: `aria51` | core, ai-auditor |
 | [`@aria51/mcp`](../packages/mcp) | MCP server with 10 tools for AI coding assistants | core, ai-auditor |
 
 ### Dependency diagram
@@ -153,7 +153,7 @@ This is built on a generic `FrameworkPlugin` interface that supports any UI fram
     │                                                      │
     ├── @aria51/ai-auditor (optional, --deep mode)         │
     │                                                      │
-    ├── @aria51/cli   (terminal UI)      ──────────────────┤
+    ├── aria51        (terminal UI)      ──────────────────┤
     └── @aria51/mcp   (MCP server)       ──────────────────┘
 ```
 
@@ -168,7 +168,7 @@ This is built on a generic `FrameworkPlugin` interface that supports any UI fram
 
 ```bash
 git clone <repo-url>
-cd aria-51
+cd aria51
 pnpm install
 pnpm build
 ```
@@ -202,7 +202,7 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
     "mcpServers": {
         "aria51": {
             "command": "node",
-            "args": ["/absolute/path/to/aria-51/packages/mcp/bin/mcp-server.js"]
+            "args": ["/absolute/path/to/aria51/packages/mcp/bin/mcp-server.js"]
         }
     }
 }
@@ -217,7 +217,7 @@ Add to your project's `.claude/settings.json` or global `~/.claude/settings.json
     "mcpServers": {
         "aria51": {
             "command": "node",
-            "args": ["/absolute/path/to/aria-51/packages/mcp/bin/mcp-server.js"]
+            "args": ["/absolute/path/to/aria51/packages/mcp/bin/mcp-server.js"]
         }
     }
 }
@@ -227,7 +227,7 @@ After adding, restart Claude Desktop or Claude Code. Then ask: *"Scan https://yo
 
 ## Configuration
 
-aria-51 supports configuration via config files, environment variables, or runtime options.
+aria51 supports configuration via config files, environment variables, or runtime options.
 
 **Config file** (auto-discovered by cosmiconfig):
 

@@ -1,6 +1,6 @@
 # @aria51/mcp
 
-[Model Context Protocol](https://modelcontextprotocol.io) server for aria-51. Exposes 10 accessibility testing tools for AI assistants like Claude Code and Cursor. No API keys required for core functionality.
+[Model Context Protocol](https://modelcontextprotocol.io) server for aria51. Exposes 10 accessibility testing tools for AI assistants like Claude Code and Cursor. No API keys required for core functionality.
 
 ## Install
 
