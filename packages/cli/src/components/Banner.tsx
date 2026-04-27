@@ -10,12 +10,30 @@ interface BannerProps {
 export const Banner: React.FC<BannerProps> = ({ url, urlLabel = 'Scanned' }) => {
     return (
         <Box flexDirection="column" marginBottom={1}>
-            <Text>{`   █████╗ ██████╗ ██╗ █████╗       ███████╗ ██╗`}</Text>
-            <Text>{`  ██╔══██╗██╔══██╗██║██╔══██╗      ██╔════╝███║`}</Text>
-            <Text>{`  ███████║██████╔╝██║███████║█████╗███████╗╚██║`}</Text>
-            <Text>{`  ██╔══██║██╔══██╗██║██╔══██║╚════╝╚════██║ ██║`}</Text>
-            <Text>{`  ██║  ██║██║  ██║██║██║  ██║      ███████║ ██║`}</Text>
-            <Text>{`  ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚═╝  ╚═╝      ╚══════╝ ╚═╝`}</Text>
+            <Text>
+                {`   █████╗ ██████╗ ██╗ █████╗ `}
+                <Text color={colors.muted}>{`███████╗ ██╗`}</Text>
+            </Text>
+            <Text>
+                {`  ██╔══██╗██╔══██╗██║██╔══██╗`}
+                <Text color={colors.muted}>{`██╔════╝███║`}</Text>
+            </Text>
+            <Text>
+                {`  ███████║██████╔╝██║███████║`}
+                <Text color={colors.muted}>{`███████╗╚██║`}</Text>
+            </Text>
+            <Text>
+                {`  ██╔══██║██╔══██╗██║██╔══██║`}
+                <Text color={colors.muted}>{`╚════██║ ██║`}</Text>
+            </Text>
+            <Text>
+                {`  ██║  ██║██║  ██║██║██║  ██║`}
+                <Text color={colors.muted}>{`███████║ ██║`}</Text>
+            </Text>
+            <Text>
+                {`  ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚═╝  ╚═╝`}
+                <Text color={colors.muted}>{`╚══════╝ ╚═╝`}</Text>
+            </Text>
             {url && (
                 <>
                     <Text>{` `}</Text>
